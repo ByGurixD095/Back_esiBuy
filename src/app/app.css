@@ -84,46 +84,22 @@
 
 .brand-lockup {
   position: relative;
-  display: inline-block;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
   user-select: none;
 }
 
-.brand-title {
-  margin: 0;
-  font-size: clamp(3rem, min(14vw, 17vh), 6.5rem);
-  font-weight: 900;
-  line-height: 0.95;
-  letter-spacing: -0.05em;
-  white-space: nowrap;
-  padding-bottom: 0.38em;
-}
-
-/* Tipografía con brillo translúcido y relieve hacia el fondo */
-.title-main {
-  background: linear-gradient(180deg, #ffffff 40%, rgba(200, 220, 255, 0.75) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 35px rgba(255, 255, 255, 0.2)) drop-shadow(0 10px 30px rgba(0, 0, 0, 0.9));
-}
-
-.title-accent {
-  background: linear-gradient(180deg, #ffffff 40%, rgba(226, 232, 240, 0.8) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 0 35px rgba(255, 255, 255, 0.2)) drop-shadow(0 10px 30px rgba(0, 0, 0, 0.9));
-}
-
-/* Flecha y curva integrada con brillo de neón ambiental */
-.brand-smile {
-  position: absolute;
-  bottom: -0.15em;
-  left: 2.5%;
-  width: 95%;
+.brand-logo {
+  width: clamp(280px, 50vw, 600px);
   height: auto;
-  pointer-events: none;
+  display: block;
+  margin: 0 auto;
+  /* Compensamos el espacio vacío izquierdo que trae el SVG por defecto */
+  transform: translateX(70px); 
   filter: 
-    drop-shadow(0 0 12px rgba(255, 153, 0, 0.8))
-    drop-shadow(0 0 35px rgba(255, 153, 0, 0.45))
+    drop-shadow(0 0 12px rgba(255, 153, 0, 0.3))
     drop-shadow(0 8px 25px rgba(0, 0, 0, 0.9));
 }
 
@@ -150,6 +126,7 @@
     opacity: 0.5;
     transform: translate(-50%, -50%) scale(0.9);
   }
+
   100% {
     opacity: 0.9;
     transform: translate(-50%, -50%) scale(1.1);
@@ -161,10 +138,12 @@
   .logo-overlay {
     padding: 2vh 1rem;
   }
+
   .brand-title {
     font-size: clamp(2rem, min(10vw, 16vh), 3.2rem);
     padding-bottom: 0.28em;
   }
+
   .slogan-wrapper {
     margin-top: 0.6rem;
   }
@@ -174,6 +153,7 @@
   .brand-title {
     font-size: clamp(2.2rem, 13vw, 3rem);
   }
+
   .brand-slogan {
     letter-spacing: 0.04em;
   }

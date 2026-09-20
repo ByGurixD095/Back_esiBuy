@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 120" width="100%" height="100%" class="">
+  <!-- esibuy — Unbounded Ultra Bold 900: 01. Pure Solid Chalk -->
+  <defs>
+    <style>
+      .esibuy-unbounded-export {
+        font-family: 'Unbounded', sans-serif;
+        font-weight: 900;
+        font-size: 48px;
+        letter-spacing: -1.5px;
+      }
+      .esibuy-slogan-export {
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 700;
+        font-size: 9px;
+        fill: #FF6B00;
+        letter-spacing: 3px;
+        text-anchor: middle;
+      }
+    </style>
+    
+  </defs>
+
+  
+
+  <g transform="translate(30, 20)">
+    <!-- Letras 'esi' con Unbounded 900 -->
+    <text x="10" y="55" class="esibuy-unbounded-export" fill="#FFFFFF" stroke="none" stroke-width="1" >esi</text>
+
+    <!-- EL CARRITO (GEOMETRÍA VECTORIAL ORIGINAL 100% INTACTA) -->
+    <g transform="translate(85, 5)">
+      <svg width="65" height="65" viewBox="0 0 100 100">
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+          <g transform="skewX(-12) translate(4.800000000000001, 0)">
+            <!-- Heavy Streaks -->
+            <path d="M12 46 H25" stroke="#FFA800" stroke-width="5.25" stroke-linecap="round" />
+            <path d="M14 58 H27" stroke="#FFA800" stroke-width="5.25" stroke-linecap="round" />
+
+            <!-- Bold Handle Stem -->
+            <path d="M26 22 H38 V73" stroke="#FF6B00" stroke-width="8.625" stroke-linecap="round" stroke-linejoin="round" />
+
+            <!-- Deep Bold Basket with Solid Axle Bed -->
+            <path d="M38 42 H76 L68 73 H38" stroke="#FF6B00" stroke-width="8.625" stroke-linecap="round" stroke-linejoin="round" />
+
+            <!-- Solid Wheel Base Blocks -->
+            <rect x="39" y="73" width="5.25" height="9" fill="#FF6B00" rx="1" />
+            <rect x="67" y="73" width="5.25" height="9" fill="#FF6B00" rx="1" />
+
+            <!-- Solid Big Wheels -->
+            <circle cx="42" cy="85" r="6.5" fill="#FFA800" />
+            <circle cx="70" cy="85" r="6.5" fill="#EA5400" />
+          </g>
+        </svg>
+      </svg>
+    </g>
+
+    <!-- Letras 'uy' con Unbounded 900 -->
+    <text x="135" y="55" class="esibuy-unbounded-export" fill="#FFFFFF" stroke="none" stroke-width="1" >uy</text>
+  </g>
+</svg>
