@@ -1,7 +1,17 @@
 package esi.grupo5.esiBuy.Controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import jakarta.servlet.http.HttpServletResponse;
+
+import esi.grupo5.esiBuy.Dto.LoginRequestDTO;
+import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
+import esi.grupo5.esiBuy.Service.JwtService;
+import esi.grupo5.esiBuy.Service.UserService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,6 +20,11 @@ import java.util.List;
 @RequestMapping("/users")
 public class UserController {
 
+    @Autowired 
+    private UserService userService;
+
+    @Autowired 
+    private JwtService jwtService;
     
     // GET 
     @GetMapping
@@ -37,4 +52,58 @@ public class UserController {
         //TODO: Implementar
         return ResponseEntity.notFound().build();
     }
+
+    
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO dto, HttpServletResponse response) {
+
+        LoginResponseDTO loginResponse = this.userService.login(dto);
+        setTokenCookies(response, loginResponse);
+
+        return ResponseEntity.ok(loginResponse);
+    }
+
+    private void setTokenCookies(HttpServletResponse response, LoginResponseDTO lr) {
+        ResponseCookie accessCookie = ResponseCookie.from("accessToken", lr.accessToken())
+                .httpOnly(true)
+                .path("/")
+                .maxAge(jwtService.getAccessTokenExpirationSeconds())
+                .sameSite("Strict")
+                .secure(false) // PONER A TRUE EN PRODUCCIÓN (HTTPS)
+                .build();
+
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", lr.refreshToken())
+                .httpOnly(true)
+                .path("/")
+                .maxAge(jwtService.getRefreshTokenExpirationSeconds())
+                .sameSite("Strict")
+                .secure(false) // PONER A TRUE EN PRODUCCIÓN (HTTPS)
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+    }
+
+    //ESTO LUEGO LO USAMOS PARA EL LOGOUT/CERRAR SESIÓN
+    private void clearTokenCookies(HttpServletResponse response) {
+        ResponseCookie accessCookie = ResponseCookie.from("accessToken", "")
+                .httpOnly(true)
+                .path("/")
+                .maxAge(0)          // Fuerza el borrado inmediato
+                .sameSite("Strict")
+                .secure(false)       // PONER A TRUE EN PRODUCCIÓN (HTTPS)
+                .build();
+
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", "")
+                .httpOnly(true)
+                .path("/")
+                .maxAge(0)          // Fuerza el borrado inmediato
+                .sameSite("Strict")
+                .secure(false)       // PONER A TRUE EN PRODUCCIÓN (HTTPS)
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+    }
+    
 }    
