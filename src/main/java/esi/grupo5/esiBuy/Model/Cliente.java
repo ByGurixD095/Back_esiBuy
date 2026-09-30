@@ -1,49 +1,69 @@
 package esi.grupo5.esiBuy.Model;
 
-import java.util.ArrayList;
-import java.util.List;
+import esi.grupo5.esiBuy.Model.enums.Rol;
+import esi.grupo5.esiBuy.Model.enums.TipoCliente;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Past;
+
+import java.time.LocalDate;
 
 public class Cliente extends Usuario {
-    private String tipoCliente;
-    private List<String> direcciones = new ArrayList<>();
-    private List<MetodoPago> metodosPago = new ArrayList<>();
-    private List<Pedido> pedidos = new ArrayList<>();          // realiza
-    private List<Valoracion> valoraciones = new ArrayList<>(); // crea
-    private ListaDeseos listaDeseos = new ListaDeseos();       // tiene
-    private CarritoCompra carritoCompra = new CarritoCompra(); // tiene
 
-    public Cliente(String username, String password, String tipoCliente) {
-        super(username, password);
-        this.tipoCliente = tipoCliente;
+    @NotBlank
+    private String dni;
+
+    @NotNull
+    @Past
+    private LocalDate fechaNacimiento;
+
+    @NotNull
+    private TipoCliente tipoCliente;
+
+    public Cliente() {
+        super();
+        this.setRol(Rol.CLIENTE);
+        this.tipoCliente = TipoCliente.NORMAL;
     }
 
-    //------ SETTERS & GETERS --------
-    public String getTipoCliente() { return tipoCliente; }
-    public void setTipoCliente(String tipoCliente) { this.tipoCliente = tipoCliente; }
-    public List<String> getDirecciones() { return direcciones; }
-    public List<MetodoPago> getMetodosPago() { return metodosPago; }
-    public List<Pedido> getPedidos() { return pedidos; }
-    public List<Valoracion> getValoraciones() { return valoraciones; }
-    public ListaDeseos getListaDeseos() { return listaDeseos; }
-    public CarritoCompra getCarritoCompra() { return carritoCompra; }
+    // 6 parámetros (cumple <= 7)
+    public Cliente(String nombre, String apellidos, String email, 
+                   String contrasena, String dni, LocalDate fechaNacimiento) {
+        super(nombre, apellidos, email, contrasena, null, null);
+        this.setRol(Rol.CLIENTE);
+        this.dni = dni;
+        this.fechaNacimiento = fechaNacimiento;
+        this.tipoCliente = TipoCliente.NORMAL;
+    }
 
+    public static Builder builder() {
+        return new Builder();
+    }
 
-    //------ METHODS --------
-    public List<Producto> buscarProducto(List<Producto> catalogo, String texto) {
-        List<Producto> resultado = new ArrayList<>();
-        for (Producto p : catalogo) {
-            if (p.getNombre().toLowerCase().contains(texto.toLowerCase())) {
-                resultado.add(p);
-            }
+    public static class Builder {
+        private final Cliente cliente = new Cliente();
+
+        public Builder nombre(String nombre) { cliente.setNombre(nombre); return this; }
+        public Builder apellidos(String apellidos) { cliente.setApellidos(apellidos); return this; }
+        public Builder email(String email) { cliente.setEmail(email); return this; }
+        public Builder contrasena(String contrasena) { cliente.setContrasena(contrasena); return this; }
+        public Builder telefono(String telefono) { cliente.setTelefono(telefono); return this; }
+        public Builder imagenPerfil(String imagenPerfil) { cliente.setImagenPerfil(imagenPerfil); return this; }
+        public Builder dni(String dni) { cliente.setDni(dni); return this; }
+        public Builder fechaNacimiento(LocalDate fechaNacimiento) { cliente.setFechaNacimiento(fechaNacimiento); return this; }
+        public Builder tipoCliente(TipoCliente tipoCliente) { cliente.setTipoCliente(tipoCliente); return this; }
+
+        public Cliente build() {
+            return cliente;
         }
-        return resultado;
     }
 
-    public void gestionarDirecciones() {
-        // TODO: alta, baja y modificación de direcciones
-    }
+    public String getDni() { return dni; }
+    public void setDni(String dni) { this.dni = dni; }
 
-    public void gestionarMetodosPago() {
-        // TODO: alta, baja y modificación de métodos de pago
-    }
+    public LocalDate getFechaNacimiento() { return fechaNacimiento; }
+    public void setFechaNacimiento(LocalDate fechaNacimiento) { this.fechaNacimiento = fechaNacimiento; }
+
+    public TipoCliente getTipoCliente() { return tipoCliente; }
+    public void setTipoCliente(TipoCliente tipoCliente) { this.tipoCliente = tipoCliente; }
 }
