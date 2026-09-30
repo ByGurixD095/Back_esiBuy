@@ -1,0 +1,10 @@
+{
+  "sonarlint.rules": {
+    "java:S1541": {
+      "level": "on",
+      "parameters": {
+        "max": "15"
+      }
+    }
+  }
+}
