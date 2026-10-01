@@ -32,13 +32,13 @@ public class UserService {
         this.refreshTokenRepository = refreshTokenRepository;
     }
 
-    private Optional<Usuario> findByUsername(String username) {
-        return usuarioRepository.findByUsername(username);
+    private Optional<Usuario> findByEmail(String email) {
+        return usuarioRepository.findByEmail(email);
     }
 
     public LoginResponseDTO login(LoginRequestDTO loginRequest) {
 
-        Optional<Usuario> optionalUsuario = findByUsername(loginRequest.username());
+        Optional<Usuario> optionalUsuario = findByEmail(loginRequest.username());
         if (optionalUsuario.isEmpty() || !encoder.matches(loginRequest.password(), optionalUsuario.get().getContrasena())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciales inválidas");
         }
