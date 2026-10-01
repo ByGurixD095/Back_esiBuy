@@ -9,6 +9,6 @@ import java.util.Optional;
 @Repository
 public interface UsuarioRepository extends MongoRepository<Usuario, String> {
 
-    // Spring Data resuelve polimórficamente las clases hijas guardadas en "usuarios"
+    boolean existsByEmail(String email);
     Optional<Usuario> findByUsername(String username);
 }
