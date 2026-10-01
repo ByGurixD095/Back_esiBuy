@@ -61,4 +61,30 @@ public class UserService {
         }
         return new LoginResponseDTO(token, refreshTokenString, usuario.getRol().toString(), null);
     }
+
+    public LoginResponseDTO refreshToken(String refreshTokenString) {
+        // 1. Comprobamos que el token de refresco exista en la base de datos
+        Optional<RefreshToken> optionalRefreshToken = refreshTokenRepository.findByToken(refreshTokenString);
+        if (optionalRefreshToken.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token de refresco inválido");
+        }
+        RefreshToken refreshTokenEntity = optionalRefreshToken.get();
+
+        // 2. Comprobamos que la firma matemática siga siendo válida (que no haya caducado)
+        if (!jwtService.isTokenValid(refreshTokenEntity.getToken())) {
+            refreshTokenRepository.delete(refreshTokenEntity); // Lo borramos si ya caducó
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token expirado");
+        }
+
+        // 3. Generamos un nuevo Access Token corto para el usuario
+        Usuario user = refreshTokenEntity.getUsuario();
+        String nuevoAccessToken = jwtService.generateToken(user);
+
+        // 4. Retornamos el DTO correspondiente según si es Cliente u otro rol con el nuevo Access Token y el mismo Refresh Token
+        if (user instanceof Cliente cliente) {
+            return new LoginResponseDTO(nuevoAccessToken, refreshTokenEntity.getToken(), user.getRol().toString(), cliente.getTipoCliente().toString());
+        }
+        return new LoginResponseDTO(nuevoAccessToken, refreshTokenEntity.getToken(), user.getRol().toString(), null);
+
+    }
 }

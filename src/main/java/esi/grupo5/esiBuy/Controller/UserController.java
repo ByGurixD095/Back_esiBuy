@@ -63,6 +63,20 @@ public class UserController {
         return ResponseEntity.ok(loginResponse);
     }
 
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(@CookieValue(name = "refreshToken") String refreshToken, HttpServletResponse response) {
+        
+        if (refreshToken == null) {
+            throw new RuntimeException("No refresh token provided");
+        }
+
+        LoginResponseDTO lr = this.userService.refreshToken(refreshToken);
+
+        setTokenCookies(response, lr);
+        return ResponseEntity.ok(lr);
+    }
+
     private void setTokenCookies(HttpServletResponse response, LoginResponseDTO lr) {
         ResponseCookie accessCookie = ResponseCookie.from("accessToken", lr.accessToken())
                 .httpOnly(true)
