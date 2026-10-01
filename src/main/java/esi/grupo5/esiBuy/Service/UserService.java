@@ -141,7 +141,7 @@ public class UserService {
                 .nombre(dto.nombre())
                 .apellidos(dto.apellidos())
                 .email(dto.email())
-                .contrasena(dto.contrasena())
+                .contrasena(dto.contrasena())   // Encriptar con encoder.encode(dto.contrasena()) si se desea almacenar la contraseña encriptada
                 .telefono(dto.telefono())
                 .imagenPerfil(dto.imagenPerfil())
                 .nombreComercial(dto.nombreComercial())
