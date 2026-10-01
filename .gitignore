@@ -87,3 +87,7 @@ docker-compose.override.yml
 *~
 target/
 *.class
+
+sonar*
+.scannerwork/*
+
