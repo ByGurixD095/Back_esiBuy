@@ -4,6 +4,9 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "productos")
+@Data // De Lombok: Esto sirve para generar automáticamente los getters, setters, toString, equals y hashCode
+@NoArgsConstructor // Genera un constructor sin argumentos
+@AllArgsConstructor // Genera un constructor con todos los argumentos
 public class Producto {
     
     @Id
