@@ -2,58 +2,42 @@ package esi.grupo5.esiBuy.Controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.servlet.http.HttpServletResponse;
-
+import jakarta.validation.Valid;
+import esi.grupo5.esiBuy.Dto.AuthResponseDTO;
+import esi.grupo5.esiBuy.Dto.ClienteRegistroDTO;
 import esi.grupo5.esiBuy.Dto.LoginRequestDTO;
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
+import esi.grupo5.esiBuy.Dto.VendedorRegisterRequest;
 import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Service.UserService;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @RestController
 @RequestMapping("/users")
 public class UserController {
 
-    @Autowired 
+    private static final String STRICT = "Strict";
+
     private UserService userService;
 
-    @Autowired 
     private JwtService jwtService;
     
-    // GET 
-    @GetMapping
-    public ResponseEntity<String> getAllUsers() {
-        //TODO: Implementar
-        return ResponseEntity.ok("In progress");
+    public UserController(UserService userService, JwtService jwtService) {
+        this.userService = userService;
+        this.jwtService = jwtService;
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<String> getUserById(@PathVariable int id) {
-        //TODO: Implementar
-        return ResponseEntity.ok("In progress");
-    }
+    // --------- GET ------------ 
 
-    // POST
-    @PostMapping
-    public ResponseEntity<String> createUser(@RequestBody String name) {
-        //TODO: Implemetnar
-        return ResponseEntity.ok("Usuario creado: " + name);
-    }
+    //Se eliminan todos los métodos que aún no se implementar para evitar confusiones
 
-    // DELETE 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable int id) {
-        //TODO: Implementar
-        return ResponseEntity.notFound().build();
-    }
-
-    
+    // --------- POST ------------ 
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO dto, HttpServletResponse response) {
 
@@ -65,10 +49,9 @@ public class UserController {
 
 
     @PostMapping("/refresh")
-    public ResponseEntity<?> refresh(@CookieValue(name = "refreshToken") String refreshToken, HttpServletResponse response) {
-        
-        if (refreshToken == null) {
-            throw new RuntimeException("No refresh token provided");
+    public ResponseEntity<LoginResponseDTO> refresh(@CookieValue(name = "refreshToken") String refreshToken, HttpServletResponse response) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No refresh token provided");
         }
 
         LoginResponseDTO lr = this.userService.refreshToken(refreshToken);
@@ -77,20 +60,41 @@ public class UserController {
         return ResponseEntity.ok(lr);
     }
 
+    @PostMapping("/register/clientes")
+    public ResponseEntity<AuthResponseDTO> registrarCliente(@Valid @RequestBody ClienteRegistroDTO dto) {
+        AuthResponseDTO authResponse = userService.registrarCliente(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(authResponse);
+    }
+
+    @PostMapping("/register/vendedor")
+    public ResponseEntity<AuthResponseDTO> registerVendedor(
+            @Valid @RequestBody VendedorRegisterRequest request) {
+
+        AuthResponseDTO response = userService.registrarVendedor(request);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(response);
+    }
+
+    // --------- DELETE ------------ 
+
+
+    // --------- PRIVATE METHODS ------------ 
     private void setTokenCookies(HttpServletResponse response, LoginResponseDTO lr) {
         ResponseCookie accessCookie = ResponseCookie.from("accessToken", lr.accessToken())
                 .httpOnly(true)
                 .path("/")
                 .maxAge(jwtService.getAccessTokenExpirationSeconds())
-                .sameSite("Strict")
-                .secure(false) // PONER A TRUE EN PRODUCCIÓN (HTTPS)
+                .sameSite(STRICT)
+                .secure(false) // TODO: PONER A TRUE EN PRODUCCIÓN (HTTPS)
                 .build();
 
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", lr.refreshToken())
                 .httpOnly(true)
                 .path("/")
                 .maxAge(jwtService.getRefreshTokenExpirationSeconds())
-                .sameSite("Strict")
+                .sameSite(STRICT)
                 .secure(false) // PONER A TRUE EN PRODUCCIÓN (HTTPS)
                 .build();
 
@@ -98,22 +102,22 @@ public class UserController {
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
     }
 
-    //ESTO LUEGO LO USAMOS PARA EL LOGOUT/CERRAR SESIÓN
+    //TODO:  ESTO LUEGO LO USAMOS PARA EL LOGOUT/CERRAR SESIÓN
     private void clearTokenCookies(HttpServletResponse response) {
         ResponseCookie accessCookie = ResponseCookie.from("accessToken", "")
                 .httpOnly(true)
                 .path("/")
                 .maxAge(0)          // Fuerza el borrado inmediato
-                .sameSite("Strict")
-                .secure(false)       // PONER A TRUE EN PRODUCCIÓN (HTTPS)
+                .sameSite(STRICT)
+                .secure(false)       // TODO: PONER A TRUE EN PRODUCCIÓN (HTTPS)
                 .build();
 
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", "")
                 .httpOnly(true)
                 .path("/")
                 .maxAge(0)          // Fuerza el borrado inmediato
-                .sameSite("Strict")
-                .secure(false)       // PONER A TRUE EN PRODUCCIÓN (HTTPS)
+                .sameSite(STRICT)
+                .secure(false)       // TODO: PONER A TRUE EN PRODUCCIÓN (HTTPS)
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
