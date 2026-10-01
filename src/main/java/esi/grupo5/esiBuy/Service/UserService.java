@@ -66,9 +66,17 @@ public class UserService {
 
         // Retornamos el DTO correspondiente según si es Cliente u otro rol
         if (usuario instanceof Cliente cliente) {
-            return new LoginResponseDTO(token, refreshTokenString, usuario.getRol().toString(), cliente.getTipoCliente().toString());
+            return new LoginResponseDTO(
+                    token,
+                    refreshTokenString,
+                    usuario.getRol().toString(),
+                    cliente.getTipoCliente().toString());
         }
-        return new LoginResponseDTO(token, refreshTokenString, usuario.getRol().toString(), null);
+        return new LoginResponseDTO(
+                token,
+                refreshTokenString,
+                usuario.getRol().toString(),
+                null);
     }
 
     public LoginResponseDTO refreshToken(String refreshTokenString) {
@@ -91,10 +99,17 @@ public class UserService {
 
         // 4. Retornamos el DTO correspondiente según si es Cliente u otro rol con el nuevo Access Token y el mismo Refresh Token
         if (user instanceof Cliente cliente) {
-            return new LoginResponseDTO(nuevoAccessToken, refreshTokenEntity.getToken(), user.getRol().toString(), cliente.getTipoCliente().toString());
+            return new LoginResponseDTO(
+                    nuevoAccessToken,
+                    refreshTokenEntity.getToken(),
+                    user.getRol().toString(),
+                    cliente.getTipoCliente().toString());
         }
-        return new LoginResponseDTO(nuevoAccessToken, refreshTokenEntity.getToken(), user.getRol().toString(), null);
-
+        return new LoginResponseDTO(
+                nuevoAccessToken,
+                refreshTokenEntity.getToken(),
+                user.getRol().toString(),
+                null);
     }
 
     @Transactional
