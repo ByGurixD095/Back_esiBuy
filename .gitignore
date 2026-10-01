@@ -85,3 +85,8 @@ docker-compose.override.yml
 *.temp
 *.swp
 *~
+
+# SonarQube / SonarScanner (contienen tokens personales)
+sonar-project.properties
+sonar-scanner.properties
+.scannerwork/
