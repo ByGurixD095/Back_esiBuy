@@ -85,5 +85,3 @@ docker-compose.override.yml
 *.temp
 *.swp
 *~
-target/
-*.class

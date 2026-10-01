@@ -26,6 +26,7 @@ public class Cliente extends Usuario {
         this.tipoCliente = TipoCliente.NORMAL;
     }
 
+    // 6 parámetros (cumple <= 7)
     public Cliente(String nombre, String apellidos, String email, 
                    String contrasena, String dni, LocalDate fechaNacimiento) {
         super(nombre, apellidos, email, contrasena, null, null);
