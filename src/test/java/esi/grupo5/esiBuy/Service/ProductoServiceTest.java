@@ -50,8 +50,8 @@ class ProductoServiceTest {
 
         // 3. ASSERT (Comprobaciones)
         assertNotNull(resultado, "El producto creado no debe ser nulo");
-        assertEquals("Camiseta ESIBuy", resultado.getNombre());
-        assertEquals("REF-12345", resultado.getReferencia());
+        assertEquals("Camiseta ESI", resultado.getNombre());
+        assertEquals("REF-092026a", resultado.getReferencia());
         assertEquals(1999, resultado.getPrecioCent());
         assertTrue(resultado.isActivo(), "El producto debe nacer activo");
     }

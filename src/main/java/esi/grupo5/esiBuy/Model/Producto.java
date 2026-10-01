@@ -4,9 +4,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "productos")
-@Data // De Lombok: Esto sirve para generar automáticamente los getters, setters, toString, equals y hashCode
-@NoArgsConstructor // Genera un constructor sin argumentos
-@AllArgsConstructor // Genera un constructor con todos los argumentos
 public class Producto {
     
     @Id
@@ -35,6 +32,33 @@ public class Producto {
         this.categoria = categoria;
         this.urlImagen = urlImagen;
     }
+
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
+
+    public String getNombre() { return nombre; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
+
+    public String getReferencia() { return referencia; }
+    public void setReferencia(String referencia) { this.referencia = referencia; }
+
+    public int getNumStock() { return numStock; }
+    public void setNumStock(int numStock) { this.numStock = numStock; }
+
+    public int getPrecioCent() { return precioCent; }
+    public void setPrecioCent(int precioCent) { this.precioCent = precioCent; }
+
+    public String getDescripcion() { return descripcion; }
+    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
+
+    public String getCategoria() { return categoria; }
+    public void setCategoria(String categoria) { this.categoria = categoria; }
+
+    public String getUrlImagen() { return urlImagen; }
+    public void setUrlImagen(String urlImagen) { this.urlImagen = urlImagen; }
+
+    public boolean isActivo() { return activo; }
+    public void setActivo(boolean activo) { this.activo = activo; }
 
 }
 
