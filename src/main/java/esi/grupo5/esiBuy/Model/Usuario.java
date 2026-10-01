@@ -52,8 +52,7 @@ public abstract class Usuario {
         this.activo = false;
         this.bloqueado = false;
     }
-
-    // 6 parámetros (cumple la regla <= 7)
+    
     protected Usuario(String nombre, String apellidos, String email, 
                       String contrasena, String telefono, String imagenPerfil) {
         this();
