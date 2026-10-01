@@ -2,6 +2,7 @@ package esi.grupo5.esiBuy.Service;
 
 import esi.grupo5.esiBuy.Dto.LoginRequestDTO;
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
+import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.RefreshToken;
 import esi.grupo5.esiBuy.Model.Usuario;
@@ -11,11 +12,15 @@ import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+
+import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
+import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 
 @Service
 public class UserService {
@@ -26,7 +31,8 @@ public class UserService {
     private final JwtService jwtService;
     private final RefreshTokenRepository refreshTokenRepository;
 
-    public UserService(UsuarioRepository usuarioRepository, JwtService jwtService, RefreshTokenRepository refreshTokenRepository) {
+    public UserService(UsuarioRepository usuarioRepository, JwtService jwtService,
+            RefreshTokenRepository refreshTokenRepository) {
         this.usuarioRepository = usuarioRepository;
         this.jwtService = jwtService;
         this.refreshTokenRepository = refreshTokenRepository;
@@ -39,7 +45,8 @@ public class UserService {
     public LoginResponseDTO login(LoginRequestDTO loginRequest) {
 
         Optional<Usuario> optionalUsuario = findByEmail(loginRequest.username());
-        if (optionalUsuario.isEmpty() || !encoder.matches(loginRequest.password(), optionalUsuario.get().getContrasena())) {
+        if (optionalUsuario.isEmpty()
+                || !encoder.matches(loginRequest.password(), optionalUsuario.get().getContrasena())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciales inválidas");
         }
 
@@ -57,7 +64,8 @@ public class UserService {
 
         // Retornamos el DTO correspondiente según si es Cliente u otro rol
         if (usuario instanceof Cliente cliente) {
-            return new LoginResponseDTO(token, refreshTokenString, usuario.getRol().toString(), cliente.getTipoCliente().toString());
+            return new LoginResponseDTO(token, refreshTokenString, usuario.getRol().toString(),
+                    cliente.getTipoCliente().toString());
         }
         return new LoginResponseDTO(token, refreshTokenString, usuario.getRol().toString(), null);
     }
@@ -70,7 +78,8 @@ public class UserService {
         }
         RefreshToken refreshTokenEntity = optionalRefreshToken.get();
 
-        // 2. Comprobamos que la firma matemática siga siendo válida (que no haya caducado)
+        // 2. Comprobamos que la firma matemática siga siendo válida (que no haya
+        // caducado)
         if (!jwtService.isTokenValid(refreshTokenEntity.getToken())) {
             refreshTokenRepository.delete(refreshTokenEntity); // Lo borramos si ya caducó
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token expirado");
@@ -80,11 +89,41 @@ public class UserService {
         Usuario user = refreshTokenEntity.getUsuario();
         String nuevoAccessToken = jwtService.generateToken(user);
 
-        // 4. Retornamos el DTO correspondiente según si es Cliente u otro rol con el nuevo Access Token y el mismo Refresh Token
+        // 4. Retornamos el DTO correspondiente según si es Cliente u otro rol con el
+        // nuevo Access Token y el mismo Refresh Token
         if (user instanceof Cliente cliente) {
-            return new LoginResponseDTO(nuevoAccessToken, refreshTokenEntity.getToken(), user.getRol().toString(), cliente.getTipoCliente().toString());
+            return new LoginResponseDTO(nuevoAccessToken, refreshTokenEntity.getToken(), user.getRol().toString(),
+                    cliente.getTipoCliente().toString());
         }
         return new LoginResponseDTO(nuevoAccessToken, refreshTokenEntity.getToken(), user.getRol().toString(), null);
 
+    }
+
+    public ResponseEntity<AdministradorResponseDTO> crearAdministrador(AdministradorRegistroDTO dto) {
+        // Mensaje genérico a propósito: no revelamos si el email ya existe
+        if (findByEmail(dto.email()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se ha podido crear el administrador");
+        }
+
+        Administrador admin = Administrador.builder()
+                .nombre(dto.nombre())
+                .apellidos(dto.apellidos())
+                .email(dto.email())
+                .contrasena(encoder.encode(dto.contrasena()))
+                .sede(dto.sede())
+                .build();
+
+        Administrador guardado = usuarioRepository.save(admin);
+
+        AdministradorResponseDTO respuesta = new AdministradorResponseDTO(
+                guardado.getId(),
+                guardado.getNombre(),
+                guardado.getApellidos(),
+                guardado.getEmail(),
+                guardado.getSede(),
+                guardado.getRol().toString(),
+                "Administrador creado correctamente");
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
     }
 }
