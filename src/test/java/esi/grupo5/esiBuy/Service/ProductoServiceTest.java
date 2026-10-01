@@ -24,16 +24,8 @@ class ProductoServiceTest {
 
     @Test
     void crearProducto_DatosValidos_DevuelveProductoCreado() {
-        // 1. ARRANGE (Preparación de datos y simulación del repositorio)
-        ProductoDTO dto = new ProductoDTO(
-            "Camiseta ESI", 
-            "REF-092026a", 
-            10, 
-            1999, // 19.99 € en céntimos
-            "Camiseta oficial de la cervezada de la ESI 2026", 
-            "Ropa", 
-            "url_imagen.jpg"
-        );
+
+                ProductoDTO dto = dtoValido();
 
         Producto productoSimulado = new Producto();
         productoSimulado.setId("mongo-id-123");
@@ -45,14 +37,107 @@ class ProductoServiceTest {
 
         when(productoRepository.save(any(Producto.class))).thenReturn(productoSimulado);
 
-        // 2. ACT (Ejecución del método que vamos a programar)
         Producto resultado = productoService.crearProducto(dto);
 
-        // 3. ASSERT (Comprobaciones)
         assertNotNull(resultado, "El producto creado no debe ser nulo");
         assertEquals("Camiseta ESI", resultado.getNombre());
         assertEquals("REF-092026a", resultado.getReferencia());
         assertEquals(1999, resultado.getPrecioCent());
         assertTrue(resultado.isActivo(), "El producto debe nacer activo");
+    }
+
+    @Test
+    void crearProducto_DtoNulo_LanzaExcepcion() {
+        assertDtoInvalido(null);
+    }
+
+    @Test
+    void crearProducto_StockNegativo_LanzaExcepcion() {
+        ProductoDTO dto = dtoConValores("Camiseta ESI", "REF-092026a", -1, 1999,
+                "Camiseta oficial", "Ropa", "url_imagen.jpg");
+
+        assertDtoInvalido(dto);
+    }
+
+    @Test
+    void crearProducto_PrecioNegativo_LanzaExcepcion() {
+        ProductoDTO dto = dtoConValores("Camiseta ESI", "REF-092026a", 10, -1999,
+                "Camiseta oficial", "Ropa", "url_imagen.jpg");
+
+        assertDtoInvalido(dto);
+    }
+
+    @Test
+    void crearProducto_ReferenciaNulaOVacia_LanzaExcepcion() {
+        ProductoDTO dto = dtoValido();
+
+        assertDtoInvalido(dtoConValores(dto.nombre(), null, dto.numStock(), dto.precioCent(),
+                dto.descripcion(), dto.categoria(), dto.urlImagen()));
+        assertDtoInvalido(dtoConValores(dto.nombre(), "", dto.numStock(), dto.precioCent(),
+                dto.descripcion(), dto.categoria(), dto.urlImagen()));
+    }
+
+    @Test
+    void crearProducto_CategoriaNulaOVacia_LanzaExcepcion() {
+        ProductoDTO dto = dtoValido();
+
+        assertDtoInvalido(dtoConValores(dto.nombre(), dto.referencia(), dto.numStock(), dto.precioCent(),
+                dto.descripcion(), null, dto.urlImagen()));
+        assertDtoInvalido(dtoConValores(dto.nombre(), dto.referencia(), dto.numStock(), dto.precioCent(),
+                dto.descripcion(), "", dto.urlImagen()));
+    }
+
+    @Test
+    void crearProducto_DescripcionNulaOVacia_LanzaExcepcion() {
+        ProductoDTO dto = dtoValido();
+
+        assertDtoInvalido(dtoConValores(dto.nombre(), dto.referencia(), dto.numStock(), dto.precioCent(),
+                null, dto.categoria(), dto.urlImagen()));
+        assertDtoInvalido(dtoConValores(dto.nombre(), dto.referencia(), dto.numStock(), dto.precioCent(),
+                "", dto.categoria(), dto.urlImagen()));
+    }
+
+    @Test
+    void crearProducto_UrlImagenNulaOVacia_LanzaExcepcion() {
+        ProductoDTO dto = dtoValido();
+
+        assertDtoInvalido(dtoConValores(dto.nombre(), dto.referencia(), dto.numStock(), dto.precioCent(),
+                dto.descripcion(), dto.categoria(), null));
+        assertDtoInvalido(dtoConValores(dto.nombre(), dto.referencia(), dto.numStock(), dto.precioCent(),
+                dto.descripcion(), dto.categoria(), ""));
+    }
+
+    @Test
+    void crearProducto_NombreNuloOVacio_LanzaExcepcion() {
+        ProductoDTO dto = dtoValido();
+
+        assertDtoInvalido(dtoConValores(null, dto.referencia(), dto.numStock(), dto.precioCent(),
+                dto.descripcion(), dto.categoria(), dto.urlImagen()));
+        assertDtoInvalido(dtoConValores("", dto.referencia(), dto.numStock(), dto.precioCent(),
+                dto.descripcion(), dto.categoria(), dto.urlImagen()));
+    }
+
+    private ProductoDTO dtoValido() {
+        return dtoConValores(
+                "Camiseta ESI",
+                "REF-092026a",
+                10,
+                1999,
+                "Camiseta oficial de la cervezada de la ESI 2026",
+                "Ropa",
+                "url_imagen.jpg"
+        );
+    }
+
+    private ProductoDTO dtoConValores(String nombre, String referencia, int numStock,
+                                      int precioCent, String descripcion, String categoria,
+                                      String urlImagen) {
+        return new ProductoDTO(nombre, referencia, numStock, precioCent,
+                descripcion, categoria, urlImagen);
+    }
+
+    private void assertDtoInvalido(ProductoDTO dto) {
+        assertThrows(IllegalArgumentException.class,
+                () -> productoService.crearProducto(dto));
     }
 }
