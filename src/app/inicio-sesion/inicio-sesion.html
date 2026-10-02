@@ -1,1 +1,22 @@
-<p>inicio-sesion works!</p>
+<section class="inicio-sesion">
+  <h1>Iniciar sesión</h1>
+
+  <form [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+    <div class="campo">
+      <label for="usuario">Usuario</label>
+      <input id="usuario" type="text" formControlName="usuario" autocomplete="username" />
+    </div>
+
+    <div class="campo">
+      <label for="contrasena">Contraseña</label>
+      <input
+        id="contrasena"
+        type="password"
+        formControlName="contrasena"
+        autocomplete="current-password"
+      />
+    </div>
+
+    <button type="submit" [disabled]="form.invalid">Entrar</button>
+  </form>
+</section>
