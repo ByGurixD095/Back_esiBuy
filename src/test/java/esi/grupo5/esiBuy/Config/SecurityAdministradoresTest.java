@@ -21,6 +21,10 @@ import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Service.UserService;
 import jakarta.servlet.http.Cookie;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.security.core.context.SecurityContextHolder;
+
 @WebMvcTest(UserController.class)
 @Import({ SecurityConfig.class, JwtAuthenticationFilter.class })
 class SecurityAdministradoresTest {
@@ -38,6 +42,12 @@ class SecurityAdministradoresTest {
 
     @MockitoBean
     private UserService userService;
+
+    @BeforeEach
+    @AfterEach
+    void limpiarContextoDeSeguridad() {
+        SecurityContextHolder.clearContext();
+    }
 
     private void simularLogin(String rol) {
         when(jwtService.isTokenValid(any())).thenReturn(true);
