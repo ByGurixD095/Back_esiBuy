@@ -39,11 +39,22 @@ class UserServiceLoginTest {
     @Mock
     private RefreshTokenRepository refreshTokenRepository;
 
+    @Mock
+    private PasswordValidatorService passwordValidatorService;
+
+    @Mock
+    private LoginAttemptService loginAttemptService;
+
     private UserService userService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(usuarioRepository, jwtService, refreshTokenRepository);
+        userService = new UserService(
+                usuarioRepository,
+                jwtService,
+                refreshTokenRepository,
+                passwordValidatorService,
+                loginAttemptService);
         lenient().when(jwtService.generateToken(any(Usuario.class))).thenReturn("access-token");
         lenient().when(jwtService.generateRefreshToken(any(Usuario.class))).thenReturn("refresh-token");
         lenient().when(jwtService.getRefreshTokenExpirationSeconds()).thenReturn(3600);
@@ -54,7 +65,7 @@ class UserServiceLoginTest {
         Usuario usuario = cliente(TipoCliente.NORMAL);
         when(usuarioRepository.findByEmail("cliente@test.com")).thenReturn(Optional.of(usuario));
 
-        LoginResponseDTO response = userService.login(new LoginRequestDTO("cliente@test.com", "correcta"));
+        LoginResponseDTO response = login(new LoginRequestDTO("cliente@test.com", "correcta"));
 
         assertEquals("access-token", response.accessToken());
         assertEquals("refresh-token", response.refreshToken());
@@ -71,7 +82,7 @@ class UserServiceLoginTest {
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> userService.login(new LoginRequestDTO("cliente@test.com", "incorrecta")));
+                () -> login(new LoginRequestDTO("cliente@test.com", "incorrecta")));
 
         assertEquals(401, exception.getStatusCode().value());
         verify(jwtService, never()).generateToken(any(Usuario.class));
@@ -84,7 +95,7 @@ class UserServiceLoginTest {
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> userService.login(new LoginRequestDTO("noexiste@test.com", "correcta")));
+                () -> login(new LoginRequestDTO("noexiste@test.com", "correcta")));
 
         assertEquals(401, exception.getStatusCode().value());
         verify(jwtService, never()).generateToken(any(Usuario.class));
@@ -98,7 +109,7 @@ class UserServiceLoginTest {
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> userService.login(new LoginRequestDTO("cliente@test.com", "incorrecta")));
+                () -> login(new LoginRequestDTO("cliente@test.com", "incorrecta")));
 
         assertEquals(401, exception.getStatusCode().value());
         verify(jwtService, never()).generateToken(any(Usuario.class));
@@ -118,7 +129,7 @@ class UserServiceLoginTest {
                 .build();
         when(usuarioRepository.findByEmail("vendedor@test.com")).thenReturn(Optional.of(usuario));
 
-        LoginResponseDTO response = userService.login(new LoginRequestDTO("vendedor@test.com", "correcta"));
+        LoginResponseDTO response = login(new LoginRequestDTO("vendedor@test.com", "correcta"));
 
         assertEquals("VENDEDOR", response.rol());
         assertEquals("Puedes acceder a la zona vendedor", mensajeAccesoParaPrueba(response));
@@ -135,7 +146,7 @@ class UserServiceLoginTest {
                 .build();
         when(usuarioRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(usuario));
 
-        LoginResponseDTO response = userService.login(new LoginRequestDTO("admin@test.com", "correcta"));
+        LoginResponseDTO response = login(new LoginRequestDTO("admin@test.com", "correcta"));
 
         assertEquals("ADMINISTRADOR", response.rol());
         assertEquals("Puedes acceder a la zona admin", mensajeAccesoParaPrueba(response));
@@ -146,7 +157,7 @@ class UserServiceLoginTest {
         Usuario usuario = cliente(TipoCliente.PREMIUM);
         when(usuarioRepository.findByEmail("cliente@test.com")).thenReturn(Optional.of(usuario));
 
-        LoginResponseDTO response = userService.login(new LoginRequestDTO("cliente@test.com", "correcta"));
+        LoginResponseDTO response = login(new LoginRequestDTO("cliente@test.com", "correcta"));
 
         assertEquals("PREMIUM", response.tipoCliente());
         assertEquals("Puedes acceder a la zona cliente como cliente premium", mensajeAccesoParaPrueba(response));
@@ -160,6 +171,10 @@ class UserServiceLoginTest {
                     + response.tipoCliente().toLowerCase();
             default -> throw new IllegalArgumentException("Rol no contemplado en la prueba");
         };
+    }
+
+    private LoginResponseDTO login(LoginRequestDTO request) {
+        return userService.login(request, "127.0.0.1");
     }
 
     private Cliente cliente(TipoCliente tipoCliente) {
