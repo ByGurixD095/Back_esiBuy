@@ -27,7 +27,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(
-                    "/users/*"
+                    "/users/**"
                 ).permitAll()
                 .requestMatchers(HttpMethod.POST, "/productos").hasRole("VENDEDOR")
                 .anyRequest().authenticated()
