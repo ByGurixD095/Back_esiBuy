@@ -61,20 +61,26 @@ public class UserController {
     }
 
     @PostMapping("/register/clientes")
-    public ResponseEntity<AuthResponseDTO> registrarCliente(@Valid @RequestBody ClienteRegistroDTO dto) {
-        AuthResponseDTO authResponse = userService.registrarCliente(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(authResponse);
+    public ResponseEntity<LoginResponseDTO> registrarCliente(@Valid @RequestBody ClienteRegistroDTO dto, 
+                                                            HttpServletResponse response, HttpServletRequest request) {
+        userService.registrarCliente(dto);
+        // Autologin del usuario recién registrado
+        LoginResponseDTO loginResponse = userService.login(new LoginRequestDTO(dto.email(), dto.contrasena()), request.getRemoteAddr());
+        
+        setTokenCookies(response, loginResponse);
+        return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
     }
 
     @PostMapping("/register/vendedor")
-    public ResponseEntity<AuthResponseDTO> registerVendedor(
-            @Valid @RequestBody VendedorRegisterRequest request) {
+    public ResponseEntity<LoginResponseDTO> registerVendedor(
+            HttpServletResponse response, HttpServletRequest request,
+            @Valid @RequestBody VendedorRegisterRequest dto) {
 
-        AuthResponseDTO response = userService.registrarVendedor(request);
+        userService.registrarVendedor(dto);
+        LoginResponseDTO loginResponse = userService.login(new LoginRequestDTO(dto.email(), dto.contrasena()), request.getRemoteAddr());
+        setTokenCookies(response, loginResponse);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
     }
 
     // --------- DELETE ------------ 

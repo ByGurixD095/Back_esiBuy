@@ -131,7 +131,7 @@ public class UserService {
     }
 
     @Transactional
-    public AuthResponseDTO registrarCliente(@Valid ClienteRegistroDTO dto) {
+    public void registrarCliente(@Valid ClienteRegistroDTO dto) {
         if (usuarioRepository.existsByEmail(dto.email())) {
             throw new IllegalArgumentException("El email ya está registrado");
         }
@@ -153,22 +153,11 @@ public class UserService {
         cliente.setActivo(true);
         cliente.getHistorialContrasenas().add(contrasenaHasheada);
 
-        Cliente clientSaved = usuarioRepository.save(cliente);
-
-        //TODO: Guardar un toten de verdad cuando el servicio token de Alberto funcione
-        String token = "dummy-token";
-
-        return new AuthResponseDTO(
-                token,
-                clientSaved.getId(),
-                clientSaved.getNombre(),
-                clientSaved.getEmail(),
-                clientSaved.getRol()
-        );
+        usuarioRepository.save(cliente);
     }
 
     @Transactional
-    public AuthResponseDTO registrarVendedor(@Valid VendedorRegisterRequest dto) {
+    public void registrarVendedor(@Valid VendedorRegisterRequest dto) {
         if (usuarioRepository.existsByEmail(dto.email())) {
             throw new IllegalArgumentException("El email ya está registrado");
         }
@@ -189,17 +178,6 @@ public class UserService {
 
         vendedor.setActivo(true);
         vendedor.getHistorialContrasenas().add(contrasenaHasheada);
-        Vendedor guardado = usuarioRepository.save(vendedor);
-
-        //TODO: Guardar un token de verdad cuando el servicio token de Alberto funcione
-        String token = "dummy-jwt-token";
-
-        return new AuthResponseDTO(
-                token,
-                guardado.getId(),
-                guardado.getNombre(),
-                guardado.getEmail(),
-                guardado.getRol()
-        );
+        usuarioRepository.save(vendedor);
     }
 }
