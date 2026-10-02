@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Administradores } from '../administradores';
 
 // Misma política que AdministradorRegistroDTO del back
 const PATRON_CONTRASENA = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).+$/;
@@ -12,6 +14,12 @@ const NO_VACIO = /\S/;
   styleUrl: './administrador-registro.css',
 })
 export class AdministradorRegistro {
+  private readonly administradores = inject(Administradores);
+
+  readonly mensajeExito = signal('');
+  readonly mensajeError = signal('');
+  readonly enviando = signal(false);
+
   readonly form = new FormGroup({
     nombre: new FormControl('', {
       nonNullable: true,
@@ -42,7 +50,32 @@ export class AdministradorRegistro {
       this.form.markAllAsTouched();
       return;
     }
-    // La llamada al back se añade en la tarea 110
+
+    this.mensajeExito.set('');
+    this.mensajeError.set('');
+    this.enviando.set(true);
+
+    this.administradores.crear(this.form.getRawValue()).subscribe({
+      next: (respuesta) => {
+        this.enviando.set(false);
+        this.mensajeExito.set(respuesta.mensaje);
+        this.form.reset();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.enviando.set(false);
+        this.mensajeError.set(this.textoDeError(error));
+      },
+    });
+  }
+
+  private textoDeError(error: HttpErrorResponse): string {
+    if (error.status === 401 || error.status === 403) {
+      return 'No tienes permisos para crear administradores. Inicia sesión como administrador.';
+    }
+    if (error.status === 0) {
+      return 'No se ha podido conectar con el servidor.';
+    }
+    return 'No se ha podido crear el administrador. Revisa los datos e inténtalo de nuevo.';
   }
 
   esInvalido(campo: keyof typeof this.form.controls): boolean {

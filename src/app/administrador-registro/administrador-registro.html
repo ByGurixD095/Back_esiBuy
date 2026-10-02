@@ -6,7 +6,7 @@
       <label for="nombre">Nombre</label>
       <input id="nombre" type="text" formControlName="nombre" autocomplete="given-name" />
       @if (esInvalido('nombre')) {
-        <small class="error">El nombre es obligatorio.</small>
+      <small class="error">El nombre es obligatorio.</small>
       }
     </div>
 
@@ -14,7 +14,7 @@
       <label for="apellidos">Apellidos</label>
       <input id="apellidos" type="text" formControlName="apellidos" autocomplete="family-name" />
       @if (esInvalido('apellidos')) {
-        <small class="error">Los apellidos son obligatorios.</small>
+      <small class="error">Los apellidos son obligatorios.</small>
       }
     </div>
 
@@ -22,7 +22,7 @@
       <label for="email">Correo electrónico</label>
       <input id="email" type="email" formControlName="email" autocomplete="email" />
       @if (esInvalido('email')) {
-        <small class="error">Introduce un correo electrónico válido.</small>
+      <small class="error">Introduce un correo electrónico válido.</small>
       }
     </div>
 
@@ -30,9 +30,9 @@
       <label for="contrasena">Contraseña</label>
       <input id="contrasena" type="password" formControlName="contrasena" autocomplete="new-password" />
       @if (esInvalido('contrasena')) {
-        <small class="error">
-          Entre 8 y 64 caracteres, con minúscula, mayúscula, número y símbolo.
-        </small>
+      <small class="error">
+        Entre 8 y 64 caracteres, con minúscula, mayúscula, número y símbolo.
+      </small>
       }
     </div>
 
@@ -41,6 +41,13 @@
       <input id="sede" type="text" formControlName="sede" />
     </div>
 
-    <button type="submit" [disabled]="form.invalid">Crear administrador</button>
+    @if (mensajeExito()) {
+    <p class="exito" role="status">{{ mensajeExito() }}</p>
+    }
+    @if (mensajeError()) {
+    <p class="error-general" role="alert">{{ mensajeError() }}</p>
+    }
+
+    <button type="submit" [disabled]="form.invalid || enviando()">Crear administrador</button>
   </form>
 </section>
