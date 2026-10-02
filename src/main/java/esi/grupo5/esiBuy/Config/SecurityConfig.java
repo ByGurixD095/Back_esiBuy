@@ -29,6 +29,7 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/users/*"
                 ).permitAll()
+                .requestMatchers(HttpMethod.POST, "/productos").hasRole("VENDEDOR")
                 .anyRequest().authenticated()
             );
 
