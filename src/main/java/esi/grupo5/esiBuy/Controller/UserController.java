@@ -1,6 +1,5 @@
 package esi.grupo5.esiBuy.Controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -8,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import esi.grupo5.esiBuy.Dto.AuthResponseDTO;
@@ -39,9 +39,9 @@ public class UserController {
 
     // --------- POST ------------ 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO dto, HttpServletResponse response) {
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO dto, HttpServletResponse response, HttpServletRequest request) {
 
-        LoginResponseDTO loginResponse = this.userService.login(dto);
+        LoginResponseDTO loginResponse = this.userService.login(dto, request.getRemoteAddr());
         setTokenCookies(response, loginResponse);
 
         return ResponseEntity.ok(loginResponse);

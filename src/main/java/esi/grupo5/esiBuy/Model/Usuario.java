@@ -11,6 +11,8 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Document(collection = "usuarios")
 public abstract class Usuario {
@@ -48,9 +50,14 @@ public abstract class Usuario {
     @LastModifiedDate
     private LocalDateTime fechaModificacion;
 
+    private LocalDateTime fechaCambioContrasena;
+    private List<String> historialContrasenas;
+
     protected Usuario() {
         this.activo = false;
         this.bloqueado = false;
+        this.fechaCambioContrasena = LocalDateTime.now().plusDays(30); //Sirve para llevar el conteo de los dias hasta 30(cambio de contraseña obligatorio)
+        this.historialContrasenas = new ArrayList<>();
     }
     
     protected Usuario(String nombre, String apellidos, String email, 
@@ -99,4 +106,10 @@ public abstract class Usuario {
 
     public LocalDateTime getFechaModificacion() { return fechaModificacion; }
     public void setFechaModificacion(LocalDateTime fechaModificacion) { this.fechaModificacion = fechaModificacion; }
+
+    public LocalDateTime getFechaCambioContrasena() { return fechaCambioContrasena; }
+    public void setFechaCambioContrasena(LocalDateTime fechaCambioContrasena) { this.fechaCambioContrasena = fechaCambioContrasena;}
+
+    public List<String> getHistorialContrasenas() { return historialContrasenas; }
+    public void setHistorialContrasenas(List<String> historialContrasenas) { this.historialContrasenas = historialContrasenas; }
 }

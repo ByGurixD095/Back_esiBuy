@@ -24,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Optional;
 
 @Service
@@ -34,25 +35,42 @@ public class UserService {
     private final UsuarioRepository usuarioRepository;
     private final JwtService jwtService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final PasswordValidatorService passwordValidatorService;
+    private final LoginAttemptService loginAttempService;
 
-    public UserService(UsuarioRepository usuarioRepository, JwtService jwtService, RefreshTokenRepository refreshTokenRepository) {
+    public UserService(UsuarioRepository usuarioRepository, JwtService jwtService, RefreshTokenRepository refreshTokenRepository,
+                         PasswordValidatorService passwordValidatorService, LoginAttemptService loginAttempService) {
         this.usuarioRepository = usuarioRepository;
         this.jwtService = jwtService;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.passwordValidatorService = passwordValidatorService;
+        this.loginAttempService = loginAttempService;
     }
 
     private Optional<Usuario> findByEmail(String email) {
         return usuarioRepository.findByEmail(email);
     }
 
-    public LoginResponseDTO login(LoginRequestDTO loginRequest) {
+    public LoginResponseDTO login(LoginRequestDTO loginRequest, String ipAddress) {
 
+        loginAttempService.ensureLoginAllowed(ipAddress);
         Optional<Usuario> optionalUsuario = findByEmail(loginRequest.username());
         if (optionalUsuario.isEmpty() || !encoder.matches(loginRequest.password(), optionalUsuario.get().getContrasena())) {
+            loginAttempService.registerFailedLogin(ipAddress);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciales inválidas");
         }
 
         Usuario usuario = optionalUsuario.get();
+        // Comprobación de caducidad (30 días)
+        if (usuario.getFechaCambioContrasena() != null) {
+            if (LocalDateTime.now().isAfter(usuario.getFechaCambioContrasena())) {
+                loginAttempService.registerFailedLogin(ipAddress);
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tu contraseña ha caducado. Debes cambiarla.");
+            }
+        }
+
+        loginAttempService.registerSuccessfulLogin(ipAddress);
+
         String token = jwtService.generateToken(usuario);
         String refreshTokenString = jwtService.generateRefreshToken(usuario);
 
@@ -117,12 +135,14 @@ public class UserService {
         if (usuarioRepository.existsByEmail(dto.email())) {
             throw new IllegalArgumentException("El email ya está registrado");
         }
+        passwordValidatorService.validarNuevaContrasena(dto.contrasena(), null, encoder);
+        String contrasenaHasheada = encoder.encode(dto.contrasena());
 
         Cliente cliente = Cliente.builder()
                 .nombre(dto.nombre())
                 .apellidos(dto.apellidos())
                 .email(dto.email())
-                .contrasena(dto.contrasena())
+                .contrasena(contrasenaHasheada)
                 .telefono(dto.telefono())
                 .imagenPerfil(dto.imagenPerfil())
                 .dni(dto.dni())
@@ -131,6 +151,7 @@ public class UserService {
                 .build();
 
         cliente.setActivo(true);
+        cliente.getHistorialContrasenas().add(contrasenaHasheada);
 
         Cliente clientSaved = usuarioRepository.save(cliente);
 
@@ -151,12 +172,14 @@ public class UserService {
         if (usuarioRepository.existsByEmail(dto.email())) {
             throw new IllegalArgumentException("El email ya está registrado");
         }
+        passwordValidatorService.validarNuevaContrasena(dto.contrasena(), null, encoder);
+        String contrasenaHasheada = encoder.encode(dto.contrasena());
 
         Vendedor vendedor = Vendedor.builder()
                 .nombre(dto.nombre())
                 .apellidos(dto.apellidos())
                 .email(dto.email())
-                .contrasena(dto.contrasena())   // Encriptar con encoder.encode(dto.contrasena()) si se desea almacenar la contraseña encriptada
+                .contrasena(contrasenaHasheada)
                 .telefono(dto.telefono())
                 .imagenPerfil(dto.imagenPerfil())
                 .nombreComercial(dto.nombreComercial())
@@ -165,6 +188,7 @@ public class UserService {
                 .build();
 
         vendedor.setActivo(true);
+        vendedor.getHistorialContrasenas().add(contrasenaHasheada);
         Vendedor guardado = usuarioRepository.save(vendedor);
 
         //TODO: Guardar un token de verdad cuando el servicio token de Alberto funcione
