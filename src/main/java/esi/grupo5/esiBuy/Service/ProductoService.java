@@ -15,8 +15,7 @@ public class ProductoService {
     }
 
     public Producto crearProducto(ProductoDTO dto) {
-        validarProducto(dto);
-        
+        validarDto(dto);
 
         Producto producto = new Producto(
                 dto.nombre(),
@@ -31,27 +30,34 @@ public class ProductoService {
         return productoRepository.save(producto);
     }
 
-    private void validarProducto(ProductoDTO dto) {
+    private void validarDto(ProductoDTO dto) {
         if (dto == null) {
-            throw new IllegalArgumentException("El producto no puede ser nulo");
+            throw new IllegalArgumentException("El DTO del producto no puede ser nulo");
+        }
+        if (esInvalido(dto.nombre())) {
+            throw new IllegalArgumentException("El nombre del producto no puede ser nulo ni vacío");
+        }
+        if (esInvalido(dto.referencia())) {
+            throw new IllegalArgumentException("La referencia del producto no puede ser nula ni vacía");
+        }
+        if (esInvalido(dto.descripcion())) {
+            throw new IllegalArgumentException("La descripción del producto no puede ser nula ni vacía");
+        }
+        if (esInvalido(dto.categoria())) {
+            throw new IllegalArgumentException("La categoría del producto no puede ser nula ni vacía");
+        }
+        if (esInvalido(dto.urlImagen())) {
+            throw new IllegalArgumentException("La URL de la imagen no puede ser nula ni vacía");
         }
         if (dto.numStock() < 0) {
             throw new IllegalArgumentException("El stock no puede ser negativo");
         }
         if (dto.precioCent() < 0) {
-            throw new IllegalArgumentException("El precio no puede ser negativo");
+            throw new IllegalArgumentException("El precio en céntimos no puede ser negativo");
         }
-
-        validarTexto(dto.nombre(), "El nombre");
-        validarTexto(dto.referencia(), "La referencia");
-        validarTexto(dto.descripcion(), "La descripción");
-        validarTexto(dto.categoria(), "La categoría");
-        validarTexto(dto.urlImagen(), "La URL de la imagen");
     }
 
-    private void validarTexto(String valor, String nombreCampo) {
-        if (valor == null || valor.isBlank()) {
-            throw new IllegalArgumentException(nombreCampo + " no puede estar vacío");
-        }
+    private boolean esInvalido(String valor) {
+        return valor == null || valor.trim().isEmpty();
     }
 }
