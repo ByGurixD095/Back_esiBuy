@@ -1,5 +1,7 @@
 package esi.grupo5.esiBuy.Controller;
 
+import java.util.List;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -42,6 +44,12 @@ public class UserController {
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO dto, HttpServletResponse response, HttpServletRequest request) {
 
         LoginResponseDTO loginResponse = this.userService.login(dto, request.getRemoteAddr());
+        // TODO: IMPLEMENTAR EL 2/3FA SEGUN EL TIPO DE USUARIO (CLIENTE, VENDEDOR, ADMINISTRADOR)
+        if (List.of("ADMINISTRADOR", "VENDEDOR").contains(loginResponse.rol())) {
+            // 3FA OBLIGATORIO PARA ADMINISTRADORES Y VENDEDORES
+        }else {
+            // 2FA SE INCENTIVA y 3FA OPCIONAL PARA CLIENTES
+        }
         setTokenCookies(response, loginResponse);
 
         return ResponseEntity.ok(loginResponse);

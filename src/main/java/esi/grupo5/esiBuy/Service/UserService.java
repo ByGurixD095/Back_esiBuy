@@ -77,7 +77,7 @@ public class UserService {
         // Guardamos el token de refresco en la base de datos
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setToken(refreshTokenString);
-        refreshToken.setUsuario(usuario);
+        refreshToken.setUsuarioId(usuario.getId());
         long expirationTime = jwtService.getRefreshTokenExpirationSeconds() * 1000L;
         refreshToken.setFechaExpiracion(LocalDateTime.now().plusSeconds(expirationTime));
         refreshTokenRepository.save(refreshToken);
@@ -112,21 +112,24 @@ public class UserService {
         }
 
         // 3. Generamos un nuevo Access Token corto para el usuario
-        Usuario user = refreshTokenEntity.getUsuario();
-        String nuevoAccessToken = jwtService.generateToken(user);
+        String user = refreshTokenEntity.getUsuarioId();
+        Usuario usuario = usuarioRepository.findById(user).orElseThrow(() -> 
+            new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+            
+        String nuevoAccessToken = jwtService.generateToken(usuario);
 
         // 4. Retornamos el DTO correspondiente según si es Cliente u otro rol con el nuevo Access Token y el mismo Refresh Token
-        if (user instanceof Cliente cliente) {
+        if (usuario instanceof Cliente cliente) {
             return new LoginResponseDTO(
                     nuevoAccessToken,
                     refreshTokenEntity.getToken(),
-                    user.getRol().toString(),
+                    usuario.getRol().toString(),
                     cliente.getTipoCliente().toString());
         }
         return new LoginResponseDTO(
                 nuevoAccessToken,
                 refreshTokenEntity.getToken(),
-                user.getRol().toString(),
+                usuario.getRol().toString(),
                 null);
     }
 
