@@ -49,12 +49,24 @@ public class UserService {
 
     //-------- LOGIN ------------------------------
     public LoginResponseDTO login(LoginRequestDTO loginRequest, String ipAddress) {
+        loginAttempService.ensureLoginAllowed(ipAddress);
         Optional<Usuario> optionalUsuario = usuarioRepository.findByEmail(loginRequest.username());
         if (optionalUsuario.isEmpty() || !encoder.matches(loginRequest.password(), optionalUsuario.get().getContrasena())) {
             loginAttempService.registerFailedLogin(ipAddress);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciales inválidas");
         }
-        return generarTokens(optionalUsuario.get());
+        Usuario usuario = optionalUsuario.get();
+
+        // Comprobación de caducidad (30 días)
+        if (usuario.getFechaCambioContrasena() != null) {
+            if (LocalDateTime.now().isAfter(usuario.getFechaCambioContrasena())) {
+                loginAttempService.registerFailedLogin(ipAddress);
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tu contraseña ha caducado. Debes cambiarla.");
+            }
+        }
+
+        loginAttempService.registerSuccessfulLogin(ipAddress);
+        return generarTokens(usuario);
     }
 
     //-------- TOKENS ------------------------------
