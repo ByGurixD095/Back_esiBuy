@@ -1,11 +1,15 @@
 package esi.grupo5.esiBuy.Model;
 
-import esi.grupo5.esiBuy.Model.enums.Rol;
-import jakarta.validation.constraints.NotNull;
 
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.time.ZoneId;
 
+import org.springframework.data.annotation.TypeAlias;
+
+import esi.grupo5.esiBuy.Model.enums.Rol;
+
+@TypeAlias("administrador")
 public class Administrador extends Usuario {
 
     private String sede;

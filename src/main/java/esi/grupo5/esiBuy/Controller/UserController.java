@@ -1,6 +1,7 @@
 package esi.grupo5.esiBuy.Controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.List;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -8,10 +9,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+<<<<<<< HEAD
 
+=======
+import jakarta.servlet.http.HttpServletRequest;
+>>>>>>> develop
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import esi.grupo5.esiBuy.Dto.AuthResponseDTO;
 import esi.grupo5.esiBuy.Dto.ClienteRegistroDTO;
 import esi.grupo5.esiBuy.Dto.LoginRequestDTO;
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
@@ -21,6 +25,13 @@ import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Service.UserService;
 import esi.grupo5.esiBuy.Dto.UserPatchDTO;
 import esi.grupo5.esiBuy.Dto.UpdateUserResponseDTO;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
+import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/users")
@@ -43,12 +54,24 @@ public class UserController {
 
     // --------- POST ------------ 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO dto, HttpServletResponse response) {
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO dto, HttpServletResponse response, HttpServletRequest request) {
 
-        LoginResponseDTO loginResponse = this.userService.login(dto);
+        LoginResponseDTO loginResponse = this.userService.login(dto, request.getRemoteAddr());
+        // TODO: IMPLEMENTAR EL 2/3FA SEGUN EL TIPO DE USUARIO (CLIENTE, VENDEDOR, ADMINISTRADOR)
+        if (List.of("ADMINISTRADOR", "VENDEDOR").contains(loginResponse.rol())) {
+            // 3FA OBLIGATORIO PARA ADMINISTRADORES Y VENDEDORES
+        }else {
+            // 2FA SE INCENTIVA y 3FA OPCIONAL PARA CLIENTES
+        }
         setTokenCookies(response, loginResponse);
 
         return ResponseEntity.ok(loginResponse);
+    }
+
+    @PostMapping("/administradores")
+    public ResponseEntity<AdministradorResponseDTO> crearAdministrador(
+            @Valid @RequestBody AdministradorRegistroDTO dto) {
+        return userService.crearAdministrador(dto);
     }
 
 
@@ -65,20 +88,25 @@ public class UserController {
     }
 
     @PostMapping("/register/clientes")
-    public ResponseEntity<AuthResponseDTO> registrarCliente(@Valid @RequestBody ClienteRegistroDTO dto) {
-        AuthResponseDTO authResponse = userService.registrarCliente(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(authResponse);
+    public ResponseEntity<LoginResponseDTO> registrarCliente(
+            @Valid @RequestBody ClienteRegistroDTO dto, 
+            HttpServletResponse response) {
+        
+        LoginResponseDTO loginResponse = userService.registrarCliente(dto);
+        setTokenCookies(response, loginResponse);
+        
+        return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
     }
 
     @PostMapping("/register/vendedor")
-    public ResponseEntity<AuthResponseDTO> registerVendedor(
-            @Valid @RequestBody VendedorRegisterRequest request) {
+    public ResponseEntity<LoginResponseDTO> registerVendedor(
+            @Valid @RequestBody VendedorRegisterRequest request, 
+            HttpServletResponse response) {
 
-        AuthResponseDTO response = userService.registrarVendedor(request);
+        LoginResponseDTO loginResponse = userService.registrarVendedor(request);
+        setTokenCookies(response, loginResponse);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
     }
 
     // --------- DELETE ------------
