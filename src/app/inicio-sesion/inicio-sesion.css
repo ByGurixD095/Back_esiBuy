@@ -1,0 +1,83 @@
+:host {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  overflow-y: auto;
+  pointer-events: none; /* deja pasar el ratón al fondo animado fuera de la tarjeta */
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: #e2e8f0;
+}
+
+.inicio-sesion {
+  pointer-events: auto;
+  width: min(400px, 100%);
+  padding: 2rem 1.75rem;
+  border-radius: 16px;
+  background: rgba(13, 22, 45, 0.82);
+  border: 1px solid rgba(125, 211, 252, 0.25);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px);
+}
+
+h1 {
+  margin: 0 0 1.5rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  text-align: center;
+  color: #ffffff;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+input {
+  padding: 0.65rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(2, 3, 7, 0.55);
+  color: #ffffff;
+  font-size: 1rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+input:focus {
+  outline: none;
+  border-color: #7dd3fc;
+  box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.2);
+}
+
+button[type='submit'] {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 8px;
+  background: #fbbf24;
+  color: #1a1203;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s, opacity 0.15s;
+}
+
+button[type='submit']:hover:enabled {
+  filter: brightness(1.08);
+}
+
+button[type='submit']:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
