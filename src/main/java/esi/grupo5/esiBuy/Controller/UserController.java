@@ -1,6 +1,5 @@
 package esi.grupo5.esiBuy.Controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -10,7 +9,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import esi.grupo5.esiBuy.Dto.AuthResponseDTO;
 import esi.grupo5.esiBuy.Dto.ClienteRegistroDTO;
 import esi.grupo5.esiBuy.Dto.LoginRequestDTO;
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
@@ -61,20 +59,25 @@ public class UserController {
     }
 
     @PostMapping("/register/clientes")
-    public ResponseEntity<AuthResponseDTO> registrarCliente(@Valid @RequestBody ClienteRegistroDTO dto) {
-        AuthResponseDTO authResponse = userService.registrarCliente(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(authResponse);
+    public ResponseEntity<LoginResponseDTO> registrarCliente(
+            @Valid @RequestBody ClienteRegistroDTO dto, 
+            HttpServletResponse response) {
+        
+        LoginResponseDTO loginResponse = userService.registrarCliente(dto);
+        setTokenCookies(response, loginResponse);
+        
+        return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
     }
 
     @PostMapping("/register/vendedor")
-    public ResponseEntity<AuthResponseDTO> registerVendedor(
-            @Valid @RequestBody VendedorRegisterRequest request) {
+    public ResponseEntity<LoginResponseDTO> registerVendedor(
+            @Valid @RequestBody VendedorRegisterRequest request, 
+            HttpServletResponse response) {
 
-        AuthResponseDTO response = userService.registrarVendedor(request);
+        LoginResponseDTO loginResponse = userService.registrarVendedor(request);
+        setTokenCookies(response, loginResponse);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
     }
 
     // --------- DELETE ------------ 

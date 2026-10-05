@@ -1,13 +1,17 @@
 package esi.grupo5.esiBuy.Model;
 
+import java.time.LocalDateTime;
+
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Version;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.LocalDateTime;
-
 @Document(collection = "refresh_tokens")
 public class RefreshToken {
+    @Version
+    Long version;
+
     @Id
     private String id;
     private String token;
