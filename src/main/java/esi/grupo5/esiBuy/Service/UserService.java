@@ -24,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Optional;
 
 @Service
@@ -34,41 +35,66 @@ public class UserService {
     private final UsuarioRepository usuarioRepository;
     private final JwtService jwtService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final PasswordValidatorService passwordValidatorService;
+    private final LoginAttemptService loginAttempService;
 
-    public UserService(UsuarioRepository usuarioRepository, JwtService jwtService, RefreshTokenRepository refreshTokenRepository) {
+    public UserService(UsuarioRepository usuarioRepository, JwtService jwtService, RefreshTokenRepository refreshTokenRepository,
+                         PasswordValidatorService passwordValidatorService, LoginAttemptService loginAttempService) {
         this.usuarioRepository = usuarioRepository;
         this.jwtService = jwtService;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.passwordValidatorService = passwordValidatorService;
+        this.loginAttempService = loginAttempService;
     }
 
     private Optional<Usuario> findByEmail(String email) {
         return usuarioRepository.findByEmail(email);
     }
 
-    public LoginResponseDTO login(LoginRequestDTO loginRequest) {
+    public LoginResponseDTO login(LoginRequestDTO loginRequest, String ipAddress) {
 
+        loginAttempService.ensureLoginAllowed(ipAddress);
         Optional<Usuario> optionalUsuario = findByEmail(loginRequest.username());
         if (optionalUsuario.isEmpty() || !encoder.matches(loginRequest.password(), optionalUsuario.get().getContrasena())) {
+            loginAttempService.registerFailedLogin(ipAddress);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciales inválidas");
         }
 
         Usuario usuario = optionalUsuario.get();
+        // Comprobación de caducidad (30 días)
+        if (usuario.getFechaCambioContrasena() != null) {
+            if (LocalDateTime.now().isAfter(usuario.getFechaCambioContrasena())) {
+                loginAttempService.registerFailedLogin(ipAddress);
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tu contraseña ha caducado. Debes cambiarla.");
+            }
+        }
+
+        loginAttempService.registerSuccessfulLogin(ipAddress);
+
         String token = jwtService.generateToken(usuario);
         String refreshTokenString = jwtService.generateRefreshToken(usuario);
 
         // Guardamos el token de refresco en la base de datos
         RefreshToken refreshToken = new RefreshToken();
         refreshToken.setToken(refreshTokenString);
-        refreshToken.setUsuario(usuario);
+        refreshToken.setUsuarioId(usuario.getId());
         long expirationTime = jwtService.getRefreshTokenExpirationSeconds() * 1000L;
         refreshToken.setFechaExpiracion(LocalDateTime.now().plusSeconds(expirationTime));
         refreshTokenRepository.save(refreshToken);
 
         // Retornamos el DTO correspondiente según si es Cliente u otro rol
         if (usuario instanceof Cliente cliente) {
-            return new LoginResponseDTO(token, refreshTokenString, usuario.getRol().toString(), cliente.getTipoCliente().toString());
+            return new LoginResponseDTO(
+                    token,
+                    refreshTokenString,
+                    usuario.getRol().toString(),
+                    cliente.getTipoCliente().toString());
         }
-        return new LoginResponseDTO(token, refreshTokenString, usuario.getRol().toString(), null);
+        return new LoginResponseDTO(
+                token,
+                refreshTokenString,
+                usuario.getRol().toString(),
+                null);
     }
 
     public LoginResponseDTO refreshToken(String refreshTokenString) {
@@ -86,28 +112,40 @@ public class UserService {
         }
 
         // 3. Generamos un nuevo Access Token corto para el usuario
-        Usuario user = refreshTokenEntity.getUsuario();
-        String nuevoAccessToken = jwtService.generateToken(user);
+        String user = refreshTokenEntity.getUsuarioId();
+        Usuario usuario = usuarioRepository.findById(user).orElseThrow(() -> 
+            new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+            
+        String nuevoAccessToken = jwtService.generateToken(usuario);
 
         // 4. Retornamos el DTO correspondiente según si es Cliente u otro rol con el nuevo Access Token y el mismo Refresh Token
-        if (user instanceof Cliente cliente) {
-            return new LoginResponseDTO(nuevoAccessToken, refreshTokenEntity.getToken(), user.getRol().toString(), cliente.getTipoCliente().toString());
+        if (usuario instanceof Cliente cliente) {
+            return new LoginResponseDTO(
+                    nuevoAccessToken,
+                    refreshTokenEntity.getToken(),
+                    usuario.getRol().toString(),
+                    cliente.getTipoCliente().toString());
         }
-        return new LoginResponseDTO(nuevoAccessToken, refreshTokenEntity.getToken(), user.getRol().toString(), null);
-
+        return new LoginResponseDTO(
+                nuevoAccessToken,
+                refreshTokenEntity.getToken(),
+                usuario.getRol().toString(),
+                null);
     }
 
     @Transactional
-    public AuthResponseDTO registrarCliente(@Valid ClienteRegistroDTO dto) {
+    public void registrarCliente(@Valid ClienteRegistroDTO dto) {
         if (usuarioRepository.existsByEmail(dto.email())) {
             throw new IllegalArgumentException("El email ya está registrado");
         }
+        passwordValidatorService.validarNuevaContrasena(dto.contrasena(), null, encoder);
+        String contrasenaHasheada = encoder.encode(dto.contrasena());
 
         Cliente cliente = Cliente.builder()
                 .nombre(dto.nombre())
                 .apellidos(dto.apellidos())
                 .email(dto.email())
-                .contrasena(dto.contrasena())
+                .contrasena(contrasenaHasheada)
                 .telefono(dto.telefono())
                 .imagenPerfil(dto.imagenPerfil())
                 .dni(dto.dni())
@@ -116,32 +154,24 @@ public class UserService {
                 .build();
 
         cliente.setActivo(true);
+        cliente.getHistorialContrasenas().add(contrasenaHasheada);
 
-        Cliente clientSaved = usuarioRepository.save(cliente);
-
-        //TODO: Guardar un toten de verdad cuando el servicio token de Alberto funcione
-        String token = "dummy-token";
-
-        return new AuthResponseDTO(
-                token,
-                clientSaved.getId(),
-                clientSaved.getNombre(),
-                clientSaved.getEmail(),
-                clientSaved.getRol()
-        );
+        usuarioRepository.save(cliente);
     }
 
     @Transactional
-    public AuthResponseDTO registrarVendedor(@Valid VendedorRegisterRequest dto) {
+    public void registrarVendedor(@Valid VendedorRegisterRequest dto) {
         if (usuarioRepository.existsByEmail(dto.email())) {
             throw new IllegalArgumentException("El email ya está registrado");
         }
+        passwordValidatorService.validarNuevaContrasena(dto.contrasena(), null, encoder);
+        String contrasenaHasheada = encoder.encode(dto.contrasena());
 
         Vendedor vendedor = Vendedor.builder()
                 .nombre(dto.nombre())
                 .apellidos(dto.apellidos())
                 .email(dto.email())
-                .contrasena(dto.contrasena())   // Encriptar con encoder.encode(dto.contrasena()) si se desea almacenar la contraseña encriptada
+                .contrasena(contrasenaHasheada)
                 .telefono(dto.telefono())
                 .imagenPerfil(dto.imagenPerfil())
                 .nombreComercial(dto.nombreComercial())
@@ -150,17 +180,7 @@ public class UserService {
                 .build();
 
         vendedor.setActivo(true);
-        Vendedor guardado = usuarioRepository.save(vendedor);
-
-        //TODO: Guardar un token de verdad cuando el servicio token de Alberto funcione
-        String token = "dummy-jwt-token";
-
-        return new AuthResponseDTO(
-                token,
-                guardado.getId(),
-                guardado.getNombre(),
-                guardado.getEmail(),
-                guardado.getRol()
-        );
+        vendedor.getHistorialContrasenas().add(contrasenaHasheada);
+        usuarioRepository.save(vendedor);
     }
 }
