@@ -49,14 +49,16 @@ public class UserService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordValidatorService passwordValidatorService;
     private final LoginAttemptService loginAttempService;
+    private final EmailService emailService;
 
     public UserService(UsuarioRepository usuarioRepository, JwtService jwtService, RefreshTokenRepository refreshTokenRepository,
-                         PasswordValidatorService passwordValidatorService, LoginAttemptService loginAttempService) {
+                         PasswordValidatorService passwordValidatorService, LoginAttemptService loginAttempService, EmailService emailService) {
         this.usuarioRepository = usuarioRepository;
         this.jwtService = jwtService;
         this.refreshTokenRepository = refreshTokenRepository;
         this.passwordValidatorService = passwordValidatorService;
         this.loginAttempService = loginAttempService;
+        this.emailService = emailService;
     }
 
 
