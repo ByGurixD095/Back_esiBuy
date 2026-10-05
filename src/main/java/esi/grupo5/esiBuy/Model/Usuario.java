@@ -1,21 +1,24 @@
 package esi.grupo5.esiBuy.Model;
 
-import esi.grupo5.esiBuy.Model.enums.Rol;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalDateTime;
+
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.annotation.Version;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import esi.grupo5.esiBuy.Model.enums.Rol;
 
 @Document(collection = "usuarios")
 public abstract class Usuario {
+
+    @Version
+    Long version;
 
     @Id
     private String id;

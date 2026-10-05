@@ -1,13 +1,17 @@
 package esi.grupo5.esiBuy.Model;
 
-import esi.grupo5.esiBuy.Model.enums.Rol;
-import esi.grupo5.esiBuy.Model.enums.TipoCliente;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
-
 import java.time.LocalDate;
 
+import org.springframework.data.annotation.TypeAlias;
+
+import esi.grupo5.esiBuy.Model.enums.Rol;
+import esi.grupo5.esiBuy.Model.enums.TipoCliente;
+
+@TypeAlias("cliente")
 public class Cliente extends Usuario {
 
     @NotBlank

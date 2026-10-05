@@ -1,7 +1,5 @@
 package esi.grupo5.esiBuy.Controller;
 
-import java.util.List;
-
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -12,7 +10,6 @@ import org.springframework.web.server.ResponseStatusException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import esi.grupo5.esiBuy.Dto.AuthResponseDTO;
 import esi.grupo5.esiBuy.Dto.ClienteRegistroDTO;
 import esi.grupo5.esiBuy.Dto.LoginRequestDTO;
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
@@ -69,23 +66,22 @@ public class UserController {
     }
 
     @PostMapping("/register/clientes")
-    public ResponseEntity<LoginResponseDTO> registrarCliente(@Valid @RequestBody ClienteRegistroDTO dto, 
-                                                            HttpServletResponse response, HttpServletRequest request) {
-        userService.registrarCliente(dto);
-        // Autologin del usuario recién registrado
-        LoginResponseDTO loginResponse = userService.login(new LoginRequestDTO(dto.email(), dto.contrasena()), request.getRemoteAddr());
+    public ResponseEntity<LoginResponseDTO> registrarCliente(
+            @Valid @RequestBody ClienteRegistroDTO dto, 
+            HttpServletResponse response) {
         
+        LoginResponseDTO loginResponse = userService.registrarCliente(dto);
         setTokenCookies(response, loginResponse);
+        
         return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
     }
 
     @PostMapping("/register/vendedor")
     public ResponseEntity<LoginResponseDTO> registerVendedor(
-            HttpServletResponse response, HttpServletRequest request,
-            @Valid @RequestBody VendedorRegisterRequest dto) {
+            @Valid @RequestBody VendedorRegisterRequest request, 
+            HttpServletResponse response) {
 
-        userService.registrarVendedor(dto);
-        LoginResponseDTO loginResponse = userService.login(new LoginRequestDTO(dto.email(), dto.contrasena()), request.getRemoteAddr());
+        LoginResponseDTO loginResponse = userService.registrarVendedor(request);
         setTokenCookies(response, loginResponse);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
