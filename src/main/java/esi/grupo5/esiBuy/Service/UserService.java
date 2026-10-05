@@ -2,6 +2,7 @@ package esi.grupo5.esiBuy.Service;
 
 import esi.grupo5.esiBuy.Dto.LoginRequestDTO;
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
+import esi.grupo5.esiBuy.Dto.UserDto;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.RefreshToken;
 import esi.grupo5.esiBuy.Model.Usuario;
@@ -15,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -87,4 +90,42 @@ public class UserService {
         return new LoginResponseDTO(nuevoAccessToken, refreshTokenEntity.getToken(), user.getRol().toString(), null);
 
     }
+
+    private UserDto toDto(Usuario usuario) {
+        return new UserDto(
+            usuario.getId(),
+            usuario.getNombre(),
+            usuario.getApellidos(),
+            usuario.getEmail(),
+            usuario.getRol(),
+            usuario.isActivo(),
+            usuario.isBloqueado()
+        );
+    }
+
+    public List<UserDto> getAllUsers() {
+        List<Usuario> usuarios = usuarioRepository.findAll();
+
+        List<UserDto> usuariosDto = new ArrayList<>();
+
+        for (Usuario usuario : usuarios) {
+            usuariosDto.add(toDto(usuario));
+        }
+
+        return usuariosDto;
+    }
+
+    public UserDto getUserById(String id) {
+        Optional<Usuario> usuario = usuarioRepository.findById(id);
+
+        if (usuario.isEmpty()) {
+            throw new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Usuario no encontrado"
+            );
+        }
+
+        return toDto(usuario.get());
+    }
+    
 }
