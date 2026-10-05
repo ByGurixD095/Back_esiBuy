@@ -2,6 +2,7 @@ package esi.grupo5.esiBuy.Model;
 
 import java.time.LocalDateTime;
 
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Version;
 import org.springframework.data.mongodb.core.mapping.DBRef;
@@ -16,17 +17,20 @@ public class RefreshToken {
     private String id;
     private String token;
     
-    private String usuarioId;
+    @DBRef
+    private Usuario uusuario;
     
     private LocalDateTime fechaExpiracion;
 
-    public RefreshToken() {}
+    public RefreshToken() {
+        //Empty constructor for manipulation
+    }
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
     public String getToken() { return token; }
     public void setToken(String token) { this.token = token; }
-    public String getUsuarioId() { return usuarioId; }
-    public void setUsuarioId(String usuarioId) { this.usuarioId = usuarioId; }
+    public Usuario getUsuario() { return uusuario; }
+    public void setUsuario(Usuario uusuario) { this.uusuario = uusuario; }
     public LocalDateTime getFechaExpiracion() { return fechaExpiracion; }
     public void setFechaExpiracion(LocalDateTime fechaExpiracion) { this.fechaExpiracion = fechaExpiracion; }
 }

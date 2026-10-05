@@ -4,6 +4,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.ArrayList;
 
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
@@ -53,8 +55,8 @@ public abstract class Usuario {
     @LastModifiedDate
     private LocalDateTime fechaModificacion;
 
-    private LocalDateTime fechaCambioContrasena;
-    private List<String> historialContrasenas;
+    private LocalDateTime fechaCambioContrasena = LocalDateTime.now().plusDays(30);
+    private List<String> historialContrasenas = new ArrayList<>();
 
     protected Usuario() {
         this.activo = false;

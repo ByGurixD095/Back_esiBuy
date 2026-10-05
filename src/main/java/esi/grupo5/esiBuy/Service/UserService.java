@@ -3,6 +3,7 @@ package esi.grupo5.esiBuy.Service;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -45,7 +46,9 @@ public class UserService {
         this.loginAttempService = loginAttempService;
     }
 
-    public LoginResponseDTO login(LoginRequestDTO loginRequest) {
+
+    //-------- LOGIN ------------------------------
+    public LoginResponseDTO login(LoginRequestDTO loginRequest, String ipAddress) {
         Optional<Usuario> optionalUsuario = usuarioRepository.findByEmail(loginRequest.username());
         if (optionalUsuario.isEmpty() || !encoder.matches(loginRequest.password(), optionalUsuario.get().getContrasena())) {
             loginAttempService.registerFailedLogin(ipAddress);
@@ -54,6 +57,7 @@ public class UserService {
         return generarTokens(optionalUsuario.get());
     }
 
+    //-------- TOKENS ------------------------------
     private LoginResponseDTO generarTokens(Usuario usuario) {
         String token = jwtService.generateToken(usuario);
         String refreshTokenString = jwtService.generateRefreshToken(usuario);
@@ -112,26 +116,31 @@ public class UserService {
         }
 
         // 3. Generamos un nuevo Access Token corto para el usuario
-        String user = refreshTokenEntity.getUsuarioId();
-        Usuario usuario = usuarioRepository.findById(user).orElseThrow(() -> 
-            new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
-            
+        Usuario usuario = refreshTokenEntity.getUsuario(); 
         String nuevoAccessToken = jwtService.generateToken(usuario);
 
-        // 4. Retornamos el DTO correspondiente según si es Cliente u otro rol con el nuevo Access Token y el mismo Refresh Token
-       String tipoCliente = (user instanceof Cliente cliente) ? cliente.getTipoCliente().toString() : null;
+        // 4. Retornamos el DTO correspondiente según si es Cliente u otro rol
+        String tipoCliente = (usuario instanceof Cliente cliente) ? cliente.getTipoCliente().toString() : null;
         
         return new LoginResponseDTO(
                 nuevoAccessToken, 
                 refreshTokenEntity.getToken(), 
-                user.getRol().toString(), 
+                usuario.getRol().toString(), 
                 tipoCliente
         );
 
     }
 
+    //-------- REGISTER  ------------------------------
+
     @Transactional
     public LoginResponseDTO registrarCliente(@Valid ClienteRegistroDTO dto) {
+        try{
+            passwordValidatorService.passwordIsWeak(dto.contrasena(), new ArrayList<>(), encoder);
+        } catch (ResponseStatusException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña no cumple con los requisitos de seguridad: " + e.getReason());
+        }
+        
         Cliente cliente = Cliente.builder()
                 .nombre(dto.nombre())
                 .apellidos(dto.apellidos())
@@ -144,11 +153,18 @@ public class UserService {
                 .tipoCliente(dto.tipoCliente() != null ? dto.tipoCliente() : TipoCliente.NORMAL)
                 .build();
 
+        cliente.setHistorialContrasenas(new ArrayList<>(List.of(cliente.getContrasena())));
         return procesarRegistroUsuario(cliente);
     }
 
     @Transactional
     public LoginResponseDTO registrarVendedor(@Valid VendedorRegisterRequest dto) {
+        try{
+           passwordValidatorService.passwordIsWeak(dto.contrasena(), new ArrayList<>(), encoder);
+        } catch (ResponseStatusException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña no cumple con los requisitos de seguridad: " + e.getReason());
+        }
+
         Vendedor vendedor = Vendedor.builder()
                 .nombre(dto.nombre())
                 .apellidos(dto.apellidos())
@@ -161,6 +177,7 @@ public class UserService {
                 .categoriaPrincipalId(dto.categoriaPrincipalId())
                 .build();
 
+        vendedor.setHistorialContrasenas(new ArrayList<>(List.of(vendedor.getContrasena())));
         return procesarRegistroUsuario(vendedor);
     }
 
