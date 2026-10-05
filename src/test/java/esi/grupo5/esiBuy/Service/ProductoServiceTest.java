@@ -47,14 +47,38 @@ class ProductoServiceTest {
     }
 
     @Test
+    void crearProducto_Descuento_ConservaDescuento() {
+        ProductoDTO dto = dtoConDescuentos(10, 0);
+        when(productoRepository.save(any(Producto.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Producto resultado = productoService.crearProducto(dto);
+
+        assertEquals(10, resultado.getDescuento());
+    }
+
+    @Test
+    void crearProducto_DescuentoPremium_ConservaDescuentoPremium() {
+        ProductoDTO dto = dtoConDescuentos(0, 25);
+        when(productoRepository.save(any(Producto.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Producto resultado = productoService.crearProducto(dto);
+
+        assertEquals(25, resultado.getDescuentoPremium());
+    }
+
+    @Test
     void crearProducto_DtoNulo_LanzaExcepcion() {
         assertDtoInvalido(null);
     }
 
+    // CAMPOS OBLIGATORIOS? PROBAR con un par de datos
+
     @Test
     void crearProducto_StockNegativo_LanzaExcepcion() {
         ProductoDTO dto = dtoConValores("Camiseta ESI", "REF-092026a", -1, 1999,
-                "Camiseta oficial", "Ropa", "url_imagen.jpg");
+                "Camiseta oficial", "Ropa", "url_imagen.jpg", 5, 10);
 
         assertDtoInvalido(dto);
     }
@@ -62,7 +86,7 @@ class ProductoServiceTest {
     @Test
     void crearProducto_PrecioNegativo_LanzaExcepcion() {
         ProductoDTO dto = dtoConValores("Camiseta ESI", "REF-092026a", 10, -1999,
-                "Camiseta oficial", "Ropa", "url_imagen.jpg");
+                "Camiseta oficial", "Ropa", "url_imagen.jpg", 5, 10);
 
         assertDtoInvalido(dto);
     }
@@ -72,9 +96,9 @@ class ProductoServiceTest {
         ProductoDTO dto = dtoValido();
 
         assertDtoInvalido(dtoConValores(dto.nombre(), null, dto.numStock(), dto.precioCent(),
-                dto.descripcion(), dto.categoria(), dto.urlImagen()));
+                dto.descripcion(), dto.categoria(), dto.urlImagen(), 5, 10));
         assertDtoInvalido(dtoConValores(dto.nombre(), "", dto.numStock(), dto.precioCent(),
-                dto.descripcion(), dto.categoria(), dto.urlImagen()));
+                dto.descripcion(), dto.categoria(), dto.urlImagen(), 5, 10));
     }
 
     @Test
@@ -82,9 +106,9 @@ class ProductoServiceTest {
         ProductoDTO dto = dtoValido();
 
         assertDtoInvalido(dtoConValores(dto.nombre(), dto.referencia(), dto.numStock(), dto.precioCent(),
-                dto.descripcion(), null, dto.urlImagen()));
+                dto.descripcion(), null, dto.urlImagen(), 5, 10));
         assertDtoInvalido(dtoConValores(dto.nombre(), dto.referencia(), dto.numStock(), dto.precioCent(),
-                dto.descripcion(), "", dto.urlImagen()));
+                dto.descripcion(), "", dto.urlImagen(), 5, 10));
     }
 
     @Test
@@ -92,9 +116,9 @@ class ProductoServiceTest {
         ProductoDTO dto = dtoValido();
 
         assertDtoInvalido(dtoConValores(dto.nombre(), dto.referencia(), dto.numStock(), dto.precioCent(),
-                null, dto.categoria(), dto.urlImagen()));
+                null, dto.categoria(), dto.urlImagen(), 5, 10));
         assertDtoInvalido(dtoConValores(dto.nombre(), dto.referencia(), dto.numStock(), dto.precioCent(),
-                "", dto.categoria(), dto.urlImagen()));
+                "", dto.categoria(), dto.urlImagen(), 5, 10));
     }
 
     @Test
@@ -102,9 +126,9 @@ class ProductoServiceTest {
         ProductoDTO dto = dtoValido();
 
         assertDtoInvalido(dtoConValores(dto.nombre(), dto.referencia(), dto.numStock(), dto.precioCent(),
-                dto.descripcion(), dto.categoria(), null));
+                dto.descripcion(), dto.categoria(), null, 5, 10));
         assertDtoInvalido(dtoConValores(dto.nombre(), dto.referencia(), dto.numStock(), dto.precioCent(),
-                dto.descripcion(), dto.categoria(), ""));
+                dto.descripcion(), dto.categoria(), "", 5, 10));
     }
 
     @Test
@@ -112,9 +136,9 @@ class ProductoServiceTest {
         ProductoDTO dto = dtoValido();
 
         assertDtoInvalido(dtoConValores(null, dto.referencia(), dto.numStock(), dto.precioCent(),
-                dto.descripcion(), dto.categoria(), dto.urlImagen()));
+                dto.descripcion(), dto.categoria(), dto.urlImagen(), 5, 10));
         assertDtoInvalido(dtoConValores("", dto.referencia(), dto.numStock(), dto.precioCent(),
-                dto.descripcion(), dto.categoria(), dto.urlImagen()));
+                dto.descripcion(), dto.categoria(), dto.urlImagen(), 5, 10));
     }
 
     private ProductoDTO dtoValido() {
@@ -125,15 +149,22 @@ class ProductoServiceTest {
                 1999,
                 "Camiseta oficial de la cervezada de la ESI 2026",
                 "Ropa",
-                "url_imagen.jpg"
+                "url_imagen.jpg",
+                5,
+                10
         );
     }
 
     private ProductoDTO dtoConValores(String nombre, String referencia, int numStock,
                                       int precioCent, String descripcion, String categoria,
-                                      String urlImagen) {
+                                      String urlImagen, int descuento, int descuentoPremium) {
         return new ProductoDTO(nombre, referencia, numStock, precioCent,
-                descripcion, categoria, urlImagen);
+                descripcion, categoria, urlImagen, descuento, descuentoPremium);
+    }
+
+    private ProductoDTO dtoConDescuentos(int descuento, int descuentoPremium) {
+        return dtoConValores("Camiseta ESI", "REF-092026a", 10, 1999,
+                "Camiseta oficial", "Ropa", "url_imagen.jpg", descuento, descuentoPremium);
     }
 
     private void assertDtoInvalido(ProductoDTO dto) {
@@ -141,3 +172,6 @@ class ProductoServiceTest {
                 () -> productoService.crearProducto(dto));
     }
 }
+
+
+// AÑADIR TESTS PARA PETAR (80000000000000000000000000000 DE PRECIO, P EJ. )

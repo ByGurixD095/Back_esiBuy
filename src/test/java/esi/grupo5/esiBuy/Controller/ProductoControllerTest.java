@@ -38,7 +38,7 @@ class ProductoControllerTest {
     void crearProducto_DatosCorrectos_Devuelve201Created() throws Exception {
         ProductoDTO dto = new ProductoDTO(
                 "Camiseta ESI", "REF-092026a", 10, 1999,
-                "Camiseta oficial de algodón", "Ropa", "url_imagen.jpg"
+                "Camiseta oficial de algodón", "Ropa", "url_imagen.jpg", 5, 0
         );
 
         Producto productoCreado = new Producto();
@@ -50,7 +50,7 @@ class ProductoControllerTest {
 
         when(productoService.crearProducto(any(ProductoDTO.class))).thenReturn(productoCreado);
 
-        mockMvc.perform(post("/productos")
+        mockMvc.perform(post("/products/createProduct")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())

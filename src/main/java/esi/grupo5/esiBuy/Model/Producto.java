@@ -16,21 +16,25 @@ public class Producto {
     private String categoria;
     private String urlImagen;
     private boolean activo; // Control para el borrado lógico del producto
+    private int descuento; // Un descuento = 5 será de un 5%
+    private int descuentoPremium;
 
     public Producto() {
         this.activo = true; // Por defecto, el producto está activo
     }
 
     public Producto(String nombre, String referencia, int numStock, int precioCent, 
-                    String descripcion, String categoria, String urlImagen) {
+                    String descripcion, String categoria, String urlImagen, int descuento, int descuentoPremium) {
         this();
         this.nombre = nombre;
         this.referencia = referencia;
         this.numStock = numStock;
         this.precioCent = precioCent;
         this.descripcion = descripcion;
-        this.categoria = categoria;
+        this.categoria = categoria; // SELECCIONABLE
         this.urlImagen = urlImagen;
+        this.descuento = descuento;
+        this.descuentoPremium = descuentoPremium;
     }
 
     public String getId() { return id; }
@@ -59,6 +63,12 @@ public class Producto {
 
     public boolean isActivo() { return activo; }
     public void setActivo(boolean activo) { this.activo = activo; }
+
+    public int getDescuento() { return descuento; }
+    public void setDescuento(int descuento) { this.descuento = descuento; }
+
+    public int getDescuentoPremium() { return descuentoPremium; }
+    public void setDescuentoPremium(int descuentoPremium) { this.descuentoPremium = descuentoPremium; }
 
 }
 

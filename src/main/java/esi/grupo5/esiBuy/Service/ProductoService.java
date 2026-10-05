@@ -24,7 +24,9 @@ public class ProductoService {
                 dto.precioCent(),
                 dto.descripcion(),
                 dto.categoria(),
-                dto.urlImagen()
+                dto.urlImagen(),
+                dto.descuento(),
+                dto.descuentoPremium()
         );
 
         return productoRepository.save(producto);

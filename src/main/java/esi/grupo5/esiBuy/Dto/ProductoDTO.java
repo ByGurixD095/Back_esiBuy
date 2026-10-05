@@ -7,7 +7,9 @@ public record ProductoDTO(
     int precioCent, /* EL PRECIO IRÁ EN CÉNTIMOS, EN FRONTEND EUROS */
     String descripcion, 
     String categoria, 
-    String urlImagen
+    String urlImagen,
+    int descuento,
+    int descuentoPremium
 ) {
     
 
