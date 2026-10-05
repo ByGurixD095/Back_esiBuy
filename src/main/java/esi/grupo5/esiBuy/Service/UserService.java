@@ -1,10 +1,17 @@
 package esi.grupo5.esiBuy.Service;
 
+import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
+import esi.grupo5.esiBuy.Dto.PasswordResetConfirmDTO;
+import esi.grupo5.esiBuy.Dto.PasswordResetRequestDTO;
 import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 import esi.grupo5.esiBuy.Dto.ClienteRegistroDTO;
@@ -216,6 +225,70 @@ public class UserService {
         return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
     }
 
+    public void requestPasswordReset(PasswordResetRequestDTO request) {
+        String email = request.email();
+        Optional<Usuario> optionalUsuario = usuarioRepository.findByEmail(email);
+
+        if (optionalUsuario.isEmpty()) {
+            return; 
+        }
+        Usuario usuario = optionalUsuario.get();
+
+        if (usuario.getTokenRecuperacionContrasena() != null && usuario.getFechaExpiracionTokenRecuperacion() != null
+                && usuario.getFechaExpiracionTokenRecuperacion().isAfter(LocalDateTime.now())) {
+            log.info("El usuario {} ya tiene un token de recuperación válido. Se generará uno nuevo.", email);
+        }
+        String resetToken = UUID.randomUUID().toString();
+        String hashedToken = hashToken(resetToken);
+        usuario.setTokenRecuperacionContrasena(hashedToken);
+        usuario.setFechaExpiracionTokenRecuperacion(LocalDateTime.now().plusMinutes(5));
+        usuarioRepository.save(usuario);
+
+        try {
+            String resetLink = "http://localhost:4200/reset-password?token=" + resetToken;
+            emailService.sendRecoveryEmail(email, usuario.getNombre(), resetLink);
+        } catch (MessagingException e) {
+            log.error("Error al enviar email de recuperación a {}: {}", email, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No se ha podido enviar el email de recuperación", e);
+        }
+    
+    }
+
+    public void resetPassword(PasswordResetConfirmDTO request) {
+        String token = request.token();
+        String pwd1 = request.pwd1();
+        String pwd2 = request.pwd2();
+
+ 
+        if (!pwd1.equals(pwd2)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Las contraseñas no coinciden");
+        }
+
+        Optional<Usuario> optionalUsuario = usuarioRepository.findByTokenRecuperacionContrasena(hashToken(token));
+        if (optionalUsuario.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token de recuperación inválido");
+        }
+
+        Usuario usuario = optionalUsuario.get();
+
+        if (usuario.getFechaExpiracionTokenRecuperacion() == null || usuario.getFechaExpiracionTokenRecuperacion().isBefore(LocalDateTime.now())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token de recuperación expirado");
+        }
+
+        passwordValidatorService.passwordIsWeak(pwd1, usuario.getHistorialContrasenas(), encoder);
+
+        usuario.setContrasena(encoder.encode(pwd1));
+        usuario.setFechaCambioContrasena(LocalDateTime.now());
+        usuario.getHistorialContrasenas().add(0, usuario.getContrasena());
+        if (usuario.getHistorialContrasenas().size() > 5) {
+            usuario.getHistorialContrasenas().remove(5);
+        }
+
+        usuario.setTokenRecuperacionContrasena(null);
+        usuario.setFechaExpiracionTokenRecuperacion(null);
+        usuarioRepository.save(usuario);
+    }
+
     private LoginResponseDTO procesarRegistroUsuario(Usuario usuario) {
         boolean existeEmail;
         try {
@@ -241,4 +314,17 @@ public class UserService {
 
         return generarTokens(usuarioGuardado);
     }
+
+    private String hashToken(String token) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            // StandardCharsets.UTF_8 asegura que siempre se lean los bytes de la misma forma sin importar el sistema operativo
+            byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+            // HexFormat convierte el array de bytes a un String alfanumérico seguro para BBDD (Requiere Java 17+)
+            return HexFormat.of().formatHex(hash); 
+        } catch (Exception e) {
+            throw new RuntimeException("Error crítico de servidor al inicializar el algoritmo SHA-256", e);
+        }
+    }
+    
 }

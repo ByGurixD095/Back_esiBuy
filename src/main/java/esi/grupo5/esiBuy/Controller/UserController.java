@@ -1,6 +1,7 @@
 package esi.grupo5.esiBuy.Controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -15,6 +16,8 @@ import jakarta.validation.Valid;
 import esi.grupo5.esiBuy.Dto.ClienteRegistroDTO;
 import esi.grupo5.esiBuy.Dto.LoginRequestDTO;
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
+import esi.grupo5.esiBuy.Dto.PasswordResetConfirmDTO;
+import esi.grupo5.esiBuy.Dto.PasswordResetRequestDTO;
 import esi.grupo5.esiBuy.Dto.VendedorRegisterRequest;
 import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Service.UserService;
@@ -100,6 +103,19 @@ public class UserController {
         setTokenCookies(response, loginResponse);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
+    }
+
+    @PostMapping("/recover-password")
+    public ResponseEntity<Void> requestPasswordReset(@Valid @RequestBody PasswordResetRequestDTO request) {
+
+        this.userService.requestPasswordReset(request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping ("/reset-password")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody PasswordResetConfirmDTO request) {
+        this.userService.resetPassword(request);
+        return ResponseEntity.ok().build();
     }
 
     // --------- DELETE ------------ 
