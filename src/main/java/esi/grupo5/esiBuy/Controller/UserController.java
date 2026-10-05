@@ -19,6 +19,13 @@ import esi.grupo5.esiBuy.Dto.VendedorRegisterRequest;
 import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Service.UserService;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
+import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/users")
 public class UserController {
@@ -52,6 +59,12 @@ public class UserController {
         setTokenCookies(response, loginResponse);
 
         return ResponseEntity.ok(loginResponse);
+    }
+
+    @PostMapping("/administradores")
+    public ResponseEntity<AdministradorResponseDTO> crearAdministrador(
+            @Valid @RequestBody AdministradorRegistroDTO dto) {
+        return userService.crearAdministrador(dto);
     }
 
 

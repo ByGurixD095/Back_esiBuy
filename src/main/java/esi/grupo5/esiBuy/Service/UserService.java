@@ -9,15 +9,19 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
+import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
+import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 import esi.grupo5.esiBuy.Dto.ClienteRegistroDTO;
 import esi.grupo5.esiBuy.Dto.LoginRequestDTO;
 import esi.grupo5.esiBuy.Dto.VendedorRegisterRequest;
+import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.RefreshToken;
 import esi.grupo5.esiBuy.Model.Usuario;
@@ -102,7 +106,8 @@ public class UserService {
 
         RefreshToken refreshTokenEntity = optionalRefreshToken.get();
 
-        // 2. Comprobamos que la firma matemática siga siendo válida (que no haya caducado)
+        // 2. Comprobamos que la firma matemática siga siendo válida (que no haya
+        // caducado)
         if (!jwtService.isTokenValid(refreshTokenEntity.getToken())) {
             try {
                 // Lo borramos si ya caducó.
@@ -179,6 +184,36 @@ public class UserService {
 
         vendedor.setHistorialContrasenas(new ArrayList<>(List.of(vendedor.getContrasena())));
         return procesarRegistroUsuario(vendedor);
+    }
+
+
+        //-------- CREAR ADMINISTRADOR ------------------------------
+    public ResponseEntity<AdministradorResponseDTO> crearAdministrador(AdministradorRegistroDTO dto) {
+        // Mensaje genérico a propósito: no revelamos si el email ya existe
+        if (usuarioRepository.findByEmail(dto.email()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se ha podido crear el administrador");
+        }
+
+        Administrador admin = Administrador.builder()
+                .nombre(dto.nombre())
+                .apellidos(dto.apellidos())
+                .email(dto.email())
+                .contrasena(encoder.encode(dto.contrasena()))
+                .sede(dto.sede())
+                .build();
+
+        Administrador guardado = usuarioRepository.save(admin);
+
+        AdministradorResponseDTO respuesta = new AdministradorResponseDTO(
+                guardado.getId(),
+                guardado.getNombre(),
+                guardado.getApellidos(),
+                guardado.getEmail(),
+                guardado.getSede(),
+                guardado.getRol().toString(),
+                "Administrador creado correctamente");
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
     }
 
     private LoginResponseDTO procesarRegistroUsuario(Usuario usuario) {
