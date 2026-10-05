@@ -28,7 +28,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(
                     "/users/*"
-                ).permitAll()
+                ).permitAll().requestMatchers("/error").permitAll()
+                .requestMatchers("/api/admin/usuarios/**").hasRole("ADMINISTRADOR")
                 .anyRequest().authenticated()
             );
 
