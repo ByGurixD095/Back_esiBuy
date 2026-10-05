@@ -48,6 +48,7 @@ public abstract class Usuario {
 
     private boolean activo;
     private boolean bloqueado;
+    private boolean eliminado;
 
     @CreatedDate
     private LocalDateTime fechaAlta;
@@ -61,6 +62,7 @@ public abstract class Usuario {
     protected Usuario() {
         this.activo = false;
         this.bloqueado = false;
+        this.eliminado = false;
         this.fechaCambioContrasena = LocalDateTime.now().plusDays(30); //Sirve para llevar el conteo de los dias hasta 30(cambio de contraseña obligatorio)
         this.historialContrasenas = new ArrayList<>();
     }
@@ -117,4 +119,7 @@ public abstract class Usuario {
 
     public List<String> getHistorialContrasenas() { return historialContrasenas; }
     public void setHistorialContrasenas(List<String> historialContrasenas) { this.historialContrasenas = historialContrasenas; }
+
+    public boolean isEliminado() { return eliminado; }
+    public void setEliminado(boolean eliminado) { this.eliminado = eliminado; }
 }
