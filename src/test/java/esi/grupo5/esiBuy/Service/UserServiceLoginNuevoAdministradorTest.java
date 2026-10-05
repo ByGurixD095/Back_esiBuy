@@ -30,6 +30,8 @@ class UserServiceLoginNuevoAdministradorTest {
     @Mock private UsuarioRepository usuarioRepository;
     @Mock private JwtService jwtService;
     @Mock private RefreshTokenRepository refreshTokenRepository;
+        @Mock private LoginAttemptService loginAttemptService;
+    @Mock private PasswordValidatorService passwordValidatorService;
 
     @InjectMocks private UserService userService;
 
@@ -56,8 +58,7 @@ class UserServiceLoginNuevoAdministradorTest {
         when(jwtService.generateToken(any(Usuario.class))).thenReturn("access-token");
         when(jwtService.generateRefreshToken(any(Usuario.class))).thenReturn("refresh-token");
 
-        LoginResponseDTO respuesta = userService.login(new LoginRequestDTO(EMAIL, CONTRASENA));
-
+LoginResponseDTO respuesta = userService.login(new LoginRequestDTO(EMAIL, CONTRASENA), "127.0.0.1");
         assertEquals("ADMINISTRADOR", respuesta.rol());
         assertEquals("access-token", respuesta.accessToken());
         assertEquals("refresh-token", respuesta.refreshToken());
@@ -66,8 +67,7 @@ class UserServiceLoginNuevoAdministradorTest {
     @Test
     void nuevoAdministrador_conContrasenaIncorrecta_noPuedeIniciarSesion() {
         ResponseStatusException error = assertThrows(ResponseStatusException.class,
-                () -> userService.login(new LoginRequestDTO(EMAIL, "OtraClave#1")));
-
+() -> userService.login(new LoginRequestDTO(EMAIL, "OtraClave#1"), "127.0.0.1"));
         assertEquals(401, error.getStatusCode().value());
         verify(jwtService, never()).generateToken(any(Usuario.class));
     }
