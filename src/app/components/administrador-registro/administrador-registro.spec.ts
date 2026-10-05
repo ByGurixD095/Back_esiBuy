@@ -3,7 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { AdministradorRegistro } from './administrador-registro';
-import { Administradores } from '../administradores';
+import { Administradores } from '../../services/crear-admin-service/administradores';
 
 describe('AdministradorRegistro', () => {
   let component: AdministradorRegistro;
