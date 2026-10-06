@@ -9,29 +9,22 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-<<<<<<< HEAD
-
-=======
 import jakarta.servlet.http.HttpServletRequest;
->>>>>>> develop
+
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import esi.grupo5.esiBuy.Dto.ClienteRegistroDTO;
 import esi.grupo5.esiBuy.Dto.LoginRequestDTO;
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
+import esi.grupo5.esiBuy.Dto.UserPatchDTO;
 import esi.grupo5.esiBuy.Dto.VendedorRegisterRequest;
 import esi.grupo5.esiBuy.Model.Usuario;
 import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Service.UserService;
-import esi.grupo5.esiBuy.Dto.UserPatchDTO;
-import esi.grupo5.esiBuy.Dto.UpdateUserResponseDTO;
-
 import java.util.ArrayList;
-import java.util.List;
 
 import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
-import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/users")
@@ -109,20 +102,16 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
     }
 
-    // --------- DELETE ------------
-
-
     // --------- PATCH ------------
-    @PatchMapping("/{id}")
-    public ResponseEntity<UpdateUserResponseDTO> modificarUsuario(@PathVariable String id, @RequestBody UserPatchDTO userPatchDTO) {
-
-        UpdateUserResponseDTO respuesta = userService.modificarUsuario(id, userPatchDTO);
-
-
-        return ResponseEntity.ok(respuesta);
+    @PatchMapping ("/{id}")
+    public ResponseEntity<Void> modificarUsuario (@PathVariable String id, @Valid @RequestBody UserPatchDTO dto) {
+        userService.modificarUsuario(id, dto);
+        return ResponseEntity.noContent().build();
     }
 
 
+
+    // --------- DELETE ------------
 
 
     // --------- PRIVATE METHODS ------------ 
