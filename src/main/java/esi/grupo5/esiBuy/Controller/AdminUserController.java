@@ -26,4 +26,12 @@ public class AdminUserController {
     public ResponseEntity<UserDto> getUserById(@PathVariable String id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable String id) {
+        userService.eliminarUsuario(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    
 }
