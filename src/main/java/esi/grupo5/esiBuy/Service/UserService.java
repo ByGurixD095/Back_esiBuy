@@ -31,6 +31,7 @@ import esi.grupo5.esiBuy.Dto.ClienteRegistroDTO;
 import esi.grupo5.esiBuy.Dto.LoginRequestDTO;
 import esi.grupo5.esiBuy.Dto.VendedorRegisterRequest;
 import esi.grupo5.esiBuy.Model.Administrador;
+import esi.grupo5.esiBuy.Dto.UserDto;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.RefreshToken;
 import esi.grupo5.esiBuy.Model.Usuario;
@@ -38,6 +39,17 @@ import esi.grupo5.esiBuy.Model.Vendedor;
 import esi.grupo5.esiBuy.Model.enums.TipoCliente;
 import esi.grupo5.esiBuy.Repository.RefreshTokenRepository;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
+
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -317,6 +329,43 @@ public class UserService {
         return generarTokens(usuarioGuardado);
     }
 
+    private UserDto toDto(Usuario usuario) {
+        return new UserDto(
+            usuario.getId(),
+            usuario.getNombre(),
+            usuario.getApellidos(),
+            usuario.getEmail(),
+            usuario.getRol(),
+            usuario.isActivo(),
+            usuario.isBloqueado()
+        );
+    }
+
+    public List<UserDto> getAllUsers() {
+        List<Usuario> usuarios = usuarioRepository.findAll();
+
+        List<UserDto> usuariosDto = new ArrayList<>();
+
+        for (Usuario usuario : usuarios) {
+            usuariosDto.add(toDto(usuario));
+        }
+
+        return usuariosDto;
+    }
+
+    public UserDto getUserById(String id) {
+        Optional<Usuario> usuario = usuarioRepository.findById(id);
+
+        if (usuario.isEmpty()) {
+            throw new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Usuario no encontrado"
+            );
+        }
+
+        return toDto(usuario.get());
+     } 
+      
     private String hashToken(String token) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
