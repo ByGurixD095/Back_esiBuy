@@ -56,6 +56,10 @@ public abstract class Usuario {
     @LastModifiedDate
     private LocalDateTime fechaModificacion;
 
+    @Indexed
+    private String tokenRecuperacionContrasena;
+    private LocalDateTime fechaExpiracionTokenRecuperacion;
+
     private LocalDateTime fechaCambioContrasena = LocalDateTime.now().plusDays(30);
     private List<String> historialContrasenas = new ArrayList<>();
 
@@ -116,6 +120,12 @@ public abstract class Usuario {
 
     public LocalDateTime getFechaCambioContrasena() { return fechaCambioContrasena; }
     public void setFechaCambioContrasena(LocalDateTime fechaCambioContrasena) { this.fechaCambioContrasena = fechaCambioContrasena;}
+
+    public String getTokenRecuperacionContrasena() { return tokenRecuperacionContrasena; }
+    public void setTokenRecuperacionContrasena(String tokenRecuperacionContrasena) { this.tokenRecuperacionContrasena = tokenRecuperacionContrasena; }
+
+    public LocalDateTime getFechaExpiracionTokenRecuperacion() { return fechaExpiracionTokenRecuperacion; }
+    public void setFechaExpiracionTokenRecuperacion(LocalDateTime fechaExpiracionTokenRecuperacion) { this.fechaExpiracionTokenRecuperacion = fechaExpiracionTokenRecuperacion; }
 
     public List<String> getHistorialContrasenas() { return historialContrasenas; }
     public void setHistorialContrasenas(List<String> historialContrasenas) { this.historialContrasenas = historialContrasenas; }
