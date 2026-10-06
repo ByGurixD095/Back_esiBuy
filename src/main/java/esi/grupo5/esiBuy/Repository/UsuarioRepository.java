@@ -1,6 +1,8 @@
 package esi.grupo5.esiBuy.Repository;
 
 import esi.grupo5.esiBuy.Model.Usuario;
+import esi.grupo5.esiBuy.Model.enums.Rol;
+
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
@@ -14,4 +16,5 @@ public interface UsuarioRepository extends MongoRepository<Usuario, String> {
     Optional<Usuario> findByEmail(String email);
     List<Usuario> findAllByEliminadoFalse();
     Optional<Usuario> findByIdAndEliminadoFalse(String id);
+    long countByRolAndEliminadoFalse(Rol rol);
 }

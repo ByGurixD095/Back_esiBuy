@@ -26,6 +26,7 @@ import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.RefreshToken;
 import esi.grupo5.esiBuy.Model.Usuario;
 import esi.grupo5.esiBuy.Model.Vendedor;
+import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Model.enums.TipoCliente;
 import esi.grupo5.esiBuy.Repository.RefreshTokenRepository;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
@@ -240,5 +241,35 @@ public class UserService {
         }
 
         return generarTokens(usuarioGuardado);
+    }
+
+    public void eliminarUsuario(String id) {
+
+        Optional<Usuario> optionalUsuario = usuarioRepository.findByIdAndEliminadoFalse(id);
+
+        if (optionalUsuario.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Usuario no encontrado"
+            );
+        }
+
+        Usuario usuario = optionalUsuario.get();
+
+        if (usuario.getRol() == Rol.ADMINISTRADOR) {
+
+        long administradores = usuarioRepository
+                .countByRolAndEliminadoFalse(Rol.ADMINISTRADOR);
+
+        if (administradores <= 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "No se puede eliminar el último administrador"
+            );
+        }
+    }
+
+        usuario.setEliminado(true);
+        usuarioRepository.save(usuario);
     }
 }
