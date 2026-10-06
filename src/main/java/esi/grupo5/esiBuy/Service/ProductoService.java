@@ -17,16 +17,23 @@ public class ProductoService {
     public Producto crearProducto(ProductoDTO dto) {
         validarDto(dto);
 
+        int numStock;
+        if (dto.numStock() == null) {
+            numStock = 0;
+        } else {
+            numStock = dto.numStock();
+        }
+
         Producto producto = new Producto(
-                dto.nombre(),
-                dto.referencia(),
-                dto.numStock(),
-                dto.precioCent(),
-                dto.descripcion(),
-                dto.categoria(),
-                dto.urlImagen(),
-                dto.descuento(),
-                dto.descuentoPremium()
+            dto.nombre(),
+            dto.referencia(),
+            numStock,
+            dto.precioCent(),
+            dto.descripcion(),
+            dto.categoria(),
+            dto.urlImagen(),
+            dto.descuento(),
+            dto.descuentoPremium()
         );
 
         return productoRepository.save(producto);
@@ -42,24 +49,32 @@ public class ProductoService {
         if (esInvalido(dto.referencia())) {
             throw new IllegalArgumentException("La referencia del producto no puede ser nula ni vacía");
         }
-        if (esInvalido(dto.descripcion())) {
+        if (esVacio(dto.descripcion())) {
             throw new IllegalArgumentException("La descripción del producto no puede ser nula ni vacía");
         }
         if (esInvalido(dto.categoria())) {
             throw new IllegalArgumentException("La categoría del producto no puede ser nula ni vacía");
         }
-        if (esInvalido(dto.urlImagen())) {
+        if (esVacio(dto.urlImagen())) {
             throw new IllegalArgumentException("La URL de la imagen no puede ser nula ni vacía");
         }
-        if (dto.numStock() < 0) {
+        if (dto.numStock() != null && dto.numStock() < 0) {
             throw new IllegalArgumentException("El stock no puede ser negativo");
         }
         if (dto.precioCent() < 0) {
             throw new IllegalArgumentException("El precio en céntimos no puede ser negativo");
         }
+        if (dto.descuento() < 0 || dto.descuento() > 100
+                || dto.descuentoPremium() < 0 || dto.descuentoPremium() > 100) {
+            throw new IllegalArgumentException("Los descuentos deben estar entre 0 y 100.");
+        }
     }
 
     private boolean esInvalido(String valor) {
         return valor == null || valor.trim().isEmpty();
+    }
+
+    private boolean esVacio(String valor) {
+        return valor != null && valor.trim().isEmpty();
     }
 }
