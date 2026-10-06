@@ -40,6 +40,9 @@ class UserServiceRefreshTokenTest {
     @Mock
     private LoginAttemptService loginAttemptService;
 
+    @Mock
+    private EmailService emailService;
+
     private UserService userService;
 
     @BeforeEach
@@ -49,7 +52,8 @@ class UserServiceRefreshTokenTest {
                 jwtService,
                 refreshTokenRepository,
                 passwordValidatorService,
-                loginAttemptService);
+                loginAttemptService,
+                emailService);
     }
 
     @Test

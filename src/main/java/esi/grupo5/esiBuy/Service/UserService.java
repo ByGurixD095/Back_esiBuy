@@ -1,23 +1,37 @@
 package esi.grupo5.esiBuy.Service;
 
+import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
+import esi.grupo5.esiBuy.Dto.PasswordResetConfirmDTO;
+import esi.grupo5.esiBuy.Dto.PasswordResetRequestDTO;
+import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
+import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 import esi.grupo5.esiBuy.Dto.ClienteRegistroDTO;
 import esi.grupo5.esiBuy.Dto.LoginRequestDTO;
 import esi.grupo5.esiBuy.Dto.VendedorRegisterRequest;
+import esi.grupo5.esiBuy.Model.Administrador;
+import esi.grupo5.esiBuy.Dto.UserDto;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.RefreshToken;
 import esi.grupo5.esiBuy.Model.Usuario;
@@ -25,6 +39,17 @@ import esi.grupo5.esiBuy.Model.Vendedor;
 import esi.grupo5.esiBuy.Model.enums.TipoCliente;
 import esi.grupo5.esiBuy.Repository.RefreshTokenRepository;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
+
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -36,14 +61,16 @@ public class UserService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordValidatorService passwordValidatorService;
     private final LoginAttemptService loginAttempService;
+    private final EmailService emailService;
 
     public UserService(UsuarioRepository usuarioRepository, JwtService jwtService, RefreshTokenRepository refreshTokenRepository,
-                         PasswordValidatorService passwordValidatorService, LoginAttemptService loginAttempService) {
+                         PasswordValidatorService passwordValidatorService, LoginAttemptService loginAttempService, EmailService emailService) {
         this.usuarioRepository = usuarioRepository;
         this.jwtService = jwtService;
         this.refreshTokenRepository = refreshTokenRepository;
         this.passwordValidatorService = passwordValidatorService;
         this.loginAttempService = loginAttempService;
+        this.emailService = emailService;
     }
 
 
@@ -114,7 +141,8 @@ public class UserService {
 
         RefreshToken refreshTokenEntity = optionalRefreshToken.get();
 
-        // 2. Comprobamos que la firma matemática siga siendo válida (que no haya caducado)
+        // 2. Comprobamos que la firma matemática siga siendo válida (que no haya
+        // caducado)
         if (!jwtService.isTokenValid(refreshTokenEntity.getToken())) {
             try {
                 // Lo borramos si ya caducó.
@@ -193,6 +221,100 @@ public class UserService {
         return procesarRegistroUsuario(vendedor);
     }
 
+
+        //-------- CREAR ADMINISTRADOR ------------------------------
+    public ResponseEntity<AdministradorResponseDTO> crearAdministrador(AdministradorRegistroDTO dto) {
+        // Mensaje genérico a propósito: no revelamos si el email ya existe
+        if (usuarioRepository.findByEmail(dto.email()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se ha podido crear el administrador");
+        }
+
+        Administrador admin = Administrador.builder()
+                .nombre(dto.nombre())
+                .apellidos(dto.apellidos())
+                .email(dto.email())
+                .contrasena(encoder.encode(dto.contrasena()))
+                .sede(dto.sede())
+                .build();
+
+        Administrador guardado = usuarioRepository.save(admin);
+
+        AdministradorResponseDTO respuesta = new AdministradorResponseDTO(
+                guardado.getId(),
+                guardado.getNombre(),
+                guardado.getApellidos(),
+                guardado.getEmail(),
+                guardado.getSede(),
+                guardado.getRol().toString(),
+                "Administrador creado correctamente");
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
+    }
+
+    public void requestPasswordReset(PasswordResetRequestDTO request) {
+        String email = request.email();
+        Optional<Usuario> optionalUsuario = usuarioRepository.findByEmail(email);
+
+        if (optionalUsuario.isEmpty()) {
+            return; 
+        }
+        Usuario usuario = optionalUsuario.get();
+
+        if (usuario.getTokenRecuperacionContrasena() != null && usuario.getFechaExpiracionTokenRecuperacion() != null
+                && usuario.getFechaExpiracionTokenRecuperacion().isAfter(LocalDateTime.now())) {
+            log.info("El usuario {} ya tiene un token de recuperación válido. Se generará uno nuevo.", email);
+        }
+        String resetToken = UUID.randomUUID().toString();
+        String hashedToken = hashToken(resetToken);
+        usuario.setTokenRecuperacionContrasena(hashedToken);
+        usuario.setFechaExpiracionTokenRecuperacion(LocalDateTime.now().plusMinutes(5));
+        usuarioRepository.save(usuario);
+
+        try {
+            String resetLink = "http://localhost:4200/reset-password?token=" + resetToken;
+            emailService.sendRecoveryEmail(email, usuario.getNombre(), resetLink);
+        } catch (MessagingException e) {
+            log.error("Error al enviar email de recuperación a {}: {}", email, e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No se ha podido enviar el email de recuperación", e);
+        }
+    
+    }
+
+    public void resetPassword(PasswordResetConfirmDTO request) {
+        String token = request.token();
+        String pwd1 = request.pwd1();
+        String pwd2 = request.pwd2();
+
+ 
+        if (!pwd1.equals(pwd2)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Las contraseñas no coinciden");
+        }
+
+        Optional<Usuario> optionalUsuario = usuarioRepository.findByTokenRecuperacionContrasena(hashToken(token));
+        if (optionalUsuario.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token de recuperación inválido");
+        }
+
+        Usuario usuario = optionalUsuario.get();
+
+        if (usuario.getFechaExpiracionTokenRecuperacion() == null || usuario.getFechaExpiracionTokenRecuperacion().isBefore(LocalDateTime.now())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token de recuperación expirado");
+        }
+
+        passwordValidatorService.passwordIsWeak(pwd1, usuario.getHistorialContrasenas(), encoder);
+
+        usuario.setContrasena(encoder.encode(pwd1));
+        usuario.setFechaCambioContrasena(LocalDateTime.now());
+        usuario.getHistorialContrasenas().add(0, usuario.getContrasena());
+        if (usuario.getHistorialContrasenas().size() > 5) {
+            usuario.getHistorialContrasenas().remove(5);
+        }
+
+        usuario.setTokenRecuperacionContrasena(null);
+        usuario.setFechaExpiracionTokenRecuperacion(null);
+        usuarioRepository.save(usuario);
+    }
+
     private LoginResponseDTO procesarRegistroUsuario(Usuario usuario) {
         boolean existeEmail;
         try {
@@ -218,4 +340,54 @@ public class UserService {
 
         return generarTokens(usuarioGuardado);
     }
+
+    private UserDto toDto(Usuario usuario) {
+        return new UserDto(
+            usuario.getId(),
+            usuario.getNombre(),
+            usuario.getApellidos(),
+            usuario.getEmail(),
+            usuario.getRol(),
+            usuario.isActivo(),
+            usuario.isBloqueado()
+        );
+    }
+
+    public List<UserDto> getAllUsers() {
+        List<Usuario> usuarios = usuarioRepository.findAll();
+
+        List<UserDto> usuariosDto = new ArrayList<>();
+
+        for (Usuario usuario : usuarios) {
+            usuariosDto.add(toDto(usuario));
+        }
+
+        return usuariosDto;
+    }
+
+    public UserDto getUserById(String id) {
+        Optional<Usuario> usuario = usuarioRepository.findById(id);
+
+        if (usuario.isEmpty()) {
+            throw new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Usuario no encontrado"
+            );
+        }
+
+        return toDto(usuario.get());
+     } 
+      
+    private String hashToken(String token) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            // StandardCharsets.UTF_8 asegura que siempre se lean los bytes de la misma forma sin importar el sistema operativo
+            byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+            // HexFormat convierte el array de bytes a un String alfanumérico seguro para BBDD (Requiere Java 17+)
+            return HexFormat.of().formatHex(hash); 
+        } catch (Exception e) {
+            throw new RuntimeException("Error crítico de servidor al inicializar el algoritmo SHA-256", e);
+        }
+    }
+    
 }

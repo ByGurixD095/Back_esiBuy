@@ -52,8 +52,7 @@ class PasswordValidatorServiceTest {
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> service.passwordIsWeak(
-                        "Segura2026!", List.of(oldHash), encoder));
+                () -> service.passwordIsWeak("Segura2026!", List.of(oldHash), encoder));
 
         assertEquals(400, exception.getStatusCode().value());
     }
