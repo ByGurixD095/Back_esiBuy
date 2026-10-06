@@ -1,6 +1,8 @@
 package esi.grupo5.esiBuy.Controller;
 
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
+import esi.grupo5.esiBuy.Dto.PasswordResetConfirmDTO;
+import esi.grupo5.esiBuy.Dto.PasswordResetRequestDTO;
 import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Service.UserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +17,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
@@ -35,8 +38,8 @@ class UserControllerTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(new UserController(userService, jwtService)).build();
-        when(jwtService.getAccessTokenExpirationSeconds()).thenReturn(900);
-        when(jwtService.getRefreshTokenExpirationSeconds()).thenReturn(86_400);
+        lenient().when(jwtService.getAccessTokenExpirationSeconds()).thenReturn(900);
+        lenient().when(jwtService.getRefreshTokenExpirationSeconds()).thenReturn(86_400);
     }
 
     @Test
@@ -80,5 +83,27 @@ class UserControllerTest {
                 .andExpect(cookie().value("refreshToken", "refresh-token"));
 
         verify(userService).refreshToken("refresh-token");
+    }
+
+    @Test
+    void recoverPasswordDelegaLaSolicitudYDevuelveOk() throws Exception {
+        mockMvc.perform(post("/users/recover-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"cliente@test.com\"}"))
+                .andExpect(status().isOk());
+
+        verify(userService).requestPasswordReset(any(PasswordResetRequestDTO.class));
+    }
+
+    @Test
+    void resetPasswordDelegaLaConfirmacionYDevuelveOk() throws Exception {
+        mockMvc.perform(post("/users/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"token":"token-valido","pwd1":"NuevaClave1!","pwd2":"NuevaClave1!"}
+                                """))
+                .andExpect(status().isOk());
+
+        verify(userService).resetPassword(any(PasswordResetConfirmDTO.class));
     }
 }
