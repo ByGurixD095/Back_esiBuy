@@ -21,6 +21,7 @@ import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 import esi.grupo5.esiBuy.Dto.ClienteRegistroDTO;
 import esi.grupo5.esiBuy.Dto.LoginRequestDTO;
 import esi.grupo5.esiBuy.Dto.VendedorRegisterRequest;
+import esi.grupo5.esiBuy.Dto.UserPatchDTO;
 import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.RefreshToken;
@@ -184,6 +185,83 @@ public class UserService {
 
         vendedor.setHistorialContrasenas(new ArrayList<>(List.of(vendedor.getContrasena())));
         return procesarRegistroUsuario(vendedor);
+    }
+
+        //-------- MODIFICAR USUARIOS ------------------------------
+    public void modificarUsuario(String id, UserPatchDTO dto) {
+        Optional<Usuario> optionalUsuario = usuarioRepository.findById(id);
+
+        if (optionalUsuario.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado");
+        }
+
+        Usuario usuario = optionalUsuario.get();
+
+        actualizarDatosComunes(usuario, dto);
+
+        if (usuario instanceof Cliente cliente) {
+            actualizarDatosCliente(cliente, dto);
+        }
+
+        if (usuario instanceof Vendedor vendedor) {
+            actualizarDatosVendedor(vendedor, dto);
+        }
+
+        if (usuario instanceof Administrador administrador && dto.sede() != null) {
+            administrador.setSede(dto.sede());
+        }
+
+        usuarioRepository.save(usuario);
+
+    }
+
+    private void actualizarDatosComunes(Usuario usuario, UserPatchDTO dto) {
+    if (dto.nombre() != null) {
+        usuario.setNombre(dto.nombre());
+    }
+
+    if (dto.apellidos() != null) {
+        usuario.setApellidos(dto.apellidos());
+    }
+
+    if (dto.telefono() != null) {
+        usuario.setTelefono(dto.telefono());
+    }
+
+    if (dto.imagenPerfil() != null) {
+        usuario.setImagenPerfil(dto.imagenPerfil());
+    }
+
+    }
+
+    private void actualizarDatosCliente(Cliente cliente, UserPatchDTO dto) {
+    if (dto.dni() != null) {
+        cliente.setDni(dto.dni());
+    }
+
+    if (dto.fechaNacimiento() != null) {
+        cliente.setFechaNacimiento(dto.fechaNacimiento());
+    }
+
+    if (dto.tipoCliente() != null) {
+        cliente.setTipoCliente(dto.tipoCliente());
+    }
+
+    }
+
+    private void actualizarDatosVendedor(Vendedor vendedor, UserPatchDTO dto) {
+    if (dto.nombreComercial() != null) {
+        vendedor.setNombreComercial(dto.nombreComercial());
+    }
+
+    if (dto.cifNif() != null) {
+        vendedor.setCifNif(dto.cifNif());
+    }
+
+    if (dto.categoriaPrincipalId() != null) {
+        vendedor.setCategoriaPrincipalId(dto.categoriaPrincipalId());
+    }
+    
     }
 
 
