@@ -43,7 +43,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PATCH, "/users/*").hasRole("ADMINISTRADOR")
                 .requestMatchers(
                     "/users/**"
-                ).permitAll()
+                ).permitAll().requestMatchers("/error").permitAll()
+                .requestMatchers("/api/admin/usuarios/**").hasRole("ADMINISTRADOR")
                 .anyRequest().authenticated()
             );
 

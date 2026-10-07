@@ -6,5 +6,6 @@
         "max": "15"
       }
     }
-  }
+  },
+  "java.configuration.updateBuildConfiguration": "interactive"
 }
