@@ -19,6 +19,7 @@ import esi.grupo5.esiBuy.Dto.VendedorRegisterRequest;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.Usuario;
 import esi.grupo5.esiBuy.Model.Vendedor;
+import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Model.enums.TipoCliente;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 
@@ -120,16 +121,26 @@ public class UserService {
     }
 
     public List<UserDto> getAllUsers() {
-        return usuarioRepository.findAll().stream()
-                .map(this::toDto)
-                .toList();
+        List<Usuario> usuarios = usuarioRepository.findAllByEliminadoFalse();
+
+        List<UserDto> usuariosDto = new ArrayList<>();
+
+        for (Usuario usuario : usuarios) {
+            usuariosDto.add(toDto(usuario));
+        }
+
+        return usuariosDto;
     }
 
+
+
     public UserDto getUserById(String id) {
-        return usuarioRepository.findById(id)
-                .map(this::toDto)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
-    } 
+    return usuarioRepository.findByIdAndEliminadoFalse(id)
+            .map(this::toDto)
+            .orElseThrow(() -> new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Usuario no encontrado"));
+}
 
     private UserDto toDto(Usuario usuario) {
         return new UserDto(

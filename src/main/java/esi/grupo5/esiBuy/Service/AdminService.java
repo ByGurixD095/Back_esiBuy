@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -15,6 +16,7 @@ import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 import esi.grupo5.esiBuy.Dto.UserPatchDTO;
 import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Model.Usuario;
+import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Service.strategy.UsuarioUpdateStrategy;
 
@@ -106,4 +108,42 @@ public class AdminService {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
     }
+
+    public void eliminarUsuario(String id, String usuarioActualId) {
+
+        if (id.equals(usuarioActualId)) {
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "No puedes eliminar tu propia cuenta"
+        );
+        }
+
+        Optional<Usuario> optionalUsuario = usuarioRepository.findByIdAndEliminadoFalse(id);
+
+        if (optionalUsuario.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Usuario no encontrado"
+            );
+        }
+
+        Usuario usuario = optionalUsuario.get();
+
+        if (usuario.getRol() == Rol.ADMINISTRADOR) {
+
+        long administradores = usuarioRepository
+                .countByRolAndEliminadoFalse(Rol.ADMINISTRADOR);
+
+        if (administradores <= 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "No se puede eliminar el último administrador"
+            );
+        }
+    }
+
+        usuario.setEliminado(true);
+        usuarioRepository.save(usuario);
+    }
+
 }

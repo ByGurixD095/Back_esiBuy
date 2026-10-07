@@ -9,6 +9,7 @@ import esi.grupo5.esiBuy.Service.AdminService;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -48,6 +49,12 @@ public class AdminController {
     @PatchMapping ("/{id}")
     public ResponseEntity<Void> modificarUsuario (@PathVariable String id, @Valid @RequestBody UserPatchDTO dto) {
         adminService.modificarUsuario(id, dto);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable String id, @AuthenticationPrincipal String usuarioActualId) {
+        adminService.eliminarUsuario(id, usuarioActualId);
         return ResponseEntity.noContent().build();
     }
 }
