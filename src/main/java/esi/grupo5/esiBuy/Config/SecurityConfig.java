@@ -35,22 +35,42 @@ public class SecurityConfig {
         http
             .cors(Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())
+            // La API no guarda sesiones: cada peticion protegida debe llevar un JWT valido.
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/error").permitAll()
-                .requestMatchers(HttpMethod.POST, "/users/administradores").hasRole("ADMINISTRADOR")
-                .requestMatchers(HttpMethod.PATCH, "/users/*").hasRole("ADMINISTRADOR")
-                .requestMatchers(
-                    "/users/**"
-                ).permitAll().requestMatchers("/error").permitAll()
-                .requestMatchers("/api/admin/usuarios/**").hasRole("ADMINISTRADOR")
-                .anyRequest().authenticated()
-            );
+            .authorizeHttpRequests(auth -> {
+                // Las peticiones OPTIONS se usan en la comprobacion previa de CORS.
+                auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
+                auth.requestMatchers("/error").permitAll();
+
+                // Solo las operaciones de autenticacion y registro son publicas.
+                auth.requestMatchers(
+                    "/users/login",
+                    "/users/refresh",
+                    "/users/register/**",
+                    "/users/recover-password",
+                    "/users/reset-password"
+                ).permitAll();
+
+                // Las operaciones de administracion requieren un JWT de administrador.
+                auth.requestMatchers(HttpMethod.POST, "/users/administradores")
+                    .hasRole("ADMINISTRADOR");
+                auth.requestMatchers(HttpMethod.PATCH, "/users/*")
+                    .hasRole("ADMINISTRADOR");
+                auth.requestMatchers("/api/admin/usuarios/**")
+                    .hasRole("ADMINISTRADOR");
+
+                // Solo los vendedores autenticados pueden crear productos.
+                auth.requestMatchers(HttpMethod.POST, "/products", "/products/createProduct")
+                    .hasRole("VENDEDOR");
+
+                // Cualquier otra ruta requiere que exista un usuario autenticado.
+                auth.anyRequest().authenticated();
+            });
 
         // Add JWT filter before the username/password auth filter
         http.addFilterBefore(this.jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
 }
