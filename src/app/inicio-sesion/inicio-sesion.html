@@ -1,22 +1,46 @@
-<section class="inicio-sesion">
-  <h1>Iniciar sesión</h1>
+<app-marco-pagina [volver]="true">
+  <h1 class="esi-titulo">accede a tu cuenta</h1>
 
-  <form [formGroup]="form" (ngSubmit)="enviar()" novalidate>
-    <div class="campo">
-      <label for="usuario">Usuario</label>
-      <input id="usuario" type="text" formControlName="usuario" autocomplete="username" />
-    </div>
+  <section class="inicio-sesion esi-tarjeta">
+    <h2>Iniciar sesión</h2>
 
-    <div class="campo">
-      <label for="contrasena">Contraseña</label>
-      <input
-        id="contrasena"
-        type="password"
-        formControlName="contrasena"
-        autocomplete="current-password"
-      />
-    </div>
+    <form [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+      <div class="esi-campo">
+        <label for="usuario">Correo electrónico</label>
+        <input
+          id="usuario"
+          type="email"
+          formControlName="usuario"
+          autocomplete="username"
+          placeholder="nombre@correo.es"
+        />
+      </div>
 
-    <button type="submit" [disabled]="form.invalid">Entrar</button>
-  </form>
-</section>
+      <div class="esi-campo">
+        <label for="contrasena">Contraseña</label>
+        <span class="grupo">
+          <input
+            id="contrasena"
+            [type]="mostrarContrasena() ? 'text' : 'password'"
+            formControlName="contrasena"
+            autocomplete="current-password"
+          />
+          <button
+            type="button"
+            class="grupo-boton"
+            [attr.aria-pressed]="mostrarContrasena()"
+            (click)="alternarContrasena()"
+          >
+            {{ mostrarContrasena() ? 'Ocultar' : 'Mostrar' }}
+          </button>
+        </span>
+      </div>
+
+      <button type="submit" class="esi-boton" [disabled]="form.invalid">Iniciar sesión</button>
+
+      <p class="aviso">
+        Tras varios intentos fallidos se bloquea el acceso durante unos minutos.
+      </p>
+    </form>
+  </section>
+</app-marco-pagina>
