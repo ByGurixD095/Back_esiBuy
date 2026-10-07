@@ -2,6 +2,8 @@ package esi.grupo5.esiBuy.Service;
 
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -217,10 +219,16 @@ public class UserService {
 
     private void actualizarDatosComunes(Usuario usuario, UserPatchDTO dto) {
     if (dto.nombre() != null) {
+        if (dto.nombre().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre no puede estar vacío");
+        }
         usuario.setNombre(dto.nombre());
     }
 
     if (dto.apellidos() != null) {
+        if (dto.apellidos().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Los apellidos no pueden estar vacíos");
+        }
         usuario.setApellidos(dto.apellidos());
     }
 
@@ -240,6 +248,9 @@ public class UserService {
     }
 
     if (dto.fechaNacimiento() != null) {
+        if (dto.fechaNacimiento().isAfter(LocalDate.now(ZoneId.systemDefault()).minusYears(18))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El cliente debe ser mayor de edad");
+        }
         cliente.setFechaNacimiento(dto.fechaNacimiento());
     }
 
@@ -251,14 +262,23 @@ public class UserService {
 
     private void actualizarDatosVendedor(Vendedor vendedor, UserPatchDTO dto) {
     if (dto.nombreComercial() != null) {
+        if (dto.nombreComercial().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre comercial no puede estar vacío");
+        }
         vendedor.setNombreComercial(dto.nombreComercial());
     }
 
     if (dto.cifNif() != null) {
+        if (dto.cifNif().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El CIF/NIF no puede estar vacío");
+        }
         vendedor.setCifNif(dto.cifNif());
     }
 
     if (dto.categoriaPrincipalId() != null) {
+        if (dto.categoriaPrincipalId().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La categoría principal no puede estar vacía");
+        }
         vendedor.setCategoriaPrincipalId(dto.categoriaPrincipalId());
     }
     
