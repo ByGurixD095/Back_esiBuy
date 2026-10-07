@@ -4,6 +4,6 @@ public record LoginResponseDTO(
         String accessToken,
         String refreshToken,
         String rol,
-        String tipoCliente) {
-
-}
+        String tipoCliente,
+        String mfaStatus,
+        String email){}
