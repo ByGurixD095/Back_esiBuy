@@ -16,16 +16,26 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @Value("${app.security.allow-development:false}")
-    private boolean allowDevelopment;
+    // Evita que Spring Boot registre el filtro JWT también como filtro de servlet
+    // (solo debe ejecutarse dentro de la cadena de Spring Security)
+    @Bean
+    public FilterRegistrationBean<JwtAuthenticationFilter> jwtFilterRegistration(JwtAuthenticationFilter filter) {
+        FilterRegistrationBean<JwtAuthenticationFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -34,30 +44,20 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             // La API no guarda sesiones: cada peticion protegida debe llevar un JWT valido.
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> {
-                // Las peticiones OPTIONS se usan en la comprobacion previa de CORS.
-                auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
-
-                // Registro, login y el resto de endpoints de usuarios son publicos.
-                auth.requestMatchers("/users/**").permitAll();
-
-                // Esta propiedad permite habilitar temporalmente la creacion publica
-                // de productos, por ejemplo durante el desarrollo.
-                    if (allowDevelopment) {
-                    auth.requestMatchers(HttpMethod.POST, "/products", "/products/createProduct").permitAll();
-                } else {
-                    // En el comportamiento normal, solo los vendedores autenticados
-                    // pueden crear productos. El rol se obtiene del JWT.
-                    auth.requestMatchers(HttpMethod.POST, "/products", "/products/createProduct")
-                        .hasRole("VENDEDOR");
-                }
-
-                // Cualquier otra ruta requiere que exista un usuario autenticado.
-                auth.anyRequest().authenticated();
-            });
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/error").permitAll()
+                .requestMatchers(HttpMethod.POST, "/users/administradores").hasRole("ADMINISTRADOR")
+                .requestMatchers(HttpMethod.PATCH, "/users/*").hasRole("ADMINISTRADOR")
+                .requestMatchers(
+                    "/users/**"
+                ).permitAll().requestMatchers("/error").permitAll()
+                .requestMatchers("/api/admin/usuarios/**").hasRole("ADMINISTRADOR")
+                .anyRequest().authenticated()
+            );
 
         // Add JWT filter before the username/password auth filter
-        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(this.jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
