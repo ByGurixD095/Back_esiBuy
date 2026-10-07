@@ -330,7 +330,14 @@ public class UserService {
         return generarTokens(usuarioGuardado);
     }
 
-    public void eliminarUsuario(String id) {
+    public void eliminarUsuario(String id, String usuarioActualId) {
+
+        if (id.equals(usuarioActualId)) {
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "No puedes eliminar tu propia cuenta"
+        );
+        }
 
         Optional<Usuario> optionalUsuario = usuarioRepository.findByIdAndEliminadoFalse(id);
 
@@ -373,7 +380,7 @@ public class UserService {
     }
 
     public List<UserDto> getAllUsers() {
-        List<Usuario> usuarios = usuarioRepository.findAll();
+        List<Usuario> usuarios = usuarioRepository.findAllByEliminadoFalse();
 
         List<UserDto> usuariosDto = new ArrayList<>();
 

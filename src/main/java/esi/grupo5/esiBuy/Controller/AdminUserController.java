@@ -3,6 +3,7 @@ package esi.grupo5.esiBuy.Controller;
 import esi.grupo5.esiBuy.Dto.UserDto;
 import esi.grupo5.esiBuy.Service.UserService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,8 +29,8 @@ public class AdminUserController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable String id) {
-        userService.eliminarUsuario(id);
+    public ResponseEntity<Void> deleteUser(@PathVariable String id, @AuthenticationPrincipal String usuarioActualId) {
+        userService.eliminarUsuario(id, usuarioActualId);
         return ResponseEntity.noContent().build();
     }
 
