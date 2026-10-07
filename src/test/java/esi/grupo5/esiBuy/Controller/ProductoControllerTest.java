@@ -1,5 +1,7 @@
 package esi.grupo5.esiBuy.Controller;
 
+import java.util.List;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import esi.grupo5.esiBuy.Dto.ProductoDTO;
 import esi.grupo5.esiBuy.Model.Producto;
@@ -17,6 +19,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -60,6 +63,23 @@ class ProductoControllerTest {
                 .andExpect(jsonPath("$.nombre").value("Camiseta ESI"))
                 .andExpect(jsonPath("$.precioCent").value(1999));
     }
+
+        @Test
+        void crearProducto_RutaCorta_Devuelve201Created() throws Exception {
+        ProductoDTO dto = new ProductoDTO(
+            "Camiseta ESI", "REF-092026a", 10, 1999,
+            "Camiseta oficial de algodón", "Ropa", "url_imagen.jpg", 5, 0, null);
+        Producto productoCreado = new Producto();
+        productoCreado.setId("mongo-id-123");
+
+        when(productoService.crearProducto(any(ProductoDTO.class))).thenReturn(productoCreado);
+
+        mockMvc.perform(post("/products")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(dto)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id").value("mongo-id-123"));
+        }
 
         @Test
         void crearProducto_PrecioFueraDeRango_Devuelve400BadRequest() throws Exception {
@@ -155,6 +175,38 @@ class ProductoControllerTest {
                 .content(dtoSinCamposOpcionales))
                 .andExpect(status().isCreated());
             }
+
+    @Test
+    void obtenerDisponibles_devuelveProductosDisponibles() throws Exception {
+        Producto producto = new Producto("Camiseta ESI", "REF-092026a", 10, 1999,
+                "Camiseta oficial de algodón", "Ropa", "url_imagen.jpg", 0, 0);
+        producto.setId("mongo-id-123");
+
+        when(productoService.obtenerProductosDisponibles()).thenReturn(List.of(producto));
+
+        mockMvc.perform(get("/products/disponibles"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value("mongo-id-123"))
+                .andExpect(jsonPath("$[0].nombre").value("Camiseta ESI"))
+                .andExpect(jsonPath("$[0].referencia").value("REF-092026a"))
+                .andExpect(jsonPath("$[0].numStock").value(10))
+                .andExpect(jsonPath("$[0].precioCent").value(1999))
+                .andExpect(jsonPath("$[0].activo").value(true));
+
+        verify(productoService).obtenerProductosDisponibles();
+    }
+
+    @Test
+    void obtenerDisponibles_sinResultados_devuelveListaVacia() throws Exception {
+        when(productoService.obtenerProductosDisponibles()).thenReturn(List.of());
+
+        mockMvc.perform(get("/products/disponibles"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+
+        verify(productoService).obtenerProductosDisponibles();
+    }
 }
 
 

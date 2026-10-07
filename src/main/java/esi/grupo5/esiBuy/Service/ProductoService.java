@@ -3,6 +3,9 @@ package esi.grupo5.esiBuy.Service;
 import esi.grupo5.esiBuy.Dto.ProductoDTO;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
+
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 @Service
@@ -38,6 +41,10 @@ public class ProductoService {
         producto.setActivo(dto.activo() == null || dto.activo());
 
         return productoRepository.save(producto);
+    }
+
+    public List<Producto> obtenerProductosDisponibles() {
+        return productoRepository.findByActivoTrueAndNumStockGreaterThan(0);
     }
 
     private void validarDto(ProductoDTO dto) {

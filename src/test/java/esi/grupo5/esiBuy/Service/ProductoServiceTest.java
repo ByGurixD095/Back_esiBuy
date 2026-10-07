@@ -1,8 +1,14 @@
 package esi.grupo5.esiBuy.Service;
 
+import java.util.Collections;
+import java.util.List;
+
 import esi.grupo5.esiBuy.Dto.ProductoDTO;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -11,6 +17,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -21,6 +29,8 @@ class ProductoServiceTest {
 
     @InjectMocks
     private ProductoService productoService;
+    private Producto productoDisponible1;
+    private Producto productoDisponible2;
 
     @Test
     void datosValidos_DevuelveProductoCreado() {
@@ -44,6 +54,29 @@ class ProductoServiceTest {
         assertEquals("REF-092026a", resultado.getReferencia());
         assertEquals(1999, resultado.getPrecioCent());
         assertTrue(resultado.isActivo(), "El producto debe nacer activo");
+    }
+
+    @Test
+    void crearProducto_ConservaTodosLosAtributosYActivo() {
+        ProductoDTO dto = new ProductoDTO(
+                "Portátil ESI", "TEC-001", 7, 89900,
+                "Portátil ligero", "Tecnología", "url1.png", 15, 25, false);
+        when(productoRepository.save(any(Producto.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Producto resultado = productoService.crearProducto(dto);
+
+        assertAll(
+                () -> assertEquals("Portátil ESI", resultado.getNombre()),
+                () -> assertEquals("TEC-001", resultado.getReferencia()),
+                () -> assertEquals(7, resultado.getNumStock()),
+                () -> assertEquals(89900, resultado.getPrecioCent()),
+                () -> assertEquals("Portátil ligero", resultado.getDescripcion()),
+                () -> assertEquals("Tecnología", resultado.getCategoria()),
+                () -> assertEquals("url1.png", resultado.getUrlImagen()),
+                () -> assertEquals(15, resultado.getDescuento()),
+                () -> assertEquals(25, resultado.getDescuentoPremium()),
+                () -> assertFalse(resultado.isActivo()));
     }
 
     @Test
@@ -278,8 +311,50 @@ class ProductoServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> productoService.crearProducto(dto));
     }
+
+    @BeforeEach
+    void setUp() {
+        productoDisponible1 = new Producto("Portátil ESI", "TEC-001", 10, 89900, "Portátil ligero", "Tecnología", "url1.png", 0, 0);
+        productoDisponible1.setId("prod-1");
+        productoDisponible1.setActivo(true);
+
+        productoDisponible2 = new Producto("Mochila ESI", "ESC-002", 5, 2990, "Mochila ergonómica", "Papelería y Material Escolar", "url2.png", 0, 0);
+        productoDisponible2.setId("prod-2");
+        productoDisponible2.setActivo(true);
+    }
+
+
+    @Test
+    @DisplayName("RED: Debe devolver únicamente los productos activos y con stock mayor que 0")
+    void obtenerProductosDisponibles_debeRetornarSoloDisponibles() {
+        // GIVEN: El repositorio devuelve productos que cumplen activo=true y numStock > 0
+        when(productoRepository.findByActivoTrueAndNumStockGreaterThan(0))
+                .thenReturn(List.of(productoDisponible1, productoDisponible2));
+
+        // WHEN: El servicio solicita el catálogo disponible
+        List<Producto> resultado = productoService.obtenerProductosDisponibles();
+
+        // THEN: Se valida la lista y que se invoque al método de filtrado estricto
+        assertNotNull(resultado);
+        assertEquals(2, resultado.size());
+        assertTrue(resultado.stream().allMatch(p -> p.isActivo() && p.getNumStock() > 0));
+        verify(productoRepository, times(1)).findByActivoTrueAndNumStockGreaterThan(0);
+    }
+
+    @Test
+    @DisplayName("RED: Debe devolver una lista vacía sin errores si no hay productos disponibles")
+    void obtenerProductosDisponibles_cuandoNoHayStock_debeRetornarListaVacia() {
+        // GIVEN: Ningún producto en BBDD cumple el criterio de disponibilidad
+        when(productoRepository.findByActivoTrueAndNumStockGreaterThan(0))
+                .thenReturn(Collections.emptyList());
+
+        // WHEN
+        List<Producto> resultado = productoService.obtenerProductosDisponibles();
+
+        // THEN
+        assertNotNull(resultado);
+        assertTrue(resultado.isEmpty());
+        verify(productoRepository, times(1)).findByActivoTrueAndNumStockGreaterThan(0);
+    }
+
 }
-
-
-    // CAMPOS OBLIGATORIOS? PROBAR con un par de datos
-// AÑADIR TESTS PARA PETAR (80000000000000000000000000000 DE PRECIO, P EJ. )
