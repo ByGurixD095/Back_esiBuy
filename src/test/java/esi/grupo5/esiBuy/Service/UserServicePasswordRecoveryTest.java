@@ -56,6 +56,9 @@ class UserServicePasswordRecoveryTest {
     @Mock
     private EmailService emailService;
 
+    @Mock
+    private AuthFactorService authFactorService;
+
     private UserService userService;
 
     @BeforeEach
@@ -66,7 +69,8 @@ class UserServicePasswordRecoveryTest {
                 refreshTokenRepository,
                 passwordValidatorService,
                 loginAttemptService,
-                emailService);
+                emailService,
+                authFactorService);
     }
 
     @Test

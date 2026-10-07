@@ -32,6 +32,8 @@ class UserServiceLoginNuevoAdministradorTest {
     @Mock private RefreshTokenRepository refreshTokenRepository;
         @Mock private LoginAttemptService loginAttemptService;
     @Mock private PasswordValidatorService passwordValidatorService;
+    @Mock private EmailService emailService;
+    @Mock private AuthFactorService authFactorService;
 
     @InjectMocks private UserService userService;
 

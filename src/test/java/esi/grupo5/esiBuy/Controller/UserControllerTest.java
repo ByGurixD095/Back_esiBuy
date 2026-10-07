@@ -45,7 +45,7 @@ class UserControllerTest {
     @Test
     void loginDevuelveRespuestaYConfiguraCookies() throws Exception {
         LoginResponseDTO response = new LoginResponseDTO(
-                "access-token", "refresh-token", "CLIENTE", "NORMAL");
+                "access-token", "refresh-token", "CLIENTE", "NORMAL", "SUCCESS", "cliente@test.com");
         when(userService.login(any(), eq("127.0.0.1"))).thenReturn(response);
 
         mockMvc.perform(post("/users/login")
@@ -62,6 +62,8 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.refreshToken").value("refresh-token"))
                 .andExpect(jsonPath("$.rol").value("CLIENTE"))
                 .andExpect(jsonPath("$.tipoCliente").value("NORMAL"))
+                .andExpect(jsonPath("$.mfaStatus").value("SUCCESS"))
+                .andExpect(jsonPath("$.email").value("cliente@test.com"))
                 .andExpect(cookie().value("accessToken", "access-token"))
                 .andExpect(cookie().value("refreshToken", "refresh-token"));
 
@@ -71,7 +73,7 @@ class UserControllerTest {
     @Test
     void refreshDevuelveNuevoAccessTokenYConfiguraCookies() throws Exception {
         LoginResponseDTO response = new LoginResponseDTO(
-                "new-access-token", "refresh-token", "CLIENTE", "NORMAL");
+                "new-access-token", "refresh-token", "CLIENTE", "NORMAL", "SUCCESS", "cliente@test.com");
         when(userService.refreshToken("refresh-token")).thenReturn(response);
 
         mockMvc.perform(post("/users/refresh").cookie(
@@ -79,6 +81,8 @@ class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("new-access-token"))
                 .andExpect(jsonPath("$.refreshToken").value("refresh-token"))
+                .andExpect(jsonPath("$.mfaStatus").value("SUCCESS"))
+                .andExpect(jsonPath("$.email").value("cliente@test.com"))
                 .andExpect(cookie().value("accessToken", "new-access-token"))
                 .andExpect(cookie().value("refreshToken", "refresh-token"));
 

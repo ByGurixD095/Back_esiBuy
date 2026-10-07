@@ -31,6 +31,10 @@ class UserServiceCrearAdministradorTest {
     @Mock private UsuarioRepository usuarioRepository;
     @Mock private JwtService jwtService;
     @Mock private RefreshTokenRepository refreshTokenRepository;
+    @Mock private PasswordValidatorService passwordValidatorService;
+    @Mock private LoginAttemptService loginAttemptService;
+    @Mock private EmailService emailService;
+    @Mock private AuthFactorService authFactorService;
 
     @InjectMocks private UserService userService;
 

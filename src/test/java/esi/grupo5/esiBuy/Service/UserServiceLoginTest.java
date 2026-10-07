@@ -48,6 +48,9 @@ class UserServiceLoginTest {
     @Mock
     private EmailService emailService;
 
+    @Mock
+    private AuthFactorService authFactorService;
+
     private UserService userService;
 
     @BeforeEach
@@ -58,7 +61,8 @@ class UserServiceLoginTest {
                 refreshTokenRepository,
                 passwordValidatorService,
                 loginAttemptService,
-                emailService);
+                emailService,
+                authFactorService);
         lenient().when(jwtService.generateToken(any(Usuario.class))).thenReturn("access-token");
         lenient().when(jwtService.generateRefreshToken(any(Usuario.class))).thenReturn("refresh-token");
         lenient().when(jwtService.getRefreshTokenExpirationSeconds()).thenReturn(3600);
