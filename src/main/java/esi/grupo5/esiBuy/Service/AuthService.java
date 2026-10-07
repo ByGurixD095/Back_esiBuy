@@ -137,7 +137,7 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token de recuperación expirado");
         }
 
-        passwordValidatorService.passwordIsWeak(request.pwd1(), usuario.getHistorialContrasenas(), encoder);
+        passwordValidatorService.validatePassword(request.pwd1(), usuario.getHistorialContrasenas());
 
         usuario.setContrasena(encoder.encode(request.pwd1()));
         usuario.setFechaCambioContrasena(LocalDateTime.now());

@@ -77,7 +77,10 @@ public class AdminService {
         }
 
         try {
-            passwordValidatorService.passwordIsWeak(dto.contrasena(), new ArrayList<>(), encoder);
+            passwordValidatorService.validatePassword(
+                dto.contrasena(),
+                new ArrayList<>()
+            );
         } catch (ResponseStatusException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña no cumple con los requisitos de seguridad: " + e.getReason());
         }
