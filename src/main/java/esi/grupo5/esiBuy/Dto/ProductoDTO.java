@@ -9,7 +9,8 @@ public record ProductoDTO(
     String categoria, 
     String urlImagen,
     int descuento,
-    int descuentoPremium
+    int descuentoPremium,
+    Boolean activo
 ) {
     
 

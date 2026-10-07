@@ -35,6 +35,7 @@ public class ProductoService {
             dto.descuento(),
             dto.descuentoPremium()
         );
+        producto.setActivo(dto.activo() == null || dto.activo());
 
         return productoRepository.save(producto);
     }
