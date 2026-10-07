@@ -1,9 +1,13 @@
 package esi.grupo5.esiBuy.Model;
 
-import esi.grupo5.esiBuy.Model.enums.Rol;
 import jakarta.validation.constraints.NotBlank;
+
+import org.springframework.data.annotation.TypeAlias;
 import org.springframework.data.mongodb.core.index.Indexed;
 
+import esi.grupo5.esiBuy.Model.enums.Rol;
+
+@TypeAlias("vendedor")
 public class Vendedor extends Usuario {
 
     @NotBlank
