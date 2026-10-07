@@ -36,6 +36,7 @@ import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.RefreshToken;
 import esi.grupo5.esiBuy.Model.Usuario;
 import esi.grupo5.esiBuy.Model.Vendedor;
+import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Model.enums.TipoCliente;
 import esi.grupo5.esiBuy.Repository.RefreshTokenRepository;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
@@ -62,15 +63,18 @@ public class UserService {
     private final PasswordValidatorService passwordValidatorService;
     private final LoginAttemptService loginAttempService;
     private final EmailService emailService;
+    private final AuthFactorService authFactorService;
 
     public UserService(UsuarioRepository usuarioRepository, JwtService jwtService, RefreshTokenRepository refreshTokenRepository,
-                         PasswordValidatorService passwordValidatorService, LoginAttemptService loginAttempService, EmailService emailService) {
+                         PasswordValidatorService passwordValidatorService, LoginAttemptService loginAttempService, EmailService emailService 
+                        , AuthFactorService authFactorService) {
         this.usuarioRepository = usuarioRepository;
         this.jwtService = jwtService;
         this.refreshTokenRepository = refreshTokenRepository;
         this.passwordValidatorService = passwordValidatorService;
         this.loginAttempService = loginAttempService;
         this.emailService = emailService;
+        this.authFactorService = authFactorService;
     }
 
 
@@ -93,7 +97,8 @@ public class UserService {
         }
 
         loginAttempService.registerSuccessfulLogin(ipAddress);
-        return generarTokens(usuario);
+
+        return completarAutenticacion(usuario);
     }
 
     //-------- TOKENS ------------------------------
@@ -120,7 +125,9 @@ public class UserService {
                 token, 
                 refreshTokenString, 
                 usuario.getRol().toString(), 
-                tipoCliente
+                tipoCliente,
+                "SUCCESS",
+                usuario.getEmail()
         );
     }
 
@@ -166,7 +173,9 @@ public class UserService {
                 nuevoAccessToken, 
                 refreshTokenEntity.getToken(), 
                 usuario.getRol().toString(), 
-                tipoCliente
+                tipoCliente,
+                "SUCCESS",
+                usuario.getEmail()
         );
 
     }
@@ -218,7 +227,7 @@ public class UserService {
                 .build();
 
         vendedor.setHistorialContrasenas(new ArrayList<>(List.of(vendedor.getContrasena())));
-        return procesarRegistroUsuario(vendedor);
+        return procesarRegistroUsuario(vendedor, true);
     }
 
 
@@ -304,7 +313,7 @@ public class UserService {
         passwordValidatorService.passwordIsWeak(pwd1, usuario.getHistorialContrasenas(), encoder);
 
         usuario.setContrasena(encoder.encode(pwd1));
-        usuario.setFechaCambioContrasena(LocalDateTime.now());
+        usuario.setFechaCambioContrasena(LocalDateTime.now().plusDays(30));
         usuario.getHistorialContrasenas().add(0, usuario.getContrasena());
         if (usuario.getHistorialContrasenas().size() > 5) {
             usuario.getHistorialContrasenas().remove(5);
@@ -316,6 +325,10 @@ public class UserService {
     }
 
     private LoginResponseDTO procesarRegistroUsuario(Usuario usuario) {
+        return procesarRegistroUsuario(usuario, false);
+    }
+
+    private LoginResponseDTO procesarRegistroUsuario(Usuario usuario, boolean aplicarMfa) {
         boolean existeEmail;
         try {
             existeEmail = usuarioRepository.existsByEmail(usuario.getEmail());
@@ -338,7 +351,14 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno al registrar el usuario");
         }
 
-        return generarTokens(usuarioGuardado);
+        return aplicarMfa ? completarAutenticacion(usuarioGuardado) : generarTokens(usuarioGuardado);
+    }
+
+    private LoginResponseDTO completarAutenticacion(Usuario usuario) {
+        if (!authFactorService.requiereMfaObligatorio(usuario)) {
+            return generarTokens(usuario);
+        }
+        return authFactorService.completarAutenticacion(usuario);
     }
 
     private UserDto toDto(Usuario usuario) {

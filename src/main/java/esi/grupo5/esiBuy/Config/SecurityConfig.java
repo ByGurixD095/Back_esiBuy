@@ -40,7 +40,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/users/administradores").hasRole("ADMINISTRADOR")
                 .requestMatchers(
-                    "/users/**"
+                    "/users/**",
+                    "/mfa/**"
                 ).permitAll().requestMatchers("/error").permitAll()
                 .requestMatchers("/api/admin/usuarios/**").hasRole("ADMINISTRADOR")
                 .anyRequest().authenticated()

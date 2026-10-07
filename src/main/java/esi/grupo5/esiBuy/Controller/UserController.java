@@ -1,8 +1,5 @@
 package esi.grupo5.esiBuy.Controller;
 
-import java.util.List;
-import java.util.Map;
-
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -21,9 +18,6 @@ import esi.grupo5.esiBuy.Dto.PasswordResetRequestDTO;
 import esi.grupo5.esiBuy.Dto.VendedorRegisterRequest;
 import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Service.UserService;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
@@ -53,13 +47,9 @@ public class UserController {
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO dto, HttpServletResponse response, HttpServletRequest request) {
 
         LoginResponseDTO loginResponse = this.userService.login(dto, request.getRemoteAddr());
-        // TODO: IMPLEMENTAR EL 2/3FA SEGUN EL TIPO DE USUARIO (CLIENTE, VENDEDOR, ADMINISTRADOR)
-        if (List.of("ADMINISTRADOR", "VENDEDOR").contains(loginResponse.rol())) {
-            // 3FA OBLIGATORIO PARA ADMINISTRADORES Y VENDEDORES
-        }else {
-            // 2FA SE INCENTIVA y 3FA OPCIONAL PARA CLIENTES
+        if (loginResponse.accessToken() != null) {
+            setTokenCookies(response, loginResponse);
         }
-        setTokenCookies(response, loginResponse);
 
         return ResponseEntity.ok(loginResponse);
     }
@@ -100,7 +90,9 @@ public class UserController {
             HttpServletResponse response) {
 
         LoginResponseDTO loginResponse = userService.registrarVendedor(request);
-        setTokenCookies(response, loginResponse);
+        if (loginResponse.accessToken() != null) {
+            setTokenCookies(response, loginResponse);
+        }
 
         return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
     }
