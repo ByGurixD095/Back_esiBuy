@@ -1,12 +1,9 @@
-package esi.grupo5.esiBuy.Controller;
-
-import java.util.List;
+﻿package esi.grupo5.esiBuy.Controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import esi.grupo5.esiBuy.Dto.ClienteRegistroDTO;
 import esi.grupo5.esiBuy.Dto.LoginRequestDTO;
@@ -15,6 +12,7 @@ import esi.grupo5.esiBuy.Dto.PasswordResetConfirmDTO;
 import esi.grupo5.esiBuy.Dto.PasswordResetRequestDTO;
 import esi.grupo5.esiBuy.Dto.UserSelfUpdateDTO;
 import esi.grupo5.esiBuy.Dto.VendedorRegisterRequest;
+import esi.grupo5.esiBuy.Exception.*;
 import esi.grupo5.esiBuy.Service.AuthService;
 import esi.grupo5.esiBuy.Service.UserService;
 import esi.grupo5.esiBuy.Util.CookieUtil;
@@ -40,23 +38,41 @@ public class UserController {
     // --------- POST ------------ 
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO dto, HttpServletResponse response, HttpServletRequest request) {
-        LoginResponseDTO loginResponse = authService.login(dto, request.getRemoteAddr());
-        
-        if (loginResponse.accessToken() != null) {
-            cookieUtil.setTokenCookies(response, loginResponse);
+        try {
+            LoginResponseDTO loginResponse = authService.login(dto, request.getRemoteAddr());
+            
+            if (loginResponse.accessToken() != null) {
+                cookieUtil.setTokenCookies(response, loginResponse);
+            }
+            return ResponseEntity.ok(loginResponse);
+        } catch (AuthException e) {
+            throw e;
+        } catch (ForbiddenException e) {
+            throw e;
+        } catch (PasswordExpiredException e) {
+            throw e;
+        } catch (BusinessException e) {
+            throw new BusinessException(e.getMessage(), e.getHttpStatusCode(), e.getErrorCode());
         }
-        return ResponseEntity.ok(loginResponse);
     }
 
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponseDTO> refresh(@CookieValue(name = "refreshToken", required = false) String refreshToken, HttpServletResponse response) {
         if (refreshToken == null || refreshToken.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No refresh token provided");
+            throw new ValidationException("No refresh token provided");
         }
 
-        LoginResponseDTO lr = authService.refreshToken(refreshToken);
-        cookieUtil.setTokenCookies(response, lr);
-        return ResponseEntity.ok(lr);
+        try {
+            LoginResponseDTO lr = authService.refreshToken(refreshToken);
+            cookieUtil.setTokenCookies(response, lr);
+            return ResponseEntity.ok(lr);
+        } catch (AuthException e) {
+            throw e;
+        } catch (ExpiredTokenException e) {
+            throw e;
+        } catch (BusinessException e) {
+            throw new BusinessException(e.getMessage(), e.getHttpStatusCode(), e.getErrorCode());
+        }
     }
 
     @PostMapping("/register/clientes")
@@ -64,11 +80,19 @@ public class UserController {
             @Valid @RequestBody ClienteRegistroDTO dto, 
             HttpServletResponse response) {
         
-        LoginResponseDTO loginResponse = userService.registrarCliente(dto);
-        if (loginResponse.accessToken() != null) {
-            cookieUtil.setTokenCookies(response, loginResponse);
+        try {
+            LoginResponseDTO loginResponse = userService.registrarCliente(dto);
+            if (loginResponse.accessToken() != null) {
+                cookieUtil.setTokenCookies(response, loginResponse);
+            }
+            return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
+        } catch (ValidationException e) {
+            throw e;
+        } catch (ConflictException e) {
+            throw e;
+        } catch (BusinessException e) {
+            throw new BusinessException(e.getMessage(), e.getHttpStatusCode(), e.getErrorCode());
         }
-        return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
     }
 
     @PostMapping("/register/vendedor")
@@ -76,11 +100,19 @@ public class UserController {
             @Valid @RequestBody VendedorRegisterRequest request, 
             HttpServletResponse response) {
 
-        LoginResponseDTO loginResponse = userService.registrarVendedor(request);
-        if (loginResponse.accessToken() != null) {
-            cookieUtil.setTokenCookies(response, loginResponse);
+        try {
+            LoginResponseDTO loginResponse = userService.registrarVendedor(request);
+            if (loginResponse.accessToken() != null) {
+                cookieUtil.setTokenCookies(response, loginResponse);
+            }
+            return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
+        } catch (ValidationException e) {
+            throw e;
+        } catch (ConflictException e) {
+            throw e;
+        } catch (BusinessException e) {
+            throw new BusinessException(e.getMessage(), e.getHttpStatusCode(), e.getErrorCode());
         }
-        return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
     }
 
     @PostMapping("/recover-password")
@@ -109,8 +141,16 @@ public class UserController {
         
         String idAutenticado = (String) authentication.getPrincipal(); 
         
-        userService.modificarMiPerfil(idAutenticado, dto);
-        return ResponseEntity.noContent().build();
+        try {
+            userService.modificarMiPerfil(idAutenticado, dto);
+            return ResponseEntity.noContent().build();
+        } catch (NotFoundException e) {
+            throw e;
+        } catch (ConflictException e) {
+            throw e;
+        } catch (BusinessException e) {
+            throw new BusinessException(e.getMessage(), e.getHttpStatusCode(), e.getErrorCode());
+        }
     }
 
 }
