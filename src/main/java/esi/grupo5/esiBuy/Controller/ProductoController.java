@@ -5,6 +5,7 @@ import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Service.ProductoService;
 import jakarta.validation.Valid;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,10 +20,10 @@ public class ProductoController {
     }
 
     // --------- POST ------------ 
-    @PostMapping
+    @PostMapping("/createProduct")
     public ResponseEntity<Producto> crearProducto(
             @Valid @RequestBody ProductoDTO dto) {
 
-        return ResponseEntity.ok(productoService.crearProducto(dto));
+        return ResponseEntity.status(HttpStatus.CREATED).body(productoService.crearProducto(dto));
     }
 }

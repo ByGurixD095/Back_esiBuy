@@ -1,4 +1,4 @@
-﻿package esi.grupo5.esiBuy.Exception;
+package esi.grupo5.esiBuy.Exception;
 
 /**
  * Excepción para cuando una cuenta está bloqueada por demasiados intentos fallidos

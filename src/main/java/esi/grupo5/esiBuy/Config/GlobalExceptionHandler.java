@@ -1,4 +1,4 @@
-﻿package esi.grupo5.esiBuy.Config;
+package esi.grupo5.esiBuy.Config;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;

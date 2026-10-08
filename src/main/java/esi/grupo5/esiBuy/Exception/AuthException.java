@@ -1,4 +1,4 @@
-﻿package esi.grupo5.esiBuy.Exception;
+package esi.grupo5.esiBuy.Exception;
 
 /**
  * Excepción para errores de autenticación (login fallido, credenciales inválidas, etc.)

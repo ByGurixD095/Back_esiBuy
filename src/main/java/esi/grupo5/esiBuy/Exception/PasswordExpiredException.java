@@ -1,4 +1,4 @@
-﻿package esi.grupo5.esiBuy.Exception;
+package esi.grupo5.esiBuy.Exception;
 
 /**
  * Excepción para cuando la contraseña ha caducado y debe cambiarse

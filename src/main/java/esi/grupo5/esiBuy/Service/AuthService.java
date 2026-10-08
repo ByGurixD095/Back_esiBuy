@@ -1,4 +1,4 @@
-﻿package esi.grupo5.esiBuy.Service;
+package esi.grupo5.esiBuy.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
