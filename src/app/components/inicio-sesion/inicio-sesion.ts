@@ -1,7 +1,7 @@
 import { Component, output, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { MarcoPagina } from '../../compartido/marco-pagina/marco-pagina';
+import { MarcoPagina } from '../marco-pagina/marco-pagina';
 
 @Component({
   selector: 'app-inicio-sesion',

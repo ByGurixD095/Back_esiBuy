@@ -3,7 +3,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ResetPasswordService } from '../../services/reset-password-service/reset-password-service';
-import { MarcoPagina } from '../../compartido/marco-pagina/marco-pagina';
+import { MarcoPagina } from '../marco-pagina/marco-pagina';
 
 const PATRON_CONTRASENA = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).+$/;
 

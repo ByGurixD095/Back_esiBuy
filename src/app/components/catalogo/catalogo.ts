@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Producto } from '../models/producto.model';
-import { ProductApiError, ProductService } from '../services/product.service';
+import { Producto } from '../../models/producto.model';
+import { ProductApiError, ProductService } from '../../services/product.service';
 
 type OrdenCatalogo = 'relevancia' | 'precioAsc' | 'precioDesc' | 'descuento';
 

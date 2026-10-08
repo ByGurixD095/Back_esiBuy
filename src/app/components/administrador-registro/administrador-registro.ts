@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MarcoPagina } from '../../compartido/marco-pagina/marco-pagina';
+import { MarcoPagina } from '../marco-pagina/marco-pagina';
 import { Administradores } from '../../services/crear-admin-service/administradores';
 
 // Misma política que AdministradorRegistroDTO del back
