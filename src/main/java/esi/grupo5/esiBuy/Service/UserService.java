@@ -36,8 +36,7 @@ public class UserService {
     private final AuthService authService;
 
     public UserService(UsuarioRepository usuarioRepository, BCryptPasswordEncoder encoder,
-                       PasswordValidatorService passwordValidatorService,
-                       AuthService authService) {
+                       PasswordValidatorService passwordValidatorService, AuthService authService) {
         this.usuarioRepository = usuarioRepository;
         this.encoder = encoder;
         this.passwordValidatorService = passwordValidatorService;

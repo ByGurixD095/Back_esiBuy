@@ -35,6 +35,7 @@ application-local.yaml
 application-secret.properties
 application-secret.yml
 application-secret.yaml
+/src/scriptMongo
 
 # --- Bases de Datos y Mongo DB (Datos locales y volcados) ---
 *.db

@@ -79,6 +79,7 @@ public abstract class Usuario {
     protected Usuario() {
         this.activo = false;
         this.bloqueado = false;
+        this.eliminado = false;
         this.fechaCambioContrasena = LocalDateTime.now().plusDays(30); //Sirve para llevar el conteo de los dias hasta 30(cambio de contraseña obligatorio)
         this.historialContrasenas = new ArrayList<>();
     }
@@ -173,6 +174,4 @@ public abstract class Usuario {
     public void setMfaSetupTokenExpiracion(LocalDateTime mfaSetupTokenExpiracion) {
         this.mfaSetupTokenExpiracion = mfaSetupTokenExpiracion;
     }
-
-    
 }
