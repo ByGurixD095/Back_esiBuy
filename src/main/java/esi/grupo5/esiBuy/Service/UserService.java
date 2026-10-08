@@ -84,6 +84,9 @@ public class UserService {
             loginAttempService.registerFailedLogin(ipAddress);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciales inválidas");
         }
+         if (optionalUsuario.get().isBloqueado()) {
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuario bloqueado");
+    }
         return generarTokens(optionalUsuario.get());
     }
 
