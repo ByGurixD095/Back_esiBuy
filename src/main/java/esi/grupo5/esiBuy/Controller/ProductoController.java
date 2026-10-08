@@ -1,6 +1,7 @@
 package esi.grupo5.esiBuy.Controller;
 
 import esi.grupo5.esiBuy.Dto.ProductoDTO;
+import esi.grupo5.esiBuy.Dto.FiltroCatalogoDTO;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Service.ProductoService;
 
@@ -31,7 +32,7 @@ public class ProductoController {
     }
 
     @GetMapping("/disponibles")
-    public ResponseEntity<List<Producto>> obtenerProductosDisponibles() {
-        return ResponseEntity.ok(productoService.obtenerProductosDisponibles());
+    public ResponseEntity<List<Producto>> obtenerProductosDisponibles(@ModelAttribute FiltroCatalogoDTO filtros) {
+        return ResponseEntity.ok(productoService.obtenerProductosDisponibles(filtros));
     }
 }
