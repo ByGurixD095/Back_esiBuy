@@ -1,110 +1,115 @@
 :host {
-  position: fixed; /* tapa el fondo animado de la portada */
+  position: fixed;
   inset: 0;
   z-index: 20;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  background: var(--esi-bg);
-  color: var(--esi-text);
+  background: var(--esi-paper);
+  color: var(--esi-ink);
   font-family: var(--esi-font-body);
-  font-size: 15px;
-  line-height: 1.45;
 }
 
 .cabecera {
-  background: var(--esi-navy);
-  color: #fff;
-}
-
-.cabecera-interior,
-.pie-interior {
-  width: 100%;
-  max-width: 1232px;
-  margin: 0 auto;
-  box-sizing: border-box;
+  background: var(--esi-header);
+  border-bottom: 1px solid var(--esi-header-line);
 }
 
 .cabecera-interior {
-  padding: 12px 24px;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 12px 20px;
+  justify-content: space-between;
+  gap: 16px;
+  box-sizing: border-box;
+  max-width: 1232px;
+  min-height: 76px;
+  margin: 0 auto;
+  padding: 0 24px;
 }
 
 .logo {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: #fff;
-  text-decoration: none;
-  font-size: 30px;
-  font-weight: 300;
-  letter-spacing: -0.5px;
-}
-
-.logo span {
-  font-weight: 500;
-}
-
-.panel {
-  padding-left: 20px;
-  border-left: 1px solid #4a5d80;
-  font-size: 15px;
-  color: #e6ecf5;
-}
-
-.volver {
-  margin-left: auto;
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  color: #e6ecf5;
+}
+
+.logo img {
+  display: block;
+  width: 112px;
+  height: auto;
+}
+
+.logo:focus-visible,
+.volver:focus-visible,
+.pie a:focus-visible {
+  outline: 3px solid var(--esi-orange);
+  outline-offset: 3px;
+}
+
+.panel {
+  margin-right: auto;
+  padding-left: 16px;
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.volver {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: #e2e8f0;
   font-size: 14px;
   text-decoration: none;
 }
 
 .volver:hover {
-  text-decoration: underline;
-}
-
-.cabecera a:focus-visible,
-.pie a:focus-visible {
-  outline: 2px solid var(--esi-orange);
-  outline-offset: 2px;
+  color: #ff9f43;
 }
 
 .contenido {
-  flex: 1;
+  flex: 1 0 auto;
+  box-sizing: border-box;
   width: 100%;
   max-width: 1232px;
   margin: 0 auto;
   padding: 40px 24px 32px;
-  box-sizing: border-box;
 }
 
 .pie {
-  margin-top: 24px;
-  background: var(--esi-navy);
-  color: var(--esi-footer-text);
+  border-top: 1px solid var(--esi-line);
+  color: var(--esi-soft-ink);
+  font-size: 12px;
 }
 
 .pie-interior {
-  padding: 28px 24px;
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
-  gap: 16px 40px;
-  font-size: 14px;
+  gap: 12px;
+  box-sizing: border-box;
+  max-width: 1232px;
+  margin: 0 auto;
+  padding: 20px 24px;
 }
 
 .pie nav {
   display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
+  gap: 20px;
 }
 
 .pie a {
-  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--esi-soft-ink);
+  text-decoration: none;
+}
+
+.pie a:hover {
+  color: var(--esi-orange-text);
+  text-decoration: underline;
 }
