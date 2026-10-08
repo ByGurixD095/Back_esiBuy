@@ -308,6 +308,39 @@ public class UserService {
     }
 
 
+        //-------- BLOQUEAR/DESBLOQUEAR USUARIOS ---------------------
+    public UserDto bloquearUsuario(String id) {
+        Optional<Usuario> optionalUsuario = usuarioRepository.findById(id);
+
+        if (optionalUsuario.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado");
+        }
+
+        Usuario usuario = optionalUsuario.get();
+        usuario.setBloqueado(true);
+        usuarioRepository.save(usuario);
+
+        return toDto(usuario);
+
+    }
+
+    public UserDto desbloquearUsuario(String id) {
+        Optional<Usuario> optionalUsuario = usuarioRepository.findById(id);
+
+        if (optionalUsuario.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado");
+        }
+
+        Usuario usuario = optionalUsuario.get();
+        usuario.setBloqueado(false);
+        usuarioRepository.save(usuario);
+        return toDto(usuario);
+
+    }
+
+
+
+
         //-------- CREAR ADMINISTRADOR ------------------------------
     public ResponseEntity<AdministradorResponseDTO> crearAdministrador(AdministradorRegistroDTO dto) {
         // Mensaje genérico a propósito: no revelamos si el email ya existe
