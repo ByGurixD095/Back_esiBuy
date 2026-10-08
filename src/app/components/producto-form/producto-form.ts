@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { Producto, ProductoDTO } from '../models/producto.model';
-import { ProductoApiError, ProductoService } from '../services/producto.service';
+import { Producto, ProductoDTO } from '../../models/producto.model';
+import { ProductoApiError, ProductoService } from '../../services/producto.service';
 
 @Component({
   selector: 'app-producto-form',
