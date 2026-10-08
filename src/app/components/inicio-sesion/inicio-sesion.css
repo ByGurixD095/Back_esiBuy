@@ -70,3 +70,15 @@ form {
   font-size: 13px;
   color: var(--esi-muted);
 }
+
+.enlace-recuperacion {
+  align-self: center;
+  color: var(--esi-navy);
+  font-size: 14px;
+  text-decoration: underline;
+}
+
+.enlace-recuperacion:focus-visible {
+  outline: 2px solid var(--esi-orange);
+  outline-offset: 2px;
+}

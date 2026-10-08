@@ -1,8 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Administradores } from '../administradores';
-import { MarcoPagina } from '../compartido/marco-pagina/marco-pagina';
+import { MarcoPagina } from '../../compartido/marco-pagina/marco-pagina';
+import { Administradores } from '../../services/crear-admin-service/administradores';
 
 // Misma política que AdministradorRegistroDTO del back
 const PATRON_CONTRASENA = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).+$/;
