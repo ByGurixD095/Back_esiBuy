@@ -3,6 +3,7 @@ package esi.grupo5.esiBuy.Controller;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import esi.grupo5.esiBuy.Dto.FiltroCatalogoDTO;
 import esi.grupo5.esiBuy.Dto.ProductoDTO;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Service.JwtService;
@@ -222,9 +223,16 @@ class ProductoControllerTest {
                 "Camiseta oficial de algodón", "Ropa", "url_imagen.jpg", 0, 0);
         producto.setId("mongo-id-123");
 
-        when(productoService.obtenerProductosDisponibles()).thenReturn(List.of(producto));
+        when(productoService.obtenerProductosDisponibles(any(FiltroCatalogoDTO.class)))
+            .thenReturn(List.of(producto));
 
-        mockMvc.perform(get("/products/disponibles"))
+        mockMvc.perform(get("/products/disponibles")
+            .param("busqueda", "camiseta")
+            .param("categoria", "Ropa")
+            .param("precioMinCent", "1000")
+            .param("precioMaxCent", "5000")
+            .param("soloOfertas", "true")
+            .param("orden", "Precio Ascendente"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].id").value("mongo-id-123"))
@@ -234,18 +242,19 @@ class ProductoControllerTest {
                 .andExpect(jsonPath("$[0].precioCent").value(1999))
                 .andExpect(jsonPath("$[0].activo").value(true));
 
-        verify(productoService).obtenerProductosDisponibles();
+        verify(productoService).obtenerProductosDisponibles(any(FiltroCatalogoDTO.class));
     }
 
     @Test
     void obtenerDisponibles_sinResultados_devuelveListaVacia() throws Exception {
-        when(productoService.obtenerProductosDisponibles()).thenReturn(List.of());
+        when(productoService.obtenerProductosDisponibles(any(FiltroCatalogoDTO.class)))
+            .thenReturn(List.of());
 
         mockMvc.perform(get("/products/disponibles"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
 
-        verify(productoService).obtenerProductosDisponibles();
+        verify(productoService).obtenerProductosDisponibles(any(FiltroCatalogoDTO.class));
     }
 }
 

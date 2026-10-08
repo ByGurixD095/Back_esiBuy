@@ -3,6 +3,7 @@ package esi.grupo5.esiBuy.Service;
 import java.util.Collections;
 import java.util.List;
 
+import esi.grupo5.esiBuy.Dto.FiltroCatalogoDTO;
 import esi.grupo5.esiBuy.Dto.ProductoDTO;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
@@ -11,12 +12,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -26,6 +32,15 @@ class ProductoServiceTest {
 
     @Mock
     private ProductoRepository productoRepository;
+
+        @Mock
+        private MongoTemplate mongoTemplate;
+
+        @InjectMocks
+        private ProductoService productoService;
+
+        private Producto productoDisponible1;
+        private Producto productoDisponible2;
 
 
     @Test
@@ -214,6 +229,151 @@ class ProductoServiceTest {
         productoDisponible2 = new Producto("Mochila ESI", "ESC-002", 5, 2990, "Mochila ergonómica", "Papelería y Material Escolar", "url2.png", 0, 0);
         productoDisponible2.setId("prod-2");
         productoDisponible2.setActivo(true);
+    }
+
+        @Test
+        @DisplayName("TDD: aplica todos los filtros del catálogo a la consulta MongoDB")
+        void obtenerProductosDisponibles_aplicaFiltrosDelCatalogo() {
+                when(mongoTemplate.find(any(Query.class), eq(Producto.class)))
+                                .thenReturn(List.of(productoDisponible1));
+
+                FiltroCatalogoDTO filtros = new FiltroCatalogoDTO(
+                                "camiseta", "Ropa", 1000, 5000, true, "Precio Ascendente");
+
+                List<Producto> resultado = productoService.obtenerProductosDisponibles(filtros);
+
+                ArgumentCaptor<Query> queryCaptor = forClass(Query.class);
+                verify(mongoTemplate).find(queryCaptor.capture(), eq(Producto.class));
+
+                String query = queryCaptor.getValue().getQueryObject().toJson();
+                assertEquals(List.of(productoDisponible1), resultado);
+                assertTrue(query.contains("activo"));
+                assertTrue(query.contains("numStock"));
+                assertTrue(query.contains("categoria"));
+                assertTrue(query.contains("precioCent"));
+                assertTrue(query.contains("descuento"));
+                assertTrue(query.contains("camiseta"));
+                assertTrue(queryCaptor.getValue().getSortObject().containsKey("precioCent"));
+        }
+
+        @Test
+        @DisplayName("TDD: sin filtros mantiene las reglas de productos activos con stock")
+        void obtenerProductosDisponibles_sinFiltros_aplicaReglasBase() {
+                when(mongoTemplate.find(any(Query.class), eq(Producto.class)))
+                                .thenReturn(Collections.emptyList());
+
+                productoService.obtenerProductosDisponibles(null);
+
+                ArgumentCaptor<Query> queryCaptor = forClass(Query.class);
+                verify(mongoTemplate).find(queryCaptor.capture(), eq(Producto.class));
+
+                String query = queryCaptor.getValue().getQueryObject().toJson();
+                assertTrue(query.contains("activo"));
+                assertTrue(query.contains("numStock"));
+        }
+
+    @Test
+    @DisplayName("TDD: filtra por categoría sin añadir otros criterios opcionales")
+    void obtenerProductosDisponibles_filtraSoloPorCategoria() {
+        when(mongoTemplate.find(any(Query.class), eq(Producto.class)))
+                .thenReturn(Collections.emptyList());
+
+        productoService.obtenerProductosDisponibles(
+                new FiltroCatalogoDTO(null, "Ropa", null, null, false, null));
+
+        ArgumentCaptor<Query> queryCaptor = forClass(Query.class);
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(Producto.class));
+        String query = queryCaptor.getValue().getQueryObject().toJson();
+
+        assertTrue(query.contains("Ropa"));
+        assertFalse(query.contains("descuento"));
+        assertFalse(query.contains("precioCent"));
+    }
+
+    @Test
+    @DisplayName("TDD: ignora la categoría Todas")
+    void obtenerProductosDisponibles_ignoraCategoriaTodas() {
+        when(mongoTemplate.find(any(Query.class), eq(Producto.class)))
+                .thenReturn(Collections.emptyList());
+
+        productoService.obtenerProductosDisponibles(
+                new FiltroCatalogoDTO(null, "Todas", null, null, null, null));
+
+        ArgumentCaptor<Query> queryCaptor = forClass(Query.class);
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(Producto.class));
+        assertFalse(queryCaptor.getValue().getQueryObject().toJson().contains("categoria"));
+    }
+
+    @Test
+    @DisplayName("TDD: aplica únicamente los límites de precio recibidos")
+    void obtenerProductosDisponibles_aplicaRangoDePrecio() {
+        when(mongoTemplate.find(any(Query.class), eq(Producto.class)))
+                .thenReturn(Collections.emptyList());
+
+        productoService.obtenerProductosDisponibles(
+                new FiltroCatalogoDTO(null, null, 1000, null, null, null));
+
+        ArgumentCaptor<Query> queryCaptor = forClass(Query.class);
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(Producto.class));
+        String query = queryCaptor.getValue().getQueryObject().toJson();
+
+        assertTrue(query.contains("precioCent"));
+        assertTrue(query.contains("1000"));
+    }
+
+    @Test
+    @DisplayName("TDD: ordena por precio descendente cuando se solicita")
+    void obtenerProductosDisponibles_ordenaPrecioDescendente() {
+        when(mongoTemplate.find(any(Query.class), eq(Producto.class)))
+                .thenReturn(Collections.emptyList());
+
+        productoService.obtenerProductosDisponibles(
+                new FiltroCatalogoDTO(null, null, null, null, null, "Precio Descendente"));
+
+        ArgumentCaptor<Query> queryCaptor = forClass(Query.class);
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(Producto.class));
+
+        assertEquals(-1, queryCaptor.getValue().getSortObject().get("precioCent"));
+    }
+
+    @Test
+    @DisplayName("TDD: rechaza un precio mínimo mayor que el máximo")
+    void obtenerProductosDisponibles_rechazaRangoInvertido() {
+        FiltroCatalogoDTO filtros = new FiltroCatalogoDTO(
+                null, null, 5000, 1000, null, null);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> productoService.obtenerProductosDisponibles(filtros));
+        verify(mongoTemplate, org.mockito.Mockito.never())
+                .find(any(Query.class), eq(Producto.class));
+    }
+
+    @Test
+    @DisplayName("TDD: rechaza precios negativos")
+    void obtenerProductosDisponibles_rechazaPrecioNegativo() {
+        FiltroCatalogoDTO filtros = new FiltroCatalogoDTO(
+                null, null, -1, null, null, null);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> productoService.obtenerProductosDisponibles(filtros));
+        verify(mongoTemplate, org.mockito.Mockito.never())
+                .find(any(Query.class), eq(Producto.class));
+    }
+
+    @Test
+    @DisplayName("TDD: trata la búsqueda como texto literal")
+    void obtenerProductosDisponibles_escapaCaracteresDeBusqueda() {
+        when(mongoTemplate.find(any(Query.class), eq(Producto.class)))
+                .thenReturn(Collections.emptyList());
+
+        productoService.obtenerProductosDisponibles(
+                new FiltroCatalogoDTO("[camiseta]", null, null, null, null, null));
+
+        ArgumentCaptor<Query> queryCaptor = forClass(Query.class);
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(Producto.class));
+        String query = queryCaptor.getValue().getQueryObject().toJson();
+
+        assertTrue(query.contains("\\Q[camiseta]\\E"));
     }
 
 
