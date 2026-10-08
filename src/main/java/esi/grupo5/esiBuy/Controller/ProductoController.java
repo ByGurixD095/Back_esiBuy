@@ -23,11 +23,11 @@ public class ProductoController {
     }
 
     // --------- POST ------------ 
-    @PostMapping
+    @PostMapping({"", "/createProduct"})
     public ResponseEntity<Producto> crearProducto(
             @Valid @RequestBody ProductoDTO dto) {
 
-        return ResponseEntity.ok(productoService.crearProducto(dto));
+        return ResponseEntity.status(HttpStatus.CREATED).body(productoService.crearProducto(dto));
     }
 
     @GetMapping("/disponibles")

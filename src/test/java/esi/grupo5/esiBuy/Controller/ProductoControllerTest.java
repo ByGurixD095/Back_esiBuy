@@ -42,8 +42,8 @@ class ProductoControllerTest {
     @Test
     void crearProducto_DatosCorrectos_Devuelve201Created() throws Exception {
         ProductoDTO dto = new ProductoDTO(
-            "Camiseta ESI", "REF-092026a", 10, 1999,
-            "Camiseta oficial de algodón", "Ropa", "url_imagen.jpg", 5, 0, null
+            "Camiseta ESI", "REF-092026a", 1999,
+            "Camiseta oficial de algodón", "Ropa", "url_imagen.jpg", 10, 5, 0, null
         );
 
         Producto productoCreado = new Producto();
@@ -67,8 +67,8 @@ class ProductoControllerTest {
         @Test
         void crearProducto_RutaCorta_Devuelve201Created() throws Exception {
         ProductoDTO dto = new ProductoDTO(
-            "Camiseta ESI", "REF-092026a", 10, 1999,
-            "Camiseta oficial de algodón", "Ropa", "url_imagen.jpg", 5, 0, null);
+            "Camiseta ESI", "REF-092026a", 1999,
+            "Camiseta oficial de algodón", "Ropa", "url_imagen.jpg", 10, 5, 0, null);
         Producto productoCreado = new Producto();
         productoCreado.setId("mongo-id-123");
 
@@ -79,6 +79,46 @@ class ProductoControllerTest {
             .content(objectMapper.writeValueAsString(dto)))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.id").value("mongo-id-123"));
+        }
+
+        @Test
+        void crearProducto_CamposObligatoriosInvalidos_Devuelve400BadRequest() throws Exception {
+                String productoInvalido = """
+                        {
+                            "nombre": "",
+                            "referencia": "REF-001",
+                            "precioCent": 1999,
+                            "categoria": "Ropa",
+                            "numStock": 1,
+                            "descuento": 0,
+                            "descuentoPremium": 0
+                        }
+                        """;
+
+                mockMvc.perform(post("/products/createProduct")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(productoInvalido))
+                                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        void crearProducto_DescuentoMayorQue100_Devuelve400BadRequest() throws Exception {
+                String productoInvalido = """
+                        {
+                            "nombre": "Camiseta ESI",
+                            "referencia": "REF-001",
+                            "precioCent": 1999,
+                            "categoria": "Ropa",
+                            "numStock": 1,
+                            "descuento": 101,
+                            "descuentoPremium": 0
+                        }
+                        """;
+
+                mockMvc.perform(post("/products/createProduct")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(productoInvalido))
+                                .andExpect(status().isBadRequest());
         }
 
         @Test

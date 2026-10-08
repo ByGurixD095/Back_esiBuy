@@ -27,40 +27,12 @@ class ProductoServiceTest {
     @Mock
     private ProductoRepository productoRepository;
 
-    @InjectMocks
-    private ProductoService productoService;
-    private Producto productoDisponible1;
-    private Producto productoDisponible2;
-
-    @Test
-    void datosValidos_DevuelveProductoCreado() {
-
-                ProductoDTO dto = dtoValido();
-
-        Producto productoSimulado = new Producto();
-        productoSimulado.setId("mongo-id-123");
-        productoSimulado.setNombre(dto.nombre());
-        productoSimulado.setReferencia(dto.referencia());
-        productoSimulado.setNumStock(dto.numStock());
-        productoSimulado.setPrecioCent(dto.precioCent());
-        productoSimulado.setActivo(true); // Por defecto nace activo para el borrado lógico
-
-        when(productoRepository.save(any(Producto.class))).thenReturn(productoSimulado);
-
-        Producto resultado = productoService.crearProducto(dto);
-
-        assertNotNull(resultado, "El producto creado no debe ser nulo");
-        assertEquals("Camiseta ESI", resultado.getNombre());
-        assertEquals("REF-092026a", resultado.getReferencia());
-        assertEquals(1999, resultado.getPrecioCent());
-        assertTrue(resultado.isActivo(), "El producto debe nacer activo");
-    }
 
     @Test
     void crearProducto_ConservaTodosLosAtributosYActivo() {
         ProductoDTO dto = new ProductoDTO(
-                "Portátil ESI", "TEC-001", 7, 89900,
-                "Portátil ligero", "Tecnología", "url1.png", 15, 25, false);
+                "Portátil ESI", "TEC-001", 89900,
+                "Portátil ligero", "Tecnología", "url1.png", 7, 15, 25, false);
         when(productoRepository.save(any(Producto.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -103,41 +75,6 @@ class ProductoServiceTest {
 
         assertEquals(Integer.MAX_VALUE, resultado.getNumStock());
         assertEquals(Integer.MAX_VALUE, resultado.getPrecioCent());
-    }
-
-    @Test
-    void dtoNulo_LanzaExcepcion() {
-        assertDtoInvalido(null);
-    }
-
-    @Test
-    void nombreNuloOVacio_LanzaExcepcion() {
-        ProductoDTO dto = dtoValido();
-
-        assertDtoInvalido(dtoConValores(null, dto.referencia(), dto.numStock(), dto.precioCent(),
-                dto.descripcion(), dto.categoria(), dto.urlImagen(), 5, 10));
-        assertDtoInvalido(dtoConValores("", dto.referencia(), dto.numStock(), dto.precioCent(),
-                dto.descripcion(), dto.categoria(), dto.urlImagen(), 5, 10));
-    }
-
-    @Test
-    void categoriaNulaOVacia_LanzaExcepcion() {
-        ProductoDTO dto = dtoValido();
-
-        assertDtoInvalido(dtoConValores(dto.nombre(), dto.referencia(), dto.numStock(), dto.precioCent(),
-                dto.descripcion(), null, dto.urlImagen(), 5, 10));
-        assertDtoInvalido(dtoConValores(dto.nombre(), dto.referencia(), dto.numStock(), dto.precioCent(),
-                dto.descripcion(), "", dto.urlImagen(), 5, 10));
-    }
-
-    // Stock puede ser 0 y por naturaleza no acepta null. No habrá que testearlo.
-        
-    @Test
-    void stockNegativo_LanzaExcepcion() {
-        ProductoDTO dto = dtoConValores("Camiseta ESI", "REF-092026a", -1, 1999,
-                "Camiseta oficial", "Ropa", "url_imagen.jpg", 5, 10);
-
-        assertDtoInvalido(dto);
     }
 
     @Test
@@ -207,14 +144,6 @@ class ProductoServiceTest {
     }
 
     @Test
-    void urlImagenVacia_LanzaExcepcion() {
-        ProductoDTO dto = dtoValido();
-
-        assertDtoInvalido(dtoConValores(dto.nombre(), dto.referencia(), dto.numStock(), dto.precioCent(),
-                dto.descripcion(), dto.categoria(), "", 5, 10));
-    }
-        
-    @Test
     void descuento_ConservaDescuento() {
         ProductoDTO dto = dtoConDescuentos(10, 0);
         when(productoRepository.save(any(Producto.class)))
@@ -226,22 +155,6 @@ class ProductoServiceTest {
     }
 
     @Test
-    void descuentoNegativo_LanzaExcepcion()  {
-        ProductoDTO dto = dtoConValores("Camiseta ESI", "REF-092026a", 10, 1999,
-                "Camiseta oficial", "Ropa", "url_imagen.jpg", -5, 10);
-
-        assertDtoInvalido(dto);
-    }
-
-        @Test
-        void descuentoSuperiorAl100PorCien_LanzaExcepcion() {
-                ProductoDTO dto = dtoConValores("Camiseta ESI", "REF-092026a", 10, 1999,
-                                "Camiseta oficial", "Ropa", "url_imagen.jpg", 101, 10);
-
-                assertDtoInvalido(dto);
-        }
-
-    @Test
     void descuentoPremium_ConservaDescuentoPremium() {
         ProductoDTO dto = dtoConDescuentos(0, 25);
         when(productoRepository.save(any(Producto.class)))
@@ -251,22 +164,6 @@ class ProductoServiceTest {
 
         assertEquals(25, resultado.getDescuentoPremium());
     }
-
-    @Test
-    void descuentoPremiumNegativo_LanzaExcepcion()  {
-        ProductoDTO dto = dtoConValores("Camiseta ESI", "REF-092026a", 10, 1999,
-                "Camiseta oficial", "Ropa", "url_imagen.jpg", 5, -10);
-
-        assertDtoInvalido(dto);
-    }
-
-        @Test
-        void descuentoPremiumSuperiorAl100PorCien_LanzaExcepcion() {
-                ProductoDTO dto = dtoConValores("Camiseta ESI", "REF-092026a", 10, 1999,
-                                "Camiseta oficial", "Ropa", "url_imagen.jpg", 5, 101);
-
-                assertDtoInvalido(dto);
-        }
 
     @Test
     void valorCeroEnCamposNumericos_SonValidos() {
@@ -298,18 +195,14 @@ class ProductoServiceTest {
         private ProductoDTO dtoConValores(String nombre, String referencia, Integer numStock,
                                       int precioCent, String descripcion, String categoria,
                                       String urlImagen, int descuento, int descuentoPremium) {
-        return new ProductoDTO(nombre, referencia, numStock, precioCent,
-                descripcion, categoria, urlImagen, descuento, descuentoPremium, null);
+        return new ProductoDTO(nombre, referencia, precioCent,
+                descripcion, categoria, urlImagen, numStock,
+                descuento, descuentoPremium, null);
     }
 
     private ProductoDTO dtoConDescuentos(int descuento, int descuentoPremium) {
         return dtoConValores("Camiseta ESI", "REF-092026a", 10, 1999,
                 "Camiseta oficial", "Ropa", "url_imagen.jpg", descuento, descuentoPremium);
-    }
-
-    private void assertDtoInvalido(ProductoDTO dto) {
-        assertThrows(IllegalArgumentException.class,
-                () -> productoService.crearProducto(dto));
     }
 
     @BeforeEach

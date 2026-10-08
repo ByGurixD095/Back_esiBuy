@@ -18,7 +18,6 @@ public class ProductoService {
     }
 
     public Producto crearProducto(ProductoDTO dto) {
-
         Producto producto = new Producto(
                 dto.nombre(),
                 dto.referencia(),
@@ -34,5 +33,9 @@ public class ProductoService {
         producto.setActivo(dto.activo() == null || dto.activo());
 
         return productoRepository.save(producto);
+    }
+
+    public List<Producto> obtenerProductosDisponibles() {
+        return productoRepository.findByActivoTrueAndNumStockGreaterThan(0);
     }
 }

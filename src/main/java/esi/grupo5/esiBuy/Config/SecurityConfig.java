@@ -81,6 +81,7 @@ public class SecurityConfig {
                 auth.requestMatchers(HttpMethod.PATCH, "/users/*")
                     .hasRole("ADMINISTRADOR");
                 auth.requestMatchers("/api/admin/usuarios/**")
+                    .hasRole("ADMINISTRADOR");
                 // -------------------------------------------------
                 // ADMINISTRADOR
                 // -------------------------------------------------
