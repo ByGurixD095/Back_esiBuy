@@ -39,9 +39,8 @@ class ProductoControllerTest {
     @Test
     void crearProducto_DatosCorrectos_Devuelve201Created() throws Exception {
         ProductoDTO dto = new ProductoDTO(
-            "Camiseta ESI", "REF-092026a", 10, 1999,
-            "Camiseta oficial de algodón", "Ropa", "url_imagen.jpg", 5, 0, null
-        );
+                "Camiseta ESI", "REF-092026a", 1999, "Camiseta oficial de algodón",
+                "Ropa", "url_imagen.jpg", 10, 5, 0, null);
 
         Producto productoCreado = new Producto();
         productoCreado.setId("mongo-id-123");

@@ -2,12 +2,11 @@ package esi.grupo5.esiBuy.Controller;
 
 import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
-import esi.grupo5.esiBuy.Service.JwtService;
+import esi.grupo5.esiBuy.Service.AdminService;
 import esi.grupo5.esiBuy.Service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -25,18 +24,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
-class UserControllerCrearAdministradorTest {
+class AdminControllerCrearAdministradorTest {
 
     @Mock private UserService userService;
-    @Mock private JwtService jwtService;
-
-    @InjectMocks private UserController userController;
+    @Mock private AdminService adminService;
 
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(userController).build();
+        mockMvc = MockMvcBuilders
+                .standaloneSetup(new AdminController(userService, adminService))
+                .build();
     }
 
     private String json(String email, String contrasena) {
@@ -46,13 +45,13 @@ class UserControllerCrearAdministradorTest {
     }
 
     @Test
-    void postAdministradores_datosValidos_devuelve201ConMensajeYSinContrasena() throws Exception {
-        when(userService.crearAdministrador(any(AdministradorRegistroDTO.class)))
+    void postAdmin_datosValidos_devuelve201ConMensajeYSinContrasena() throws Exception {
+        when(adminService.crearAdministrador(any(AdministradorRegistroDTO.class)))
                 .thenReturn(ResponseEntity.status(HttpStatus.CREATED).body(
                         new AdministradorResponseDTO("1", "Ana", "Perez", "ana@esibuy.com",
                                 "Madrid", "ADMINISTRADOR", "Administrador creado correctamente")));
 
-        mockMvc.perform(post("/users/administradores")
+        mockMvc.perform(post("/admin")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json("ana@esibuy.com", "Clave#2026x")))
                 .andExpect(status().isCreated())
@@ -62,22 +61,22 @@ class UserControllerCrearAdministradorTest {
     }
 
     @Test
-    void postAdministradores_emailInvalido_devuelve400YNoLlamaAlServicio() throws Exception {
-        mockMvc.perform(post("/users/administradores")
+    void postAdmin_emailInvalido_devuelve400YNoLlamaAlServicio() throws Exception {
+        mockMvc.perform(post("/admin")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json("esto-no-es-un-email", "Clave#2026x")))
                 .andExpect(status().isBadRequest());
 
-        verify(userService, never()).crearAdministrador(any());
+        verify(adminService, never()).crearAdministrador(any());
     }
 
     @Test
-    void postAdministradores_contrasenaDebil_devuelve400YNoLlamaAlServicio() throws Exception {
-        mockMvc.perform(post("/users/administradores")
+    void postAdmin_contrasenaDebil_devuelve400YNoLlamaAlServicio() throws Exception {
+        mockMvc.perform(post("/admin")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json("ana@esibuy.com", "debil")))
                 .andExpect(status().isBadRequest());
 
-        verify(userService, never()).crearAdministrador(any());
+        verify(adminService, never()).crearAdministrador(any());
     }
 }

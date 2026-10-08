@@ -43,17 +43,18 @@ class UserServiceRefreshTokenTest {
     @Mock
     private EmailService emailService;
 
-    private UserService userService;
+    private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(
+        authService = new AuthService(
                 usuarioRepository,
                 jwtService,
                 refreshTokenRepository,
                 passwordValidatorService,
                 loginAttemptService,
-                emailService);
+                emailService,
+                new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder());
     }
 
     @Test
@@ -64,7 +65,7 @@ class UserServiceRefreshTokenTest {
         when(jwtService.isTokenValid("refresh-token")).thenReturn(true);
         when(jwtService.generateToken(user)).thenReturn("new-access-token");
 
-        LoginResponseDTO response = userService.refreshToken("refresh-token");
+        LoginResponseDTO response = authService.refreshToken("refresh-token");
 
         assertEquals("new-access-token", response.accessToken());
         assertEquals("refresh-token", response.refreshToken());
@@ -79,7 +80,7 @@ class UserServiceRefreshTokenTest {
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> userService.refreshToken("missing"));
+                () -> authService.refreshToken("missing"));
 
         assertEquals(401, exception.getStatusCode().value());
         verify(jwtService, never()).generateToken(any());
@@ -93,7 +94,7 @@ class UserServiceRefreshTokenTest {
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> userService.refreshToken("expired-token"));
+                () -> authService.refreshToken("expired-token"));
 
         assertEquals(401, exception.getStatusCode().value());
         verify(refreshTokenRepository).delete(entity);

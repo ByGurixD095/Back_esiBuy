@@ -3,8 +3,10 @@ package esi.grupo5.esiBuy.Controller;
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
 import esi.grupo5.esiBuy.Dto.PasswordResetConfirmDTO;
 import esi.grupo5.esiBuy.Dto.PasswordResetRequestDTO;
+import esi.grupo5.esiBuy.Service.AuthService;
 import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Service.UserService;
+import esi.grupo5.esiBuy.Util.CookieUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,13 +33,19 @@ class UserControllerTest {
     private UserService userService;
 
     @Mock
+    private AuthService authService;
+
+    @Mock
     private JwtService jwtService;
 
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new UserController(userService, jwtService)).build();
+        CookieUtil cookieUtil = new CookieUtil(jwtService);
+        mockMvc = MockMvcBuilders
+                .standaloneSetup(new UserController(userService, authService, cookieUtil))
+                .build();
         lenient().when(jwtService.getAccessTokenExpirationSeconds()).thenReturn(900);
         lenient().when(jwtService.getRefreshTokenExpirationSeconds()).thenReturn(86_400);
     }
@@ -46,7 +54,7 @@ class UserControllerTest {
     void loginDevuelveRespuestaYConfiguraCookies() throws Exception {
         LoginResponseDTO response = new LoginResponseDTO(
                 "access-token", "refresh-token", "CLIENTE", "NORMAL");
-        when(userService.login(any(), eq("127.0.0.1"))).thenReturn(response);
+        when(authService.login(any(), eq("127.0.0.1"))).thenReturn(response);
 
         mockMvc.perform(post("/users/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -65,14 +73,14 @@ class UserControllerTest {
                 .andExpect(cookie().value("accessToken", "access-token"))
                 .andExpect(cookie().value("refreshToken", "refresh-token"));
 
-        verify(userService).login(any(), eq("127.0.0.1"));
+        verify(authService).login(any(), eq("127.0.0.1"));
     }
 
     @Test
     void refreshDevuelveNuevoAccessTokenYConfiguraCookies() throws Exception {
         LoginResponseDTO response = new LoginResponseDTO(
                 "new-access-token", "refresh-token", "CLIENTE", "NORMAL");
-        when(userService.refreshToken("refresh-token")).thenReturn(response);
+        when(authService.refreshToken("refresh-token")).thenReturn(response);
 
         mockMvc.perform(post("/users/refresh").cookie(
                         new jakarta.servlet.http.Cookie("refreshToken", "refresh-token")))
@@ -82,7 +90,7 @@ class UserControllerTest {
                 .andExpect(cookie().value("accessToken", "new-access-token"))
                 .andExpect(cookie().value("refreshToken", "refresh-token"));
 
-        verify(userService).refreshToken("refresh-token");
+        verify(authService).refreshToken("refresh-token");
     }
 
     @Test
@@ -92,7 +100,7 @@ class UserControllerTest {
                         .content("{\"email\":\"cliente@test.com\"}"))
                 .andExpect(status().isOk());
 
-        verify(userService).requestPasswordReset(any(PasswordResetRequestDTO.class));
+        verify(authService).requestPasswordReset(any(PasswordResetRequestDTO.class));
     }
 
     @Test
@@ -104,6 +112,6 @@ class UserControllerTest {
                                 """))
                 .andExpect(status().isOk());
 
-        verify(userService).resetPassword(any(PasswordResetConfirmDTO.class));
+        verify(authService).resetPassword(any(PasswordResetConfirmDTO.class));
     }
 }

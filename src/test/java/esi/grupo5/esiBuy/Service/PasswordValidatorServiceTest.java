@@ -18,21 +18,21 @@ class PasswordValidatorServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PasswordValidatorService();
         encoder = new BCryptPasswordEncoder();
+        service = new PasswordValidatorService(encoder);
     }
 
     @Test
     void aceptaUnaContrasenaValida() {
         assertDoesNotThrow(() ->
-                service.passwordIsWeak("Segura2026!", List.of(), encoder));
+                service.validatePassword("Segura2026!", List.of()));
     }
 
     @Test
     void rechazaContrasenaDemasiadoCorta() {
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> service.passwordIsWeak("corta", null, encoder));
+                () -> service.validatePassword("corta", null));
 
         assertEquals(400, exception.getStatusCode().value());
     }
@@ -41,7 +41,7 @@ class PasswordValidatorServiceTest {
     void rechazaContrasenaIncluidaEnLaListaNegra() {
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> service.passwordIsWeak("PASSWORD", null, encoder));
+                () -> service.validatePassword("PASSWORD", null));
 
         assertEquals(400, exception.getStatusCode().value());
     }
@@ -52,7 +52,7 @@ class PasswordValidatorServiceTest {
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> service.passwordIsWeak("Segura2026!", List.of(oldHash), encoder));
+                () -> service.validatePassword("Segura2026!", List.of(oldHash)));
 
         assertEquals(400, exception.getStatusCode().value());
     }

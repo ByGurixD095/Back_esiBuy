@@ -56,17 +56,18 @@ class UserServicePasswordRecoveryTest {
     @Mock
     private EmailService emailService;
 
-    private UserService userService;
+    private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(
+        authService = new AuthService(
                 usuarioRepository,
                 jwtService,
                 refreshTokenRepository,
                 passwordValidatorService,
                 loginAttemptService,
-                emailService);
+                emailService,
+                new BCryptPasswordEncoder());
     }
 
     @Test
@@ -74,7 +75,7 @@ class UserServicePasswordRecoveryTest {
         Cliente usuario = cliente();
         when(usuarioRepository.findByEmail(usuario.getEmail())).thenReturn(Optional.of(usuario));
 
-        userService.requestPasswordReset(new PasswordResetRequestDTO(usuario.getEmail()));
+        authService.requestPasswordReset(new PasswordResetRequestDTO(usuario.getEmail()));
 
         verify(usuarioRepository).save(usuario);
         ArgumentCaptor<String> linkCaptor = ArgumentCaptor.forClass(String.class);
@@ -93,7 +94,7 @@ class UserServicePasswordRecoveryTest {
     void solicitarRecuperacionParaEmailDesconocidoNoRevelaNiEnviaEmail() throws Exception {
         when(usuarioRepository.findByEmail("desconocido@test.com")).thenReturn(Optional.empty());
 
-        userService.requestPasswordReset(new PasswordResetRequestDTO("desconocido@test.com"));
+        authService.requestPasswordReset(new PasswordResetRequestDTO("desconocido@test.com"));
 
         verify(usuarioRepository, never()).save(any(Usuario.class));
         verify(emailService, never()).sendRecoveryEmail(any(), any(), any());
@@ -107,9 +108,10 @@ class UserServicePasswordRecoveryTest {
         usuario.setFechaExpiracionTokenRecuperacion(LocalDateTime.now().plusMinutes(5));
         usuario.setHistorialContrasenas(new ArrayList<>());
         when(usuarioRepository.findByTokenRecuperacionContrasena(hash(token))).thenReturn(Optional.of(usuario));
-        doNothing().when(passwordValidatorService).passwordIsWeak(any(), eq(usuario.getHistorialContrasenas()), any());
+        doNothing().when(passwordValidatorService)
+                .validatePassword(any(), eq(usuario.getHistorialContrasenas()));
 
-        userService.resetPassword(new PasswordResetConfirmDTO(token, "NuevaClave1!", "NuevaClave1!"));
+        authService.resetPassword(new PasswordResetConfirmDTO(token, "NuevaClave1!", "NuevaClave1!"));
 
         assertTrue(new BCryptPasswordEncoder().matches("NuevaClave1!", usuario.getContrasena()));
         assertEquals(1, usuario.getHistorialContrasenas().size());
@@ -123,7 +125,7 @@ class UserServicePasswordRecoveryTest {
     void rechazaRestablecimientoConContrasenasDiferentesSinConsultarToken() {
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> userService.resetPassword(
+                () -> authService.resetPassword(
                         new PasswordResetConfirmDTO("token", "NuevaClave1!", "OtraClave1!")));
 
         assertEquals(400, exception.getStatusCode().value());
@@ -139,7 +141,7 @@ class UserServicePasswordRecoveryTest {
 
         ResponseStatusException exception = assertThrows(
                 ResponseStatusException.class,
-                () -> userService.resetPassword(
+                () -> authService.resetPassword(
                         new PasswordResetConfirmDTO(token, "NuevaClave1!", "NuevaClave1!")));
 
         assertEquals(400, exception.getStatusCode().value());

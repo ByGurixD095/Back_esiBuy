@@ -48,17 +48,18 @@ class UserServiceLoginTest {
     @Mock
     private EmailService emailService;
 
-    private UserService userService;
+    private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(
+        authService = new AuthService(
                 usuarioRepository,
                 jwtService,
                 refreshTokenRepository,
                 passwordValidatorService,
                 loginAttemptService,
-                emailService);
+                emailService,
+                new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder());
         lenient().when(jwtService.generateToken(any(Usuario.class))).thenReturn("access-token");
         lenient().when(jwtService.generateRefreshToken(any(Usuario.class))).thenReturn("refresh-token");
         lenient().when(jwtService.getRefreshTokenExpirationSeconds()).thenReturn(3600);
@@ -178,7 +179,7 @@ class UserServiceLoginTest {
     }
 
     private LoginResponseDTO login(LoginRequestDTO request) {
-        return userService.login(request, "127.0.0.1");
+        return authService.login(request, "127.0.0.1");
     }
 
     private Cliente cliente(TipoCliente tipoCliente) {
