@@ -3,9 +3,11 @@ package esi.grupo5.esiBuy.Service;
 import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,11 +17,11 @@ import org.springframework.web.server.ResponseStatusException;
 import esi.grupo5.esiBuy.Dto.ClienteRegistroDTO;
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
 import esi.grupo5.esiBuy.Dto.UserDto;
+import esi.grupo5.esiBuy.Dto.UserSelfUpdateDTO;
 import esi.grupo5.esiBuy.Dto.VendedorRegisterRequest;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.Usuario;
 import esi.grupo5.esiBuy.Model.Vendedor;
-import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Model.enums.TipoCliente;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 
@@ -41,6 +43,7 @@ public class UserService {
         this.authService = authService;
     }
 
+    // REGISTER
     @Transactional
     public LoginResponseDTO registrarCliente(@Valid ClienteRegistroDTO dto) {
         try {
@@ -95,6 +98,57 @@ public class UserService {
         return procesarRegistroUsuario(vendedor);
     }
 
+    // GETTER
+    public List<UserDto> getAllUsers() {
+        List<Usuario> usuarios = usuarioRepository.findAllByEliminadoFalse();
+
+        List<UserDto> usuariosDto = new ArrayList<>();
+
+        for (Usuario usuario : usuarios) {
+            usuariosDto.add(toDto(usuario));
+        }
+
+        return usuariosDto;
+    }
+
+
+
+    public UserDto getUserById(String id) {
+    return usuarioRepository.findByIdAndEliminadoFalse(id)
+            .map(this::toDto)
+            .orElseThrow(() -> new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    "Usuario no encontrado"));
+    }
+
+    // UPDATE PROFILE
+    @Transactional
+    public void modificarMiPerfil(String id, UserSelfUpdateDTO dto) {
+        Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+
+        actualizarSiValido(dto.nombre(), usuario::setNombre);
+        actualizarSiValido(dto.apellidos(), usuario::setApellidos);
+        actualizarSiValido(dto.telefono(), usuario::setTelefono);
+        actualizarSiValido(dto.imagenPerfil(), usuario::setImagenPerfil);
+
+        if (usuario instanceof Cliente cliente && dto.tipoCliente() != null) {
+            cliente.setTipoCliente(dto.tipoCliente());
+        } else if (usuario instanceof Vendedor vendedor) {
+            actualizarSiValido(dto.categoriaPrincipalId(), vendedor::setCategoriaPrincipalId);
+            actualizarSiValido(dto.nombreComercial(), vendedor::setNombreComercial);
+        }
+
+        try {
+            usuarioRepository.save(usuario);
+        } catch (DuplicateKeyException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "El campo único nombre comercial ya existe");
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno al actualizar el perfil");
+        }
+    }
+
+    // AUXILIAR METHODS
     private LoginResponseDTO procesarRegistroUsuario(Usuario usuario) {
         try {
             if (usuarioRepository.existsByEmail(usuario.getEmail())) {
@@ -117,35 +171,19 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno al registrar el usuario");
         }
 
-        return authService.generarTokens(usuarioGuardado);
+        return authService.completarAutenticacion(usuarioGuardado);
     }
-
-    public List<UserDto> getAllUsers() {
-        List<Usuario> usuarios = usuarioRepository.findAllByEliminadoFalse();
-
-        List<UserDto> usuariosDto = new ArrayList<>();
-
-        for (Usuario usuario : usuarios) {
-            usuariosDto.add(toDto(usuario));
-        }
-
-        return usuariosDto;
-    }
-
-
-
-    public UserDto getUserById(String id) {
-    return usuarioRepository.findByIdAndEliminadoFalse(id)
-            .map(this::toDto)
-            .orElseThrow(() -> new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Usuario no encontrado"));
-}
 
     private UserDto toDto(Usuario usuario) {
         return new UserDto(
             usuario.getId(), usuario.getNombre(), usuario.getApellidos(),
             usuario.getEmail(), usuario.getRol(), usuario.isActivo(), usuario.isBloqueado()
         );
+    }
+    
+    private void actualizarSiValido(String valor, Consumer<String> setter) {
+        if (valor != null && !valor.isBlank()) {
+            setter.accept(valor);
+        }
     }
 }

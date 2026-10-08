@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceLoginNuevoAdministradorTest {
@@ -40,6 +41,8 @@ class AuthServiceLoginNuevoAdministradorTest {
     private LoginAttemptService loginAttemptService;
     @Mock
     private EmailService emailService;
+    @Mock
+    private AuthFactorService authFactorService;
 
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
     private AuthService authService;
@@ -51,7 +54,7 @@ class AuthServiceLoginNuevoAdministradorTest {
     void crearAdministradorYDejarloGuardado() {
         AdminService adminService = new AdminService(usuarioRepository, encoder, passwordValidatorService, List.of());
         authService = new AuthService(usuarioRepository, jwtService, refreshTokenRepository,
-                passwordValidatorService, loginAttemptService, emailService, encoder);
+                passwordValidatorService, loginAttemptService, emailService, encoder, authFactorService);
 
         when(usuarioRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
         when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -68,14 +71,16 @@ class AuthServiceLoginNuevoAdministradorTest {
 
     @Test
     void nuevoAdministrador_puedeIniciarSesionConSusCredenciales() {
-        when(jwtService.generateToken(any(Usuario.class))).thenReturn("access-token");
-        when(jwtService.generateRefreshToken(any(Usuario.class))).thenReturn("refresh-token");
+        when(authFactorService.requiereMfaObligatorio(any(Usuario.class))).thenReturn(true);
+        when(authFactorService.createSetupChallenge(any(Usuario.class))).thenReturn("setup-token");
 
         LoginResponseDTO respuesta = authService.login(new LoginRequestDTO(EMAIL, CONTRASENA), "127.0.0.1");
 
         assertEquals("ADMINISTRADOR", respuesta.rol());
-        assertEquals("access-token", respuesta.accessToken());
-        assertEquals("refresh-token", respuesta.refreshToken());
+        assertEquals("REQUIRES_MFA_SETUP", respuesta.mfaStatus());
+        assertEquals("setup-token", respuesta.mfaSetupToken());
+        assertNull(respuesta.accessToken());
+        verify(jwtService, never()).generateToken(any(Usuario.class));
     }
 
     @Test
