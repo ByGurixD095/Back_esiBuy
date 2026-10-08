@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -30,29 +31,20 @@ class UserServiceConsultarUsuariosTest {
     private UsuarioRepository usuarioRepository;
 
     @Mock
-    private JwtService jwtService;
-
-    @Mock
-    private RefreshTokenRepository refreshTokenRepository;
+    private BCryptPasswordEncoder encoder;
 
     @Mock
     private PasswordValidatorService passwordValidatorService;
 
     @Mock
-    private LoginAttemptService loginAttemptService;
+    private AuthService authService;
 
     private UserService crearServicio() {
-        return new UserService(
-                usuarioRepository,
-                jwtService,
-                refreshTokenRepository,
-                passwordValidatorService,
-                loginAttemptService
-        );
+        return new UserService(usuarioRepository, encoder, passwordValidatorService, authService);
     }
 
     @Test
-    void getAllUsers_devuelveUsuariosComoDto() {
+    void getAllUsers_devuelveLosUsuariosNoEliminadosComoDto() {
         Cliente cliente = new Cliente();
         cliente.setId("cliente-1");
         cliente.setNombre("Ana");
@@ -70,7 +62,7 @@ class UserServiceConsultarUsuariosTest {
         vendedor.setActivo(false);
         vendedor.setBloqueado(true);
 
-        when(usuarioRepository.findAll()).thenReturn(List.of(cliente, vendedor));
+        when(usuarioRepository.findAllByEliminadoFalse()).thenReturn(List.of(cliente, vendedor));
 
         List<UserDto> usuarios = crearServicio().getAllUsers();
 
@@ -87,19 +79,19 @@ class UserServiceConsultarUsuariosTest {
         assertFalse(usuarios.get(1).isActivo());
         assertTrue(usuarios.get(1).isBloqueado());
 
-        verify(usuarioRepository).findAll();
+        verify(usuarioRepository).findAllByEliminadoFalse();
     }
 
     @Test
     void getAllUsers_sinUsuarios_devuelveListaVacia() {
-        when(usuarioRepository.findAll()).thenReturn(List.of());
+        when(usuarioRepository.findAllByEliminadoFalse()).thenReturn(List.of());
 
         assertEquals(List.of(), crearServicio().getAllUsers());
-        verify(usuarioRepository).findAll();
+        verify(usuarioRepository).findAllByEliminadoFalse();
     }
 
     @Test
-    void getUserById_usuarioExistente_devuelveDto() {
+    void getUserById_usuarioExistente_devuelveDtoSinContrasena() {
         Cliente cliente = new Cliente();
         cliente.setId("cliente-1");
         cliente.setNombre("Ana");
@@ -108,7 +100,8 @@ class UserServiceConsultarUsuariosTest {
         cliente.setContrasena("hash-secreto");
         cliente.setActivo(true);
         cliente.setBloqueado(true);
-        when(usuarioRepository.findById("cliente-1")).thenReturn(Optional.of(cliente));
+        when(usuarioRepository.findByIdAndEliminadoFalse("cliente-1"))
+                .thenReturn(Optional.of(cliente));
 
         UserDto usuario = crearServicio().getUserById("cliente-1");
 
@@ -119,12 +112,13 @@ class UserServiceConsultarUsuariosTest {
         assertEquals(Rol.CLIENTE, usuario.getRol());
         assertTrue(usuario.isActivo());
         assertTrue(usuario.isBloqueado());
-        verify(usuarioRepository).findById("cliente-1");
+        verify(usuarioRepository).findByIdAndEliminadoFalse("cliente-1");
     }
 
     @Test
-    void getUserById_usuarioInexistente_lanza404() {
-        when(usuarioRepository.findById("no-existe")).thenReturn(Optional.empty());
+    void getUserById_usuarioInexistenteOLoEliminado_lanza404() {
+        when(usuarioRepository.findByIdAndEliminadoFalse("no-existe"))
+                .thenReturn(Optional.empty());
         UserService service = crearServicio();
 
         ResponseStatusException error = assertThrows(
@@ -134,6 +128,6 @@ class UserServiceConsultarUsuariosTest {
 
         assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
         assertEquals("Usuario no encontrado", error.getReason());
-        verify(usuarioRepository).findById("no-existe");
+        verify(usuarioRepository).findByIdAndEliminadoFalse("no-existe");
     }
 }

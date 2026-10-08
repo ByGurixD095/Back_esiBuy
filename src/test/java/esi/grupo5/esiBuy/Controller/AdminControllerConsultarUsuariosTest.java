@@ -2,6 +2,7 @@ package esi.grupo5.esiBuy.Controller;
 
 import esi.grupo5.esiBuy.Dto.UserDto;
 import esi.grupo5.esiBuy.Model.enums.Rol;
+import esi.grupo5.esiBuy.Service.AdminService;
 import esi.grupo5.esiBuy.Service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,12 +26,15 @@ class AdminControllerConsultarUsuariosTest {
     @Mock
     private UserService userService;
 
+    @Mock
+    private AdminService adminService;
+
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new AdminUserController(userService))
+                .standaloneSetup(new AdminController(userService, adminService))
                 .build();
     }
 
@@ -41,7 +45,7 @@ class AdminControllerConsultarUsuariosTest {
                 new UserDto("id-2", "Luis", "Díaz", "luis@test.com", Rol.VENDEDOR, false, true)
         ));
 
-        mockMvc.perform(get("/api/admin/usuarios"))
+        mockMvc.perform(get("/admin/users"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].id").value("id-1"))
@@ -62,7 +66,7 @@ class AdminControllerConsultarUsuariosTest {
                 new UserDto("id-1", "Ana", "Pérez", "ana@test.com", Rol.ADMINISTRADOR, true, false)
         );
 
-        mockMvc.perform(get("/api/admin/usuarios/id-1"))
+        mockMvc.perform(get("/admin/id-1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("id-1"))
                 .andExpect(jsonPath("$.name").value("Ana"))
