@@ -9,5 +9,8 @@ public record MfaSetupConfirmDTO(
         String email,
 
         @NotBlank(message = "Debes introducir el código de tu aplicación") 
-        String code
+        String code,
+
+        @NotBlank(message = "El token de configuración MFA es obligatorio")
+        String setupToken
 ) {}

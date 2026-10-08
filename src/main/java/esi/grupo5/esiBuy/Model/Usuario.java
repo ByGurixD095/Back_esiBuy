@@ -48,6 +48,7 @@ public abstract class Usuario {
 
     private boolean activo;
     private boolean bloqueado;
+    private boolean eliminado;
 
     @CreatedDate
     private LocalDateTime fechaAlta;
@@ -71,6 +72,8 @@ public abstract class Usuario {
 
     private String emailOtpHash;
     private LocalDateTime emailOtpExpiracion;
+    private String mfaSetupTokenHash;
+    private LocalDateTime mfaSetupTokenExpiracion;
 
 
     protected Usuario() {
@@ -121,6 +124,9 @@ public abstract class Usuario {
     public boolean isBloqueado() { return bloqueado; }
     public void setBloqueado(boolean bloqueado) { this.bloqueado = bloqueado; }
 
+    public boolean isEliminado() { return eliminado; }
+    public void setEliminado(boolean eliminado) { this.eliminado = eliminado; }
+
     public LocalDateTime getFechaAlta() { return fechaAlta; }
     public void setFechaAlta(LocalDateTime fechaAlta) { this.fechaAlta = fechaAlta; }
 
@@ -159,6 +165,14 @@ public abstract class Usuario {
 
     public LocalDateTime getEmailOtpExpiracion() { return emailOtpExpiracion; }
     public void setEmailOtpExpiracion(LocalDateTime emailOtpExpiracion) { this.emailOtpExpiracion = emailOtpExpiracion; }
+
+    public String getMfaSetupTokenHash() { return mfaSetupTokenHash; }
+    public void setMfaSetupTokenHash(String mfaSetupTokenHash) { this.mfaSetupTokenHash = mfaSetupTokenHash; }
+
+    public LocalDateTime getMfaSetupTokenExpiracion() { return mfaSetupTokenExpiracion; }
+    public void setMfaSetupTokenExpiracion(LocalDateTime mfaSetupTokenExpiracion) {
+        this.mfaSetupTokenExpiracion = mfaSetupTokenExpiracion;
+    }
 
     
 }

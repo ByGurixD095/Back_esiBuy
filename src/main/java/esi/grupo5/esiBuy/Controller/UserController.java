@@ -1,75 +1,59 @@
 package esi.grupo5.esiBuy.Controller;
 
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
 import esi.grupo5.esiBuy.Dto.ClienteRegistroDTO;
 import esi.grupo5.esiBuy.Dto.LoginRequestDTO;
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
 import esi.grupo5.esiBuy.Dto.PasswordResetConfirmDTO;
 import esi.grupo5.esiBuy.Dto.PasswordResetRequestDTO;
+import esi.grupo5.esiBuy.Dto.UserSelfUpdateDTO;
 import esi.grupo5.esiBuy.Dto.VendedorRegisterRequest;
-import esi.grupo5.esiBuy.Service.JwtService;
+import esi.grupo5.esiBuy.Service.AuthService;
 import esi.grupo5.esiBuy.Service.UserService;
-
-import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
-import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
+import esi.grupo5.esiBuy.Util.CookieUtil;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/users")
 public class UserController {
 
-    private static final String STRICT = "Strict";
-
-    private UserService userService;
-
-    private JwtService jwtService;
+    private final UserService userService;
+    private final AuthService authService;
+    private final CookieUtil cookieUtil;
     
-    public UserController(UserService userService, JwtService jwtService) {
+    public UserController(UserService userService, AuthService authService, CookieUtil cookieUtil) {
         this.userService = userService;
-        this.jwtService = jwtService;
+        this.authService = authService;
+        this.cookieUtil = cookieUtil;
     }
 
-    // --------- GET ------------ 
-
-    //Se eliminan todos los métodos que aún no se implementar para evitar confusiones
 
     // --------- POST ------------ 
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO dto, HttpServletResponse response, HttpServletRequest request) {
-
-        LoginResponseDTO loginResponse = this.userService.login(dto, request.getRemoteAddr());
+        LoginResponseDTO loginResponse = authService.login(dto, request.getRemoteAddr());
+        
         if (loginResponse.accessToken() != null) {
-            setTokenCookies(response, loginResponse);
+            cookieUtil.setTokenCookies(response, loginResponse);
         }
-
         return ResponseEntity.ok(loginResponse);
     }
 
-    @PostMapping("/administradores")
-    public ResponseEntity<AdministradorResponseDTO> crearAdministrador(
-            @Valid @RequestBody AdministradorRegistroDTO dto) {
-        return userService.crearAdministrador(dto);
-    }
-
-
     @PostMapping("/refresh")
-    public ResponseEntity<LoginResponseDTO> refresh(@CookieValue(name = "refreshToken") String refreshToken, HttpServletResponse response) {
+    public ResponseEntity<LoginResponseDTO> refresh(@CookieValue(name = "refreshToken", required = false) String refreshToken, HttpServletResponse response) {
         if (refreshToken == null || refreshToken.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No refresh token provided");
         }
 
-        LoginResponseDTO lr = this.userService.refreshToken(refreshToken);
-
-        setTokenCookies(response, lr);
+        LoginResponseDTO lr = authService.refreshToken(refreshToken);
+        cookieUtil.setTokenCookies(response, lr);
         return ResponseEntity.ok(lr);
     }
 
@@ -79,8 +63,9 @@ public class UserController {
             HttpServletResponse response) {
         
         LoginResponseDTO loginResponse = userService.registrarCliente(dto);
-        setTokenCookies(response, loginResponse);
-        
+        if (loginResponse.accessToken() != null) {
+            cookieUtil.setTokenCookies(response, loginResponse);
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
     }
 
@@ -91,70 +76,39 @@ public class UserController {
 
         LoginResponseDTO loginResponse = userService.registrarVendedor(request);
         if (loginResponse.accessToken() != null) {
-            setTokenCookies(response, loginResponse);
+            cookieUtil.setTokenCookies(response, loginResponse);
         }
-
         return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
     }
 
     @PostMapping("/recover-password")
     public ResponseEntity<Void> requestPasswordReset(@Valid @RequestBody PasswordResetRequestDTO request) {
-
-        this.userService.requestPasswordReset(request);
+        authService.requestPasswordReset(request);
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping ("/reset-password")
+    @PostMapping("/reset-password")
     public ResponseEntity<Void> resetPassword(@Valid @RequestBody PasswordResetConfirmDTO request) {
-        this.userService.resetPassword(request);
+        authService.resetPassword(request);
         return ResponseEntity.ok().build();
     }
 
-    // --------- DELETE ------------ 
-
-
-    // --------- PRIVATE METHODS ------------ 
-    private void setTokenCookies(HttpServletResponse response, LoginResponseDTO lr) {
-        ResponseCookie accessCookie = ResponseCookie.from("accessToken", lr.accessToken())
-                .httpOnly(true)
-                .path("/")
-                .maxAge(jwtService.getAccessTokenExpirationSeconds())
-                .sameSite(STRICT)
-                .secure(false) // TODO: PONER A TRUE EN PRODUCCIÓN (HTTPS)
-                .build();
-
-        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", lr.refreshToken())
-                .httpOnly(true)
-                .path("/")
-                .maxAge(jwtService.getRefreshTokenExpirationSeconds())
-                .sameSite(STRICT)
-                .secure(false) // PONER A TRUE EN PRODUCCIÓN (HTTPS)
-                .build();
-
-        response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
-        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(HttpServletResponse response) {
+        cookieUtil.clearTokenCookies(response);
+        return ResponseEntity.ok().build();
     }
 
-    //TODO:  ESTO LUEGO LO USAMOS PARA EL LOGOUT/CERRAR SESIÓN
-    private void clearTokenCookies(HttpServletResponse response) {
-        ResponseCookie accessCookie = ResponseCookie.from("accessToken", "")
-                .httpOnly(true)
-                .path("/")
-                .maxAge(0)          // Fuerza el borrado inmediato
-                .sameSite(STRICT)
-                .secure(false)       // TODO: PONER A TRUE EN PRODUCCIÓN (HTTPS)
-                .build();
-
-        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", "")
-                .httpOnly(true)
-                .path("/")
-                .maxAge(0)          // Fuerza el borrado inmediato
-                .sameSite(STRICT)
-                .secure(false)       // TODO: PONER A TRUE EN PRODUCCIÓN (HTTPS)
-                .build();
-
-        response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
-        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+    // --------- PATCH ------------ 
+    @PatchMapping("/me/update")
+    public ResponseEntity<Void> modificarMiPerfil(
+            @Valid @RequestBody UserSelfUpdateDTO dto,
+            Authentication authentication) {
+        
+        String idAutenticado = (String) authentication.getPrincipal(); 
+        
+        userService.modificarMiPerfil(idAutenticado, dto);
+        return ResponseEntity.noContent().build();
     }
-    
-}    
+
+}

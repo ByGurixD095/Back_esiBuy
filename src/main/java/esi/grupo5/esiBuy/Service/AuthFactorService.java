@@ -6,17 +6,13 @@ import dev.samstevens.totp.qr.QrData;
 import dev.samstevens.totp.qr.ZxingPngQrGenerator;
 import dev.samstevens.totp.secret.DefaultSecretGenerator;
 import dev.samstevens.totp.time.SystemTimeProvider;
-import esi.grupo5.esiBuy.Model.Usuario;
-import esi.grupo5.esiBuy.Model.enums.Rol;
-import esi.grupo5.esiBuy.Model.Cliente;
-import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
 import esi.grupo5.esiBuy.Dto.MfaBackupCodesDTO;
 import esi.grupo5.esiBuy.Dto.MfaConfigRequestDTO;
 import esi.grupo5.esiBuy.Dto.MfaSetupConfirmDTO;
 import esi.grupo5.esiBuy.Dto.MfaSetupResponseDTO;
 import esi.grupo5.esiBuy.Dto.MfaVerifyRequestDTO;
-import esi.grupo5.esiBuy.Model.RefreshToken;
-import esi.grupo5.esiBuy.Repository.RefreshTokenRepository;
+import esi.grupo5.esiBuy.Model.Usuario;
+import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,115 +24,119 @@ import org.springframework.web.server.ResponseStatusException;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.SecureRandom;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
+import java.util.HexFormat;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Service
 public class AuthFactorService {
 
-    @Value("${mfa.encryption.key:1234567890123456}") // Definir en application.properties (16 bytes)
+    @Value("${mfa.encryption.key:1234567890123456}") 
     private String encryptionKey;
 
-    private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+    private final BCryptPasswordEncoder encoder;
     private final EmailService emailService;
     private final UsuarioRepository usuarioRepository;
-    private final JwtService jwtService;
-    private final RefreshTokenRepository refreshTokenRepository;
 
-    public AuthFactorService(EmailService emailService, UsuarioRepository usuarioRepository,
-            JwtService jwtService, RefreshTokenRepository refreshTokenRepository) {
+    public AuthFactorService(EmailService emailService, BCryptPasswordEncoder encoder,
+                             UsuarioRepository usuarioRepository) {
         this.emailService = emailService;
+        this.encoder = encoder;
         this.usuarioRepository = usuarioRepository;
-        this.jwtService = jwtService;
-        this.refreshTokenRepository = refreshTokenRepository;
     }
 
-    // --- POLÍTICA POR ROL ---
     public boolean requiereMfaObligatorio(Usuario usuario) {
-        // Admin y Vendedor (Creador): 3FA obligatoria. Cliente: Opcional
         if (usuario.getRol() == Rol.ADMINISTRADOR || usuario.getRol() == Rol.VENDEDOR) {
             return true;
         }
         return usuario.is2faActivoCliente();
     }
 
-    public LoginResponseDTO completarAutenticacion(Usuario usuario) {
-        if (!requiereMfaObligatorio(usuario)) {
-            return generarTokens(usuario);
+    public String createSetupChallenge(Usuario usuario) {
+            String rawToken = UUID.randomUUID().toString();
+            usuario.setMfaSetupTokenHash(hash(rawToken));
+            usuario.setMfaSetupTokenExpiracion(LocalDateTime.now().plusMinutes(10));
+            usuarioRepository.save(usuario);
+            return rawToken;
         }
 
-        String tipoCliente = (usuario instanceof Cliente cliente) ? cliente.getTipoCliente().toString() : null;
-        if (!usuario.isMfaConfigurado()) {
-            return new LoginResponseDTO(null, null, usuario.getRol().toString(), tipoCliente,
-                    "REQUIRES_MFA_SETUP", usuario.getEmail());
+    public Usuario requireSetupAccess(String email, String setupToken) {
+            Usuario usuario = usuarioRepository.findByEmail(email)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+            if (setupToken == null || usuario.getMfaSetupTokenHash() == null
+                    || usuario.getMfaSetupTokenExpiracion() == null
+                    || usuario.getMfaSetupTokenExpiracion().isBefore(LocalDateTime.now())
+                    || !MessageDigest.isEqual(usuario.getMfaSetupTokenHash().getBytes(StandardCharsets.UTF_8),
+                                              hash(setupToken).getBytes(StandardCharsets.UTF_8))) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token de configuración MFA inválido o expirado");
+            }
+            return usuario;
         }
 
-        if (usuario.getRol() == Rol.ADMINISTRADOR || usuario.getRol() == Rol.VENDEDOR
-                || usuario.is3faActivoCliente()) {
+    public MfaSetupResponseDTO initializeSetup(String email, String setupToken) {
+            Usuario usuario = requireSetupAccess(email, setupToken);
+            String secret = generarNuevoSecretoTotp();
+            usuario.setTotpSecretCifrado(cifrar(secret));
+            usuarioRepository.save(usuario);
+            return new MfaSetupResponseDTO(generarQrUri(secret, email), secret);
+        }
+
+    public MfaBackupCodesDTO confirmSetup(MfaSetupConfirmDTO dto) {
+            Usuario usuario = requireSetupAccess(dto.email(), dto.setupToken());
+            if (!verificarCodigoTotp(usuario, dto.code())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El código TOTP es incorrecto.");
+            }
+            usuario.setMfaConfigurado(true);
+            usuario.setMfaSetupTokenHash(null);
+            usuario.setMfaSetupTokenExpiracion(null);
+            List<String> backupCodes = generarCodigosRespaldo(usuario);
+            usuarioRepository.save(usuario);
+            return new MfaBackupCodesDTO(backupCodes,
+                    "MFA configurado con éxito. Guarda estos códigos en un lugar seguro.");
+        }
+
+    public void configureMfa(String userId, boolean enable2fa, boolean enable3fa) {
+            Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(userId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+            usuario.setIs2faActivoCliente(enable2fa);
+            usuario.setIs3faActivoCliente(enable3fa);
+            usuarioRepository.save(usuario);
+        }
+
+    public void prepareVerification(Usuario usuario) {
             generarYEnviarEmailOtp(usuario);
             usuarioRepository.save(usuario);
         }
 
-        return new LoginResponseDTO(null, null, usuario.getRol().toString(), tipoCliente,
-                "REQUIRES_MFA_VERIFICATION", usuario.getEmail());
-    }
-
-    public LoginResponseDTO verifyMFA(MfaVerifyRequestDTO dto) {
+    public Usuario verifyFactors(MfaVerifyRequestDTO dto) {
             Usuario usuario = usuarioRepository.findByEmail(dto.email())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
-
-            boolean isTotpValid = verificarCodigoTotp(usuario, dto.totpCode())
+            boolean totpValid = verificarCodigoTotp(usuario, dto.totpCode())
                     || verificarCodigoRespaldo(usuario, dto.totpCode());
-            if (!isTotpValid) {
+            if (!totpValid) {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Código TOTP inválido");
             }
-
             if (usuario.getRol() == Rol.ADMINISTRADOR || usuario.getRol() == Rol.VENDEDOR
                     || usuario.is3faActivoCliente()) {
                 if (!verificarEmailOtp(usuario, dto.emailOtpCode())) {
-                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Código de Email inválido o expirado");
+                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                            "Código de Email inválido o expirado");
                 }
                 usuario.setEmailOtpHash(null);
                 usuario.setEmailOtpExpiracion(null);
                 usuarioRepository.save(usuario);
             }
-
-            return generarTokens(usuario);
+            return usuario;
         }
+    
 
-        public MfaSetupResponseDTO initMfaSetup(String email) {
-            Usuario usuario = buscarUsuario(email);
-            String secretoPlano = generarNuevoSecretoTotp();
-            usuario.setTotpSecretCifrado(cifrar(secretoPlano));
-            usuarioRepository.save(usuario);
-            return new MfaSetupResponseDTO(generarQrUri(secretoPlano, email), secretoPlano);
-        }
-
-        public MfaBackupCodesDTO confirmMfaSetup(MfaSetupConfirmDTO dto) {
-            Usuario usuario = buscarUsuario(dto.email());
-            if (!verificarCodigoTotp(usuario, dto.code())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "El código TOTP es incorrecto. Vuelve a intentarlo.");
-            }
-
-            usuario.setMfaConfigurado(true);
-            List<String> codigosRespaldo = generarCodigosRespaldo(usuario);
-            usuarioRepository.save(usuario);
-            return new MfaBackupCodesDTO(codigosRespaldo,
-                    "MFA configurado con éxito. Guarda estos códigos en un lugar seguro.");
-        }
-
-        public void configureMfa(MfaConfigRequestDTO dto) {
-            Usuario usuario = buscarUsuario(dto.email());
-            usuario.setIs2faActivoCliente(dto.enable2fa());
-            usuario.setIs3faActivoCliente(dto.enable3fa());
-            usuarioRepository.save(usuario);
-        }
-
-        // --- FACTOR 2: TOTP ---
     public String generarNuevoSecretoTotp() {
         return new DefaultSecretGenerator().generate();
     }
@@ -151,16 +151,18 @@ public class AuthFactorService {
     }
 
     public boolean verificarCodigoTotp(Usuario usuario, String codigoUsuario) {
+        if (usuario.getTotpSecretCifrado() == null) return false;
         String secretoPlano = descifrar(usuario.getTotpSecretCifrado());
-        // DefaultCodeVerifier ya incluye la ventana de tolerancia de ±1 paso (Req. 2.1)
         DefaultCodeVerifier verifier = new DefaultCodeVerifier(new DefaultCodeGenerator(), new SystemTimeProvider());
         return verifier.isValidCode(secretoPlano, codigoUsuario);
     }
 
     public boolean verificarCodigoRespaldo(Usuario usuario, String codigoUsuario) {
-        for (String hash : usuario.getCodigosRespaldoHasheados()) {
+        Iterator<String> hashes = usuario.getCodigosRespaldoHasheados().iterator();
+        while (hashes.hasNext()) {
+            String hash = hashes.next();
             if (encoder.matches(codigoUsuario, hash)) {
-                usuario.getCodigosRespaldoHasheados().remove(hash); // Son de un solo uso
+                hashes.remove();
                 return true;
             }
         }
@@ -176,11 +178,8 @@ public class AuthFactorService {
         return codigosPlanos;
     }
 
-    // --- FACTOR 3: EMAIL OTP ---
     public void generarYEnviarEmailOtp(Usuario usuario) {
         String otp = String.format("%06d", new SecureRandom().nextInt(999999));
-        
-        // Hash y validez de 10 min (Req. 3.1)
         usuario.setEmailOtpHash(encoder.encode(otp));
         usuario.setEmailOtpExpiracion(LocalDateTime.now().plusMinutes(10));
         
@@ -197,28 +196,6 @@ public class AuthFactorService {
         return encoder.matches(codigoUsuario, usuario.getEmailOtpHash());
     }
 
-    private Usuario buscarUsuario(String email) {
-        return usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
-    }
-
-    private LoginResponseDTO generarTokens(Usuario usuario) {
-        String accessToken = jwtService.generateToken(usuario);
-        String refreshTokenString = jwtService.generateRefreshToken(usuario);
-
-        RefreshToken refreshToken = new RefreshToken();
-        refreshToken.setToken(refreshTokenString);
-        refreshToken.setUsuario(usuario);
-        refreshToken.setFechaExpiracion(LocalDateTime.now()
-                .plusSeconds(jwtService.getRefreshTokenExpirationSeconds()));
-        refreshTokenRepository.save(refreshToken);
-
-        String tipoCliente = (usuario instanceof Cliente cliente) ? cliente.getTipoCliente().toString() : null;
-        return new LoginResponseDTO(accessToken, refreshTokenString, usuario.getRol().toString(),
-                tipoCliente, "SUCCESS", usuario.getEmail());
-    }
-
-    // --- UTILIDADES DE CIFRADO ---
     public String cifrar(String textoPlano) {
         try {
             Cipher cipher = Cipher.getInstance("AES");
@@ -233,5 +210,15 @@ public class AuthFactorService {
             cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(encryptionKey.getBytes(), "AES"));
             return new String(cipher.doFinal(Base64.getDecoder().decode(textoCifrado)));
         } catch (Exception e) { throw new RuntimeException("Error descifrando", e); }
+    }
+
+    private String hash(String value) {
+        try {
+            return HexFormat.of().formatHex(
+                    MessageDigest.getInstance("SHA-256")
+                            .digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception exception) {
+            throw new IllegalStateException("No se pudo generar el hash del desafío MFA", exception);
+        }
     }
 }

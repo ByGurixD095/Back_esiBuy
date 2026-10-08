@@ -1,88 +1,61 @@
 package esi.grupo5.esiBuy.Controller;
 
 import java.util.Map;
-
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
-
-import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
-import esi.grupo5.esiBuy.Dto.MfaBackupCodesDTO;
-import esi.grupo5.esiBuy.Dto.MfaConfigRequestDTO;
-import esi.grupo5.esiBuy.Dto.MfaSetupConfirmDTO;
-import esi.grupo5.esiBuy.Dto.MfaSetupResponseDTO;
-import esi.grupo5.esiBuy.Dto.MfaVerifyRequestDTO;
-import esi.grupo5.esiBuy.Service.AuthFactorService;
-import esi.grupo5.esiBuy.Service.JwtService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.core.Authentication;
 import jakarta.validation.Valid;
+
+import esi.grupo5.esiBuy.Dto.*;
+import esi.grupo5.esiBuy.Service.AuthFactorService;
+import esi.grupo5.esiBuy.Service.AuthService;
+import esi.grupo5.esiBuy.Util.CookieUtil;
 
 @RestController
 @RequestMapping("/mfa")
 public class AuthFactorController {
 
-    private static final String STRICT = "Strict";
-
+    private final AuthService authService;
     private final AuthFactorService authFactorService;
-    private final JwtService jwtService;
+    private final CookieUtil cookieUtil;
 
-    public AuthFactorController(AuthFactorService authFactorService, JwtService jwtService) {
+    public AuthFactorController(AuthService authService, AuthFactorService authFactorService, CookieUtil cookieUtil) {
+        this.authService = authService;
         this.authFactorService = authFactorService;
-        this.jwtService = jwtService;
+        this.cookieUtil = cookieUtil;
     }
 
     @PostMapping("/verify-mfa")
-    public ResponseEntity<LoginResponseDTO> verifyMFA(
-            @Valid @RequestBody MfaVerifyRequestDTO dto, HttpServletResponse response) {
-        LoginResponseDTO loginResponse = authFactorService.verifyMFA(dto);
-        setTokenCookies(response, loginResponse);
+    public ResponseEntity<LoginResponseDTO> verifyMFA(@Valid @RequestBody MfaVerifyRequestDTO dto, HttpServletResponse response) {
+        LoginResponseDTO loginResponse = authService.verifyMFA(dto);
+        if (loginResponse.accessToken() != null) {
+            cookieUtil.setTokenCookies(response, loginResponse); // Usamos la utilidad centralizada
+        }
         return ResponseEntity.ok(loginResponse);
     }
 
     @PostMapping("/setup-init")
     public ResponseEntity<MfaSetupResponseDTO> initMfaSetup(@RequestBody Map<String, String> request) {
         String email = request.get("email");
+        String setupToken = request.get("setupToken");
         if (email == null || email.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email es requerido");
         }
-        return ResponseEntity.ok(authFactorService.initMfaSetup(email));
+        return ResponseEntity.ok(authFactorService.initializeSetup(email, setupToken));
     }
 
     @PostMapping("/setup-confirm")
-    public ResponseEntity<MfaBackupCodesDTO> confirmMfaSetup(
-            @Valid @RequestBody MfaSetupConfirmDTO dto) {
-        return ResponseEntity.ok(authFactorService.confirmMfaSetup(dto));
+    public ResponseEntity<MfaBackupCodesDTO> confirmMfaSetup(@Valid @RequestBody MfaSetupConfirmDTO dto) {
+        return ResponseEntity.ok(authFactorService.confirmSetup(dto));
     }
 
     @PostMapping("/config")
-    public ResponseEntity<Void> configureMfa(@Valid @RequestBody MfaConfigRequestDTO dto) {
-        authFactorService.configureMfa(dto);
+    public ResponseEntity<Void> configureMfa(@Valid @RequestBody MfaConfigRequestDTO dto,
+                                             Authentication authentication) {
+        authFactorService.configureMfa((String) authentication.getPrincipal(), dto.enable2fa(), dto.enable3fa());
         return ResponseEntity.ok().build();
-    }
-
-    private void setTokenCookies(HttpServletResponse response, LoginResponseDTO loginResponse) {
-        ResponseCookie accessCookie = ResponseCookie.from("accessToken", loginResponse.accessToken())
-                .httpOnly(true)
-                .path("/")
-                .maxAge(jwtService.getAccessTokenExpirationSeconds())
-                .sameSite(STRICT)
-                .secure(false)
-                .build();
-        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", loginResponse.refreshToken())
-                .httpOnly(true)
-                .path("/")
-                .maxAge(jwtService.getRefreshTokenExpirationSeconds())
-                .sameSite(STRICT)
-                .secure(false)
-                .build();
-
-        response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
-        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
     }
 }
