@@ -51,6 +51,9 @@ public class SecurityConfig {
                     "/users/reset-password"
                 ).permitAll();
 
+                // El catalogo es publico; no necesita una cookie JWT para consultarse.
+                auth.requestMatchers(HttpMethod.GET, "/products/disponibles").permitAll();
+
                 // Las operaciones de administracion requieren un JWT de administrador.
                 auth.requestMatchers(HttpMethod.POST, "/users/administradores")
                     .hasRole("ADMINISTRADOR");
