@@ -26,4 +26,15 @@ public class AdminUserController {
     public ResponseEntity<UserDto> getUserById(@PathVariable String id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
+
+    @PatchMapping("/{id}/bloquear")
+    public ResponseEntity<UserDto> bloquearUsuario(@PathVariable String id) {
+        return ResponseEntity.ok(userService.bloquearUsuario(id));
+    }
+
+    @PatchMapping("/{id}/desbloquear")
+    public ResponseEntity<UserDto> desbloquearUsuario(@PathVariable String id) {
+        return ResponseEntity.ok(userService.desbloquearUsuario(id));
+    }
+
 }
