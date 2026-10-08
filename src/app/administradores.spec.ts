@@ -28,7 +28,7 @@ describe('Administradores', () => {
   it('envía un POST a /users/administradores con los datos y las cookies', () => {
     servicio.crear(datos).subscribe();
 
-    const peticion = http.expectOne('http://localhost:8080/users/administradores');
+    const peticion = http.expectOne('http://localhost:8080/admin');
     expect(peticion.request.method).toBe('POST');
     expect(peticion.request.body).toEqual(datos);
     expect(peticion.request.withCredentials).toBe(true);
