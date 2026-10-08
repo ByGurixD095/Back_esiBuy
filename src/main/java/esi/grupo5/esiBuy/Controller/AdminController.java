@@ -52,6 +52,16 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
+    @PatchMapping("/{id}/bloquear")
+    public ResponseEntity<UserDto> bloquearUsuario(@PathVariable String id) {
+        return ResponseEntity.ok(adminService.bloquearUsuario(id));
+    }
+
+    @PatchMapping("/{id}/desbloquear")
+    public ResponseEntity<UserDto> desbloquearUsuario(@PathVariable String id) {
+        return ResponseEntity.ok(adminService.desbloquearUsuario(id));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable String id, @AuthenticationPrincipal String usuarioActualId) {
         adminService.eliminarUsuario(id, usuarioActualId);
