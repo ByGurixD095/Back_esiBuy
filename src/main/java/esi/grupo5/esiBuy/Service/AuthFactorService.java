@@ -195,9 +195,9 @@ public class AuthFactorService {
         return encoder.matches(codigoUsuario, usuario.getEmailOtpHash());
     }
 
-    public String cifrar(String textoPlano) {
+public String cifrar(String textoPlano) {
         try {
-            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            Cipher cipher = Cipher.getInstance("AES");
             cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(encryptionKey.getBytes(), "AES"));
             return Base64.getEncoder().encodeToString(cipher.doFinal(textoPlano.getBytes()));
         } catch (Exception e) { throw new BusinessException("Error cifrando", 500, "INTERNAL_ERROR", e); }
@@ -205,7 +205,7 @@ public class AuthFactorService {
 
     private String descifrar(String textoCifrado) {
         try {
-            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            Cipher cipher = Cipher.getInstance("AES");
             cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(encryptionKey.getBytes(), "AES"));
             return new String(cipher.doFinal(Base64.getDecoder().decode(textoCifrado)));
         } catch (Exception e) { throw new BusinessException("Error descifrando", 500, "INTERNAL_ERROR", e); }
