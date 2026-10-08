@@ -29,7 +29,7 @@ export class Administradores {
   private readonly http = inject(HttpClient);
 
   crear(datos: NuevoAdministrador): Observable<AdministradorCreado> {
-    return this.http.post<AdministradorCreado>(`${API_URL}/users/administradores`, datos, {
+    return this.http.post<AdministradorCreado>(`${API_URL}/admin`, datos, {
       withCredentials: true,
     });
   }
