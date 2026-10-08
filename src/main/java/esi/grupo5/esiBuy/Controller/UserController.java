@@ -42,14 +42,9 @@ public class UserController {
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO dto, HttpServletResponse response, HttpServletRequest request) {
         LoginResponseDTO loginResponse = authService.login(dto, request.getRemoteAddr());
         
-        // TODO: IMPLEMENTAR EL 2/3FA SEGUN EL TIPO DE USUARIO (CLIENTE, VENDEDOR, ADMINISTRADOR)
-        if (List.of("ADMINISTRADOR", "VENDEDOR").contains(loginResponse.rol())) {
-            // 3FA OBLIGATORIO PARA ADMINISTRADORES Y VENDEDORES
-        } else {
-            // 2FA SE INCENTIVA y 3FA OPCIONAL PARA CLIENTES
+        if (loginResponse.accessToken() != null) {
+            cookieUtil.setTokenCookies(response, loginResponse);
         }
-        
-        cookieUtil.setTokenCookies(response, loginResponse);
         return ResponseEntity.ok(loginResponse);
     }
 
@@ -70,7 +65,9 @@ public class UserController {
             HttpServletResponse response) {
         
         LoginResponseDTO loginResponse = userService.registrarCliente(dto);
-        cookieUtil.setTokenCookies(response, loginResponse);
+        if (loginResponse.accessToken() != null) {
+            cookieUtil.setTokenCookies(response, loginResponse);
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
     }
 
@@ -80,7 +77,9 @@ public class UserController {
             HttpServletResponse response) {
 
         LoginResponseDTO loginResponse = userService.registrarVendedor(request);
-        cookieUtil.setTokenCookies(response, loginResponse);
+        if (loginResponse.accessToken() != null) {
+            cookieUtil.setTokenCookies(response, loginResponse);
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
     }
 

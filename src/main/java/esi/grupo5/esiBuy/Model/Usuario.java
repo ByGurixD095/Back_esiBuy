@@ -63,6 +63,19 @@ public abstract class Usuario {
     private LocalDateTime fechaCambioContrasena = LocalDateTime.now().plusDays(30);
     private List<String> historialContrasenas = new ArrayList<>();
 
+    private boolean mfaConfigurado = false;
+    private boolean is2faActivoCliente = false;
+    private boolean is3faActivoCliente = false;
+
+    private String totpSecretCifrado;
+    private List<String> codigosRespaldoHasheados = new ArrayList<>();
+
+    private String emailOtpHash;
+    private LocalDateTime emailOtpExpiracion;
+    private String mfaSetupTokenHash;
+    private LocalDateTime mfaSetupTokenExpiracion;
+
+
     protected Usuario() {
         this.activo = false;
         this.bloqueado = false;
@@ -112,6 +125,9 @@ public abstract class Usuario {
     public boolean isBloqueado() { return bloqueado; }
     public void setBloqueado(boolean bloqueado) { this.bloqueado = bloqueado; }
 
+    public boolean isEliminado() { return eliminado; }
+    public void setEliminado(boolean eliminado) { this.eliminado = eliminado; }
+
     public LocalDateTime getFechaAlta() { return fechaAlta; }
     public void setFechaAlta(LocalDateTime fechaAlta) { this.fechaAlta = fechaAlta; }
 
@@ -130,6 +146,32 @@ public abstract class Usuario {
     public List<String> getHistorialContrasenas() { return historialContrasenas; }
     public void setHistorialContrasenas(List<String> historialContrasenas) { this.historialContrasenas = historialContrasenas; }
 
-    public boolean isEliminado() { return eliminado; }
-    public void setEliminado(boolean eliminado) { this.eliminado = eliminado; }
+    public boolean isMfaConfigurado() { return mfaConfigurado; }
+    public void setMfaConfigurado(boolean mfaConfigurado) { this.mfaConfigurado = mfaConfigurado; }
+
+    public boolean is2faActivoCliente() { return is2faActivoCliente; }
+    public void setIs2faActivoCliente(boolean is2faActivoCliente) { this.is2faActivoCliente = is2faActivoCliente; }
+
+    public boolean is3faActivoCliente() { return is3faActivoCliente; }
+    public void setIs3faActivoCliente(boolean is3faActivoCliente) {this.is3faActivoCliente = is3faActivoCliente; }
+
+    public String getTotpSecretCifrado() { return totpSecretCifrado; }
+    public void setTotpSecretCifrado(String totpSecretCifrado) { this.totpSecretCifrado = totpSecretCifrado; }
+
+    public List<String> getCodigosRespaldoHasheados() { return codigosRespaldoHasheados; }
+    public void setCodigosRespaldoHasheados(List<String> codigosRespaldoHasheados) { this.codigosRespaldoHasheados = codigosRespaldoHasheados; }
+
+    public String getEmailOtpHash() { return emailOtpHash; }
+    public void setEmailOtpHash(String emailOtpHash) { this.emailOtpHash = emailOtpHash; }
+
+    public LocalDateTime getEmailOtpExpiracion() { return emailOtpExpiracion; }
+    public void setEmailOtpExpiracion(LocalDateTime emailOtpExpiracion) { this.emailOtpExpiracion = emailOtpExpiracion; }
+
+    public String getMfaSetupTokenHash() { return mfaSetupTokenHash; }
+    public void setMfaSetupTokenHash(String mfaSetupTokenHash) { this.mfaSetupTokenHash = mfaSetupTokenHash; }
+
+    public LocalDateTime getMfaSetupTokenExpiracion() { return mfaSetupTokenExpiracion; }
+    public void setMfaSetupTokenExpiracion(LocalDateTime mfaSetupTokenExpiracion) {
+        this.mfaSetupTokenExpiracion = mfaSetupTokenExpiracion;
+    }
 }

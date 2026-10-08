@@ -171,7 +171,7 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno al registrar el usuario");
         }
 
-        return authService.generarTokens(usuarioGuardado);
+        return authService.completarAutenticacion(usuarioGuardado);
     }
 
     private UserDto toDto(Usuario usuario) {

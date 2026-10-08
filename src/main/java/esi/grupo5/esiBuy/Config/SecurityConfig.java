@@ -69,8 +69,13 @@ public class SecurityConfig {
                     "/users/refresh",
                     "/users/register/**",
                     "/users/recover-password",
-                    "/users/reset-password"
+                    "/users/reset-password",
+                    "/mfa/verify-mfa",
+                    "/mfa/setup-init",
+                    "/mfa/setup-confirm"
                 ).permitAll();
+
+                auth.requestMatchers("/mfa/config").authenticated();
 
                 // -------------------------------------------------
                 // ADMINISTRADOR
