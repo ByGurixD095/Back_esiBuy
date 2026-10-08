@@ -53,7 +53,7 @@ public class AuthFactorController {
     }
 
     @PostMapping("/config")
-    public ResponseEntity<Void> configureMfa(@Valid @RequestBody MfaConfigRequestDTO dto,
+    public ResponseEntity<Void> configureMfa(@RequestBody MfaConfigRequestDTO dto,
                                              Authentication authentication) {
         authFactorService.configureMfa((String) authentication.getPrincipal(), dto.enable2fa(), dto.enable3fa());
         return ResponseEntity.ok().build();
