@@ -1,0 +1,6 @@
+projectKey=2026-g05-frontend
+serverUrl=http://seralu4.esi.uclm.es:1521
+serverVersion=10.6.0.92116
+dashboardUrl=http://seralu4.esi.uclm.es:1521/dashboard?id=2026-g05-frontend
+ceTaskId=3eb203d5-ea77-4c96-91ad-f3c60b6c1f50
+ceTaskUrl=http://seralu4.esi.uclm.es:1521/api/ce/task?id=3eb203d5-ea77-4c96-91ad-f3c60b6c1f50

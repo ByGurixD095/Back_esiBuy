@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { InicioSesion } from './inicio-sesion';
 
 describe('InicioSesion', () => {
@@ -12,6 +13,7 @@ describe('InicioSesion', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [InicioSesion],
+      providers: [provideRouter([])],
     }).compileComponents();
 
     fixture = TestBed.createComponent(InicioSesion);
@@ -69,5 +71,18 @@ describe('InicioSesion', () => {
     component.enviar();
 
     expect(emitidas).toEqual([]);
+  });
+
+  it('el botón Mostrar/Ocultar alterna la visibilidad de la contraseña', async () => {
+    const campo = el.querySelector('input[formControlName="contrasena"]') as HTMLInputElement;
+    const alternar = el.querySelector('button[type="button"]') as HTMLButtonElement;
+
+    alternar.click();
+    await fixture.whenStable();
+    expect(campo.type).toBe('text');
+
+    alternar.click();
+    await fixture.whenStable();
+    expect(campo.type).toBe('password');
   });
 });

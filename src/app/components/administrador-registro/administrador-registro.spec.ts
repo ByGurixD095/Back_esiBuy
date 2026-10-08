@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
+import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { AdministradorRegistro } from './administrador-registro';
@@ -33,7 +34,7 @@ describe('AdministradorRegistro', () => {
     servicioFalso.crear.mockReset();
     await TestBed.configureTestingModule({
       imports: [AdministradorRegistro],
-      providers: [{ provide: Administradores, useValue: servicioFalso }],
+      providers: [provideRouter([]), { provide: Administradores, useValue: servicioFalso }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(AdministradorRegistro);

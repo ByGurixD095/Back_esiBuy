@@ -1,0 +1,96 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
+import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { TestBed } from '@angular/core/testing';
+import { ProductApiError, ProductService } from './product.service';
+import { Producto } from '../models/producto.model';
+
+describe('ProductService', () => {
+  let service: ProductService;
+  let httpTesting: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        ProductService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
+    });
+
+    service = TestBed.inject(ProductService);
+    httpTesting = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    httpTesting.verify();
+  });
+
+  it('consulta el catálogo real con credenciales y devuelve solo productos disponibles', () => {
+    const respuesta: Producto[] = [
+      {
+        id: 'disponible-1',
+        nombre: 'Camiseta ESI',
+        referencia: 'REF-001',
+        numStock: 3,
+        precioCent: 1999,
+        descripcion: 'Camiseta oficial',
+        categoria: 'Ropa',
+        urlImagen: null,
+        descuento: 10,
+        descuentoPremium: 5,
+        activo: true,
+      },
+      {
+        id: 'agotado-1',
+        nombre: 'Mochila ESI',
+        referencia: 'REF-002',
+        numStock: 0,
+        precioCent: 2990,
+        descripcion: null,
+        categoria: 'Papelería',
+        urlImagen: null,
+        descuento: 0,
+        descuentoPremium: 0,
+        activo: true,
+      },
+      {
+        id: 'inactivo-1',
+        nombre: 'Producto retirado',
+        referencia: 'REF-003',
+        numStock: 4,
+        precioCent: 1000,
+        descripcion: null,
+        categoria: 'Otros',
+        urlImagen: null,
+        descuento: 0,
+        descuentoPremium: 0,
+        activo: false,
+      },
+    ];
+
+    let resultado: Producto[] | undefined;
+    service.obtenerDisponibles().subscribe((productos) => (resultado = productos));
+
+    const request = httpTesting.expectOne('http://localhost:8080/products/disponibles');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.withCredentials).toBe(true);
+    request.flush(respuesta);
+
+    expect(resultado).toEqual([respuesta[0]]);
+  });
+
+  it('propaga un 403 como ProductApiError sin sustituirlo por datos falsos', () => {
+    let errorRecibido: ProductApiError | undefined;
+    service.obtenerDisponibles().subscribe({
+      error: (error: ProductApiError) => (errorRecibido = error),
+    });
+
+    const request = httpTesting.expectOne('http://localhost:8080/products/disponibles');
+    request.flush(null, new HttpErrorResponse({ status: 403, statusText: 'Forbidden' }));
+
+    expect(errorRecibido).toBeInstanceOf(ProductApiError);
+    expect(errorRecibido?.status).toBe(403);
+    expect(errorRecibido?.message).toContain('no tiene permiso');
+  });
+});

@@ -1,9 +1,10 @@
-import { Component, output } from '@angular/core';
+import { Component, output, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MarcoPagina } from '../compartido/marco-pagina/marco-pagina';
 
 @Component({
   selector: 'app-inicio-sesion',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, MarcoPagina],
   templateUrl: './inicio-sesion.html',
   styleUrl: './inicio-sesion.css',
 })
@@ -15,6 +16,12 @@ export class InicioSesion {
     usuario: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     contrasena: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
   });
+
+  readonly mostrarContrasena = signal(false);
+
+  alternarContrasena(): void {
+    this.mostrarContrasena.update((visible) => !visible);
+  }
 
   enviar(): void {
     if (this.form.invalid) {
