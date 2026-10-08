@@ -31,6 +31,7 @@ yarn-error.log
 
 # Miscellaneous
 /.angular/cache
+Bocetos EsiBuy.html
 .sass-cache/
 /connect.lock
 /coverage
