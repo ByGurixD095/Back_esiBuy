@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -12,6 +13,7 @@ import esi.grupo5.esiBuy.Dto.LoginRequestDTO;
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
 import esi.grupo5.esiBuy.Dto.PasswordResetConfirmDTO;
 import esi.grupo5.esiBuy.Dto.PasswordResetRequestDTO;
+import esi.grupo5.esiBuy.Dto.UserSelfUpdateDTO;
 import esi.grupo5.esiBuy.Dto.VendedorRegisterRequest;
 import esi.grupo5.esiBuy.Service.AuthService;
 import esi.grupo5.esiBuy.Service.UserService;
@@ -99,4 +101,17 @@ public class UserController {
         cookieUtil.clearTokenCookies(response);
         return ResponseEntity.ok().build();
     }
+
+    // --------- PATCH ------------ 
+    @PatchMapping("/me/update")
+    public ResponseEntity<Void> modificarMiPerfil(
+            @Valid @RequestBody UserSelfUpdateDTO dto,
+            Authentication authentication) {
+        
+        String idAutenticado = (String) authentication.getPrincipal(); 
+        
+        userService.modificarMiPerfil(idAutenticado, dto);
+        return ResponseEntity.noContent().build();
+    }
+
 }
