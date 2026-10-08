@@ -25,10 +25,10 @@ describe('Administradores', () => {
 
   afterEach(() => http.verify());
 
-  it('envía un POST a /users/administradores con los datos y las cookies', () => {
+  it('envía un POST a /admin con los datos y las cookies', () => {
     servicio.crear(datos).subscribe();
 
-    const peticion = http.expectOne('http://localhost:8080/users/administradores');
+    const peticion = http.expectOne('http://localhost:8080/admin');
     expect(peticion.request.method).toBe('POST');
     expect(peticion.request.body).toEqual(datos);
     expect(peticion.request.withCredentials).toBe(true);
@@ -48,7 +48,7 @@ describe('Administradores', () => {
     let recibido: unknown;
     servicio.crear(datos).subscribe((r) => (recibido = r));
 
-    http.expectOne('http://localhost:8080/users/administradores').flush(respuesta);
+    http.expectOne('http://localhost:8080/admin').flush(respuesta);
     expect(recibido).toEqual(respuesta);
   });
 });
