@@ -61,14 +61,14 @@ class ProductoControllerTest {
         mockMvc.perform(post("/products")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value("mongo-id-123"))
                 .andExpect(jsonPath("$.nombre").value("Camiseta ESI"))
                 .andExpect(jsonPath("$.precioCent").value(1999));
     }
 
         @Test
-        void crearProducto_RutaCorta_Devuelve201Created() throws Exception {
+        void crearProducto_RutaLegacy_Devuelve201Created() throws Exception {
         ProductoDTO dto = new ProductoDTO(
             "Camiseta ESI", "REF-092026a", 1999,
             "Camiseta oficial de algodón", "Ropa", "url_imagen.jpg", 10, 5, 0, null);
@@ -77,7 +77,7 @@ class ProductoControllerTest {
 
         when(productoService.crearProducto(any(ProductoDTO.class))).thenReturn(productoCreado);
 
-        mockMvc.perform(post("/products")
+        mockMvc.perform(post("/products/createProduct")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(dto)))
             .andExpect(status().isCreated())
@@ -190,7 +190,7 @@ class ProductoControllerTest {
                 mockMvc.perform(post("/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(dtoSinStock))
-                    .andExpect(status().isOk());
+                    .andExpect(status().isCreated());
 
                 verify(productoService).crearProducto(argThat(dto -> dto.numStock() == null));
                 }
@@ -216,7 +216,7 @@ class ProductoControllerTest {
             mockMvc.perform(post("/products")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(dtoSinCamposOpcionales))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
             }
 
     @Test
@@ -269,5 +269,4 @@ class ProductoControllerTest {
                 any(FiltroCatalogoDTO.class), any(org.springframework.data.domain.Pageable.class));
     }
 }
-
 

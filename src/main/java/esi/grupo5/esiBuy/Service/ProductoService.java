@@ -4,9 +4,8 @@ import esi.grupo5.esiBuy.Dto.FiltroCatalogoDTO;
 import esi.grupo5.esiBuy.Dto.ProductoDTO;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
-
 import java.util.List;
-
+import java.util.regex.Pattern;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +18,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class ProductoService {
 
+    private static final String ACTIVO_FIELD = "activo";
+    private static final String STOCK_FIELD = "numStock";
     private static final String PRECIO_CENT_FIELD = "precioCent";
 
     private final ProductoRepository productoRepository;
@@ -38,8 +39,8 @@ public class ProductoService {
                 dto.descripcion(),
                 dto.categoria(),
                 dto.urlImagen(),
-                dto.descuento(),
-                dto.descuentoPremium()
+                valorPorDefecto(dto.descuento()),
+                valorPorDefecto(dto.descuentoPremium())
         );
 
         producto.setActivo(dto.activo() == null || dto.activo());
@@ -52,6 +53,7 @@ public class ProductoService {
 
     public Page<Producto> obtenerProductosDisponibles(FiltroCatalogoDTO filtros, Pageable pageable) {
         Query query = construirConsulta(filtros);
+        aplicarOrden(query, filtros == null ? null : filtros.orden(), pageable.getSort());
         long total = mongoTemplate.count(query, Producto.class);
 
         if (!pageable.isUnpaged()) {
@@ -65,14 +67,13 @@ public class ProductoService {
 
     private Query construirConsulta(FiltroCatalogoDTO filtros) {
         Query query = new Query();
-        query.addCriteria(Criteria.where("activo").is(true).and("numStock").gt(0));
+        query.addCriteria(Criteria.where(ACTIVO_FIELD).is(true).and(STOCK_FIELD).gt(0));
 
         if (filtros != null) {
             aplicarBusqueda(query, filtros.busqueda());
             aplicarCategoria(query, filtros.categoria());
             aplicarRangoPrecio(query, filtros.precioMinCent(), filtros.precioMaxCent());
             aplicarOferta(query, filtros.soloOfertas());
-            aplicarOrden(query, filtros.orden());
         }
 
         return query;
@@ -80,16 +81,17 @@ public class ProductoService {
 
     private void aplicarBusqueda(Query query, String busqueda) {
         if (busqueda != null && !busqueda.isBlank()) {
+            String textoLiteral = Pattern.quote(busqueda.trim());
             query.addCriteria(new Criteria().orOperator(
-                    Criteria.where("nombre").regex(busqueda.trim(), "i"),
-                    Criteria.where("referencia").regex(busqueda.trim(), "i")
+                    Criteria.where("nombre").regex(textoLiteral, "i"),
+                    Criteria.where("referencia").regex(textoLiteral, "i")
             ));
         }
     }
 
     private void aplicarCategoria(Query query, String categoria) {
-        if (categoria != null && !categoria.isBlank() && !categoria.equalsIgnoreCase("Todas")) {
-            query.addCriteria(Criteria.where("categoria").is(categoria));
+        if (categoria != null && !categoria.isBlank() && !categoria.trim().equalsIgnoreCase("Todas")) {
+            query.addCriteria(Criteria.where("categoria").is(categoria.trim()));
         }
     }
 
@@ -112,15 +114,21 @@ public class ProductoService {
         }
     }
 
-    private void aplicarOrden(Query query, String orden) {
+    private void aplicarOrden(Query query, String orden, Sort ordenPaginado) {
         if ("Precio Ascendente".equalsIgnoreCase(orden)) {
             query.with(Sort.by(Sort.Direction.ASC, PRECIO_CENT_FIELD));
         } else if ("Precio Descendente".equalsIgnoreCase(orden)) {
             query.with(Sort.by(Sort.Direction.DESC, PRECIO_CENT_FIELD));
+        } else if (ordenPaginado.isSorted()) {
+            query.with(ordenPaginado);
         }
     }
 
     public List<Producto> obtenerProductosDisponibles() {
         return productoRepository.findByActivoTrueAndNumStockGreaterThan(0);
+    }
+
+    private int valorPorDefecto(Integer valor) {
+        return valor == null ? 0 : valor;
     }
 }
