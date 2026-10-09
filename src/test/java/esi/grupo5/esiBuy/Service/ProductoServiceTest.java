@@ -1,26 +1,42 @@
 package esi.grupo5.esiBuy.Service;
 
 import esi.grupo5.esiBuy.Dto.ProductoDTO;
+import esi.grupo5.esiBuy.Dto.FiltroCatalogoDTO;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class ProductoServiceTest {
 
     @Mock
     private ProductoRepository productoRepository;
+
+    @Mock
+    private MongoTemplate mongoTemplate;
 
     @InjectMocks
     private ProductoService productoService;
@@ -96,10 +112,74 @@ class ProductoServiceTest {
         assertNull(resultado.getUrlImagen());
     }
 
+    @Test
+    void crearProducto_inicializaDescuentosNulosACero() {
+        ProductoDTO dto = new ProductoDTO(
+                "Camiseta ESI", "REF-092026a", 1999, null, "Ropa", null, null, null, null, null);
+        when(productoRepository.save(any(Producto.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Producto resultado = productoService.crearProducto(dto);
+
+        assertEquals(0, resultado.getDescuento());
+        assertEquals(0, resultado.getDescuentoPremium());
+    }
+
+    @Test
+    void obtenerProductosDisponibles_aplicaFiltrosPaginacionOrdenYBusquedaLiteral() {
+        FiltroCatalogoDTO filtros = new FiltroCatalogoDTO(
+                "camiseta.*", " Ropa ", 1000, 5000, true, null);
+        PageRequest pageable = PageRequest.of(1, 5, Sort.by(Sort.Direction.DESC, "nombre"));
+        when(mongoTemplate.count(any(Query.class), eq(Producto.class))).thenReturn(6L);
+        when(mongoTemplate.find(any(Query.class), eq(Producto.class))).thenReturn(List.of());
+
+        Page<Producto> resultado = productoService.obtenerProductosDisponibles(filtros, pageable);
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(Producto.class));
+        Query query = queryCaptor.getValue();
+
+        assertTrue(resultado.isEmpty());
+        assertEquals(6, resultado.getTotalElements());
+        assertEquals(2, resultado.getTotalPages());
+        assertEquals(1, resultado.getNumber());
+        assertEquals(5, query.getLimit());
+        assertEquals(5, query.getSkip());
+        assertEquals(-1, query.getSortObject().get("nombre"));
+
+        Pattern nombrePattern = findPattern(query.getQueryObject());
+        assertNotNull(nombrePattern);
+        assertTrue(nombrePattern.matcher("Camiseta.*").find());
+        assertFalse(nombrePattern.matcher("CamisetaXX").find());
+    }
+
     private ProductoDTO productoDTO(Integer stock, Integer precio, Integer descuento,
                                     Integer descuentoPremium, Boolean activo) {
         return new ProductoDTO(
                 "Camiseta ESI", "REF-092026a", precio, "Camiseta oficial",
                 "Ropa", "url_imagen.jpg", stock, descuento, descuentoPremium, activo);
+    }
+
+    private Pattern findPattern(Object value) {
+        if (value instanceof Pattern pattern) {
+            return pattern;
+        }
+        if (value instanceof Map<?, ?> map) {
+            for (Object nestedValue : map.values()) {
+                Pattern pattern = findPattern(nestedValue);
+                if (pattern != null) {
+                    return pattern;
+                }
+            }
+        }
+        if (value instanceof Iterable<?> iterable) {
+            for (Object nestedValue : iterable) {
+                Pattern pattern = findPattern(nestedValue);
+                if (pattern != null) {
+                    return pattern;
+                }
+            }
+        }
+        return null;
     }
 }
