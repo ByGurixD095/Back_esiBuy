@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -29,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AdminControllerTest {
 
     @Autowired private MockMvc mockMvc;
+    @Autowired private AdminController adminController;
     private final ObjectMapper objectMapper = new ObjectMapper();
     @MockitoBean private UserService userService;
     @MockitoBean private AdminService adminService;
@@ -78,6 +80,14 @@ class AdminControllerTest {
                 .andExpect(status().isBadRequest());
 
         verify(adminService, never()).crearAdministrador(any());
+    }
+
+    @Test
+    void eliminarUsuario_devuelve204YDelegaAlServicio() {
+        ResponseEntity<Void> response = adminController.deleteUser("cliente-1", "admin-1");
+
+        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+        verify(adminService).eliminarUsuario("cliente-1", "admin-1");
     }
 
     private AdministradorRegistroDTO administradorDTO() {
