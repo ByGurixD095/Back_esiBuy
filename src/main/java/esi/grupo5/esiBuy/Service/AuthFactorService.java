@@ -195,7 +195,7 @@ public class AuthFactorService {
         return encoder.matches(codigoUsuario, usuario.getEmailOtpHash());
     }
 
-    public String cifrar(String textoPlano) {
+public String cifrar(String textoPlano) {
         try {
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
             cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(encryptionKey.getBytes(), "AES"));
