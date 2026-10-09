@@ -37,10 +37,10 @@ class ProductoControllerTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    void crearProducto_DatosCorrectos_Devuelve201Created() throws Exception {
+    void crearProducto_DatosCorrectos_Devuelve200Ok() throws Exception {
         ProductoDTO dto = new ProductoDTO(
-            "Camiseta ESI", "REF-092026a", 10, 1999,
-            "Camiseta oficial de algodón", "Ropa", "url_imagen.jpg", 5, 0, null
+            "Camiseta ESI", "REF-092026a", 1999,
+            "Camiseta oficial de algodón", "Ropa", "url_imagen.jpg", 10, 5, 0, null
         );
 
         Producto productoCreado = new Producto();
@@ -52,10 +52,10 @@ class ProductoControllerTest {
 
         when(productoService.crearProducto(any(ProductoDTO.class))).thenReturn(productoCreado);
 
-        mockMvc.perform(post("/products/createProduct")
+        mockMvc.perform(post("/products")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("mongo-id-123"))
                 .andExpect(jsonPath("$.nombre").value("Camiseta ESI"))
                 .andExpect(jsonPath("$.precioCent").value(1999));
@@ -77,7 +77,7 @@ class ProductoControllerTest {
                                 }
                                 """;
 
-                mockMvc.perform(post("/products/createProduct")
+                mockMvc.perform(post("/products")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(dtoConPrecioDemasiadoGrande))
                                 .andExpect(status().isBadRequest());
@@ -99,7 +99,7 @@ class ProductoControllerTest {
                     }
                     """;
 
-                mockMvc.perform(post("/products/createProduct")
+                mockMvc.perform(post("/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(dtoConStockDemasiadoGrande))
                     .andExpect(status().isBadRequest());
@@ -124,10 +124,10 @@ class ProductoControllerTest {
                     }
                     """;
 
-                mockMvc.perform(post("/products/createProduct")
+                mockMvc.perform(post("/products")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(dtoSinStock))
-                    .andExpect(status().isCreated());
+                    .andExpect(status().isOk());
 
                 verify(productoService).crearProducto(argThat(dto -> dto.numStock() == null));
                 }
@@ -150,12 +150,11 @@ class ProductoControllerTest {
                 }
                 """;
 
-            mockMvc.perform(post("/products/createProduct")
+            mockMvc.perform(post("/products")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(dtoSinCamposOpcionales))
-                .andExpect(status().isCreated());
+                .andExpect(status().isOk());
             }
 }
-
 
 

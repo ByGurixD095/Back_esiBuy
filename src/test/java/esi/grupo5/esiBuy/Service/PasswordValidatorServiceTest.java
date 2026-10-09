@@ -2,12 +2,12 @@ package esi.grupo5.esiBuy.Service;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import esi.grupo5.esiBuy.Exception.ValidationException;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import org.springframework.web.server.ResponseStatusException;
 
 class PasswordValidatorServiceTest {
     private final PasswordValidatorService service =
@@ -20,7 +20,7 @@ class PasswordValidatorServiceTest {
 
     @Test
     void rechazaContrasenaDebil() {
-        assertThrows(ResponseStatusException.class,
+        assertThrows(ValidationException.class,
                 () -> service.validatePassword("weak", List.of()));
     }
 }

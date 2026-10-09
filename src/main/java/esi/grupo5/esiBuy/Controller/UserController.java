@@ -1,4 +1,4 @@
-﻿package esi.grupo5.esiBuy.Controller;
+package esi.grupo5.esiBuy.Controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -45,11 +45,7 @@ public class UserController {
                 cookieUtil.setTokenCookies(response, loginResponse);
             }
             return ResponseEntity.ok(loginResponse);
-        } catch (AuthException e) {
-            throw e;
-        } catch (ForbiddenException e) {
-            throw e;
-        } catch (PasswordExpiredException e) {
+        }  catch (AuthException | ForbiddenException | PasswordExpiredException e) {
             throw e;
         } catch (BusinessException e) {
             throw new BusinessException(e.getMessage(), e.getHttpStatusCode(), e.getErrorCode());
@@ -66,9 +62,7 @@ public class UserController {
             LoginResponseDTO lr = authService.refreshToken(refreshToken);
             cookieUtil.setTokenCookies(response, lr);
             return ResponseEntity.ok(lr);
-        } catch (AuthException e) {
-            throw e;
-        } catch (ExpiredTokenException e) {
+        } catch (AuthException | ExpiredTokenException e) {
             throw e;
         } catch (BusinessException e) {
             throw new BusinessException(e.getMessage(), e.getHttpStatusCode(), e.getErrorCode());
@@ -86,9 +80,7 @@ public class UserController {
                 cookieUtil.setTokenCookies(response, loginResponse);
             }
             return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
-        } catch (ValidationException e) {
-            throw e;
-        } catch (ConflictException e) {
+        } catch (ValidationException | ConflictException e) {
             throw e;
         } catch (BusinessException e) {
             throw new BusinessException(e.getMessage(), e.getHttpStatusCode(), e.getErrorCode());
@@ -106,9 +98,7 @@ public class UserController {
                 cookieUtil.setTokenCookies(response, loginResponse);
             }
             return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
-        } catch (ValidationException e) {
-            throw e;
-        } catch (ConflictException e) {
+        } catch (ValidationException | ConflictException e) {
             throw e;
         } catch (BusinessException e) {
             throw new BusinessException(e.getMessage(), e.getHttpStatusCode(), e.getErrorCode());
@@ -144,9 +134,7 @@ public class UserController {
         try {
             userService.modificarMiPerfil(idAutenticado, dto);
             return ResponseEntity.noContent().build();
-        } catch (NotFoundException e) {
-            throw e;
-        } catch (ConflictException e) {
+        } catch (NotFoundException | ConflictException e) {
             throw e;
         } catch (BusinessException e) {
             throw new BusinessException(e.getMessage(), e.getHttpStatusCode(), e.getErrorCode());

@@ -1,4 +1,4 @@
-﻿package esi.grupo5.esiBuy.Exception;
+package esi.grupo5.esiBuy.Exception;
 
 /**
  * Excepción para conflictos (recurso ya existe, email duplicado, etc.)

@@ -1,4 +1,4 @@
-﻿package esi.grupo5.esiBuy.Exception;
+package esi.grupo5.esiBuy.Exception;
 
 /**
  * Excepción base para errores de negocio en el sistema ESI Buy.
