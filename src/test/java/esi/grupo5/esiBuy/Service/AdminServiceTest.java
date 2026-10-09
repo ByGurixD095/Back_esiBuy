@@ -10,7 +10,6 @@ import esi.grupo5.esiBuy.Model.Usuario;
 import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Model.enums.TipoCliente;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
-import esi.grupo5.esiBuy.Service.strategy.UsuarioUpdateStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -170,5 +169,4 @@ class AdminServiceTest {
         assertThrows(ResponseStatusException.class, () -> service.modificarUsuario(id, dto));
         verify(usuarioRepository, never()).save(any(Usuario.class));
     }
-
 }
