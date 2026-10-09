@@ -5,10 +5,11 @@ import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 import esi.grupo5.esiBuy.Exception.ConflictException;
 import esi.grupo5.esiBuy.Exception.ValidationException;
 import esi.grupo5.esiBuy.Model.Administrador;
+import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.Usuario;
 import esi.grupo5.esiBuy.Model.enums.Rol;
+import esi.grupo5.esiBuy.Model.enums.TipoCliente;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
-import esi.grupo5.esiBuy.Service.strategy.UsuarioUpdateStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,7 +18,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
+import esi.grupo5.esiBuy.Dto.UserPatchDTO;
+import esi.grupo5.esiBuy.Exception.NotFoundException;
+import esi.grupo5.esiBuy.Service.strategy.AdministradorUpdateStrategy;
+import esi.grupo5.esiBuy.Service.strategy.ClienteUpdateStrategy;
+import esi.grupo5.esiBuy.Service.strategy.VendedorUpdateStrategy;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,7 +52,7 @@ class AdminServiceTest {
                 usuarioRepository,
                 new BCryptPasswordEncoder(),
                 passwordValidatorService,
-                List.<UsuarioUpdateStrategy>of());
+                List.of(new AdministradorUpdateStrategy(), new ClienteUpdateStrategy(), new VendedorUpdateStrategy()));
     }
 
     @Test
@@ -96,5 +103,70 @@ class AdminServiceTest {
     private AdministradorRegistroDTO administradorDTO() {
         return new AdministradorRegistroDTO(
                 "Ana", "Pérez", "ana@esibuy.com", "Clave#2026x", "Madrid");
+    }
+
+    @Test
+    void modificarUsuario_NoExiste() {
+        String id = "usuario1";
+        when(usuarioRepository.findById(id)).thenReturn(Optional.empty());
+
+        UserPatchDTO dto = new UserPatchDTO(null, null, null, null, null,
+            null, null, null, null, null, null);
+
+        assertThrows(NotFoundException.class,() -> service.modificarUsuario(id, dto));
+
+        verify(usuarioRepository, never()).save(any(Usuario.class));
+    }
+
+    @Test
+    void modificarUsuario_administrador() {
+        String id = "admin1";
+
+        Administrador administrador = Administrador.builder()
+            .nombre("Ana")
+            .apellidos("Pérez")
+            .email("ana@esibuy.com")
+            .contrasena("password")
+            .sede("Madrid")
+            .build();
+
+        UserPatchDTO dto = new UserPatchDTO("Laura", "Gómez", "600123456", "foto.jpg", 
+            null, null, null, null, null, null, "Ciudad Real");
+
+        when(usuarioRepository.findById(id)).thenReturn(Optional.of(administrador));
+
+        service.modificarUsuario(id, dto);
+
+        assertEquals("Laura", administrador.getNombre());
+        assertEquals("Gómez", administrador.getApellidos());
+        assertEquals("600123456", administrador.getTelefono());
+        assertEquals("foto.jpg", administrador.getImagenPerfil());
+        assertEquals("Ciudad Real", administrador.getSede());
+
+        verify(usuarioRepository).save(administrador);
+    }
+
+    @Test
+    void modificarUsuario_clienteMenorDeEdad() {
+        String id = "cliente1";
+
+        Cliente cliente = Cliente.builder()
+            .nombre("Carlos")
+            .apellidos("López")
+            .email("carlos@esibuy.com")
+            .contrasena("password")
+            .dni("12345678A")
+            .fechaNacimiento(LocalDate.of(2000, 1, 1))
+            .tipoCliente(TipoCliente.NORMAL)
+            .build();
+
+        UserPatchDTO dto = new UserPatchDTO(
+            null, null, null, null,
+            null, LocalDate.now().minusYears(17),
+            null, null, null, null, null);
+
+        when(usuarioRepository.findById(id)).thenReturn(Optional.of(cliente));
+        assertThrows(ResponseStatusException.class, () -> service.modificarUsuario(id, dto));
+        verify(usuarioRepository, never()).save(any(Usuario.class));
     }
 }

@@ -22,6 +22,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AdminController.class)
@@ -88,4 +89,19 @@ class SecurityAdminAuthorizationTest {
         when(jwtService.extractId(any())).thenReturn("user-1");
         when(jwtService.extractRol(any())).thenReturn(role);
     }
+
+    @Test
+    void ClienteNoPuedeModificarUsuarios() throws Exception {
+        stubAuthenticatedRole("CLIENTE");
+
+        mockMvc.perform(patch("/admin/user-1")
+                        .cookie(new Cookie("accessToken", "token"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nombre":"NuevoNombre"}
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+
 }
