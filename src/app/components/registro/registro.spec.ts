@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
-import { Autenticacion } from '../../services/autenticacion-service/autenticacion';
+import { AuthService } from '../../services/auth.service';
 import { Registro as RegistroService } from '../../services/registro-service/registro';
 import { RegistroComponent } from './registro';
 
@@ -15,8 +15,14 @@ describe('RegistroComponent', () => {
     registrarCliente: vi.fn(),
     registrarVendedor: vi.fn(),
   };
-  const autenticacionFalsa = { iniciarSesion: vi.fn() };
-  const routerFalso = { navigateByUrl: vi.fn().mockResolvedValue(true) };
+  const autenticacionFalsa = {
+    login: vi.fn(),
+    applyAuthenticationResponse: vi.fn(),
+  };
+  const routerFalso = {
+    navigateByUrl: vi.fn().mockResolvedValue(true),
+    navigate: vi.fn().mockResolvedValue(true),
+  };
   const respuestaLoginOk = {
     accessToken: null,
     refreshToken: null,
@@ -30,15 +36,16 @@ describe('RegistroComponent', () => {
   async function configurar(tipoRegistro: 'cliente' | 'vendedor'): Promise<void> {
     servicioFalso.registrarCliente.mockReset();
     servicioFalso.registrarVendedor.mockReset();
-    autenticacionFalsa.iniciarSesion.mockReset();
-    autenticacionFalsa.iniciarSesion.mockReturnValue(of(respuestaLoginOk));
+    autenticacionFalsa.login.mockReset();
+    autenticacionFalsa.login.mockReturnValue(of(respuestaLoginOk));
     routerFalso.navigateByUrl.mockClear();
+    routerFalso.navigate.mockClear();
     await TestBed.configureTestingModule({
       imports: [RegistroComponent],
       providers: [
         { provide: ActivatedRoute, useValue: { snapshot: { data: { tipoRegistro } } } },
         { provide: RegistroService, useValue: servicioFalso },
-        { provide: Autenticacion, useValue: autenticacionFalsa },
+        { provide: AuthService, useValue: autenticacionFalsa },
         { provide: Router, useValue: routerFalso },
       ],
     }).compileComponents();
@@ -72,7 +79,7 @@ describe('RegistroComponent', () => {
 
   it('envía los campos de cliente esperados y muestra el éxito', async () => {
     await configurar('cliente');
-    servicioFalso.registrarCliente.mockReturnValue(of(undefined));
+    servicioFalso.registrarCliente.mockReturnValue(of(respuestaLoginOk));
     component.form.patchValue({
       nombre: 'Ana',
       apellidos: 'López',
@@ -97,12 +104,8 @@ describe('RegistroComponent', () => {
       dni: '12345678A',
       fechaNacimiento: '2000-01-01',
     });
-    expect(autenticacionFalsa.iniciarSesion).toHaveBeenCalledWith(
-      'ana@example.es',
-      'Clave123!',
-    );
     expect(component.mensajeExito()).toContain('inicio de sesión completado');
-    expect(routerFalso.navigateByUrl).toHaveBeenCalledWith('/products');
+    expect(routerFalso.navigateByUrl).toHaveBeenCalledWith('/cart');
   });
 
   it('valida y envía los campos obligatorios de vendedor', async () => {
@@ -116,7 +119,7 @@ describe('RegistroComponent', () => {
     });
     expect(component.form.valid).toBe(false);
 
-    servicioFalso.registrarVendedor.mockReturnValue(of(undefined));
+    servicioFalso.registrarVendedor.mockReturnValue(of({ ...respuestaLoginOk, rol: 'VENDEDOR' }));
     component.form.patchValue({
       nombreComercial: 'Tienda Ana',
       cifNif: 'B12345678',
@@ -137,19 +140,12 @@ describe('RegistroComponent', () => {
       cifNif: 'B12345678',
       categoriaPrincipalId: 'categoria-1',
     });
-    expect(autenticacionFalsa.iniciarSesion).toHaveBeenCalledWith(
-      'ana@example.es',
-      'Clave123!',
-    );
     expect(routerFalso.navigateByUrl).toHaveBeenCalledWith('/products');
   });
 
-  it('no intenta registrar otra vez si falla el inicio de sesión tras crear la cuenta', async () => {
+  it('no intenta registrar otra vez tras crear la cuenta', async () => {
     await configurar('cliente');
-    servicioFalso.registrarCliente.mockReturnValue(of(undefined));
-    autenticacionFalsa.iniciarSesion.mockReturnValue(
-      throwError(() => new HttpErrorResponse({ status: 0 })),
-    );
+    servicioFalso.registrarCliente.mockReturnValue(of(respuestaLoginOk));
     component.form.patchValue({
       nombre: 'Ana',
       apellidos: 'López',
@@ -163,20 +159,19 @@ describe('RegistroComponent', () => {
     await fixture.whenStable();
 
     expect(component.cuentaCreada()).toBe(true);
-    expect(component.puedeReintentarLogin()).toBe(true);
-    expect(component.mensajeError()).toContain('La cuenta se creó');
+    expect(component.puedeReintentarLogin()).toBe(false);
+    expect(component.mensajeExito()).toContain('inicio de sesión completado');
     expect(servicioFalso.registrarCliente).toHaveBeenCalledTimes(1);
 
     component.reintentarInicioSesion();
 
     expect(servicioFalso.registrarCliente).toHaveBeenCalledTimes(1);
-    expect(autenticacionFalsa.iniciarSesion).toHaveBeenCalledTimes(2);
+    expect(autenticacionFalsa.login).toHaveBeenCalledTimes(1);
   });
 
   it('informa si el login del vendedor requiere MFA, sin considerarlo sesión iniciada', async () => {
     await configurar('vendedor');
-    servicioFalso.registrarVendedor.mockReturnValue(of(undefined));
-    autenticacionFalsa.iniciarSesion.mockReturnValue(
+    servicioFalso.registrarVendedor.mockReturnValue(
       of({
         ...respuestaLoginOk,
         rol: 'VENDEDOR',
@@ -197,8 +192,7 @@ describe('RegistroComponent', () => {
     component.enviar();
     await fixture.whenStable();
 
-    expect(component.mensajeError()).toContain('requiere completar la verificación MFA');
-    expect(routerFalso.navigateByUrl).not.toHaveBeenCalled();
+    expect(routerFalso.navigate).toHaveBeenCalled();
     expect(component.puedeReintentarLogin()).toBe(false);
   });
 

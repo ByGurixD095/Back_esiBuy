@@ -7,16 +7,21 @@ import { ResetPasswordComponent } from './components/reset-password-component/re
 import { ProductoForm } from './components/producto-form/producto-form';
 import { RegistroComponent } from './components/registro/registro';
 import { RegistroInicio } from './components/registro/registro-inicio';
+import { roleGuard } from './guards/role.guard';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'products' },
-  { path: 'products', component: Catalogo },
-  { path: 'products/new', component: ProductoForm },
+  { path: 'products', component: Catalogo, canActivate: [roleGuard(['VENDEDOR'])] },
+  { path: 'products/new', component: ProductoForm, canActivate: [roleGuard(['VENDEDOR'])] },
   { path: 'register', component: RegistroInicio },
   { path: 'register/clientes', component: RegistroComponent, data: { tipoRegistro: 'cliente' } },
   { path: 'register/vendedor', component: RegistroComponent, data: { tipoRegistro: 'vendedor' } },
   { path: 'cart', children: [] },
-  { path: 'administradores/nuevo', component: AdministradorRegistro },
+  {
+    path: 'administradores/nuevo',
+    component: AdministradorRegistro,
+    canActivate: [roleGuard(['ADMINISTRADOR'])],
+  },
   { path: 'login', component: InicioSesion },
   { path: 'recover-password', component: RecoverPasswordComponent },
   { path: 'reset-password', component: ResetPasswordComponent },

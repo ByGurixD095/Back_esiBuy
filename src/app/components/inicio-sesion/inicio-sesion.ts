@@ -1,16 +1,22 @@
-import { Component, output, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, inject, output, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { AuthService, Rol } from '../../services/auth.service';
+import { MfaAuth } from '../mfa-auth/mfa-auth';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
 
 @Component({
   selector: 'app-inicio-sesion',
-  imports: [ReactiveFormsModule, RouterLink, MarcoPagina],
+  imports: [ReactiveFormsModule, RouterLink, MfaAuth, MarcoPagina],
   templateUrl: './inicio-sesion.html',
   styleUrl: './inicio-sesion.css',
 })
 export class InicioSesion {
-  // Mismos nombres que espera el back en POST /users/login
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+
   readonly iniciarSesion = output<{ username: string; password: string }>();
 
   readonly form = new FormGroup({
@@ -19,6 +25,15 @@ export class InicioSesion {
   });
 
   readonly mostrarContrasena = signal(false);
+  readonly fase = signal<'login' | 'setup' | 'verify' | 'backup'>('login');
+  readonly cargando = signal(false);
+  readonly mensajeError = signal('');
+  readonly emailMfa = signal('');
+  readonly mfaSetupToken = signal('');
+  readonly qrCodeUri = signal('');
+  readonly manualSecretKey = signal('');
+  readonly backupCodes = signal<string[]>([]);
+  readonly rolMfa = signal<Rol | null>(null);
 
   alternarContrasena(): void {
     this.mostrarContrasena.update((visible) => !visible);
@@ -31,5 +46,109 @@ export class InicioSesion {
     }
     const { usuario, contrasena } = this.form.getRawValue();
     this.iniciarSesion.emit({ username: usuario, password: contrasena });
+    this.mensajeError.set('');
+    this.cargando.set(true);
+
+    this.authService.login({ username: usuario, password: contrasena }).subscribe({
+      next: (respuesta) => {
+        this.cargando.set(false);
+        this.emailMfa.set(respuesta.email ?? usuario);
+        this.rolMfa.set(respuesta.rol);
+
+        if (respuesta.mfaStatus === 'SUCCESS') {
+          this.navegarTrasLogin(respuesta.rol);
+        } else if (respuesta.mfaStatus === 'REQUIRES_MFA_SETUP' && respuesta.mfaSetupToken) {
+          this.mfaSetupToken.set(respuesta.mfaSetupToken);
+          this.fase.set('setup');
+          this.inicializarConfiguracionMfa();
+        } else if (respuesta.mfaStatus === 'REQUIRES_MFA_VERIFICATION') {
+          this.fase.set('verify');
+        } else {
+          this.mensajeError.set('El servidor devolvió un estado de autenticación no reconocido.');
+        }
+      },
+      error: (error: HttpErrorResponse) => {
+        this.cargando.set(false);
+        this.mensajeError.set(
+          this.authService.errorMessage(error, 'No se ha podido iniciar sesión. Revisa tus credenciales.'),
+        );
+      },
+    });
+  }
+
+  confirmarConfiguracion(code: string): void {
+    this.cargando.set(true);
+    this.mensajeError.set('');
+    this.authService
+      .confirmMfaSetup({
+        email: this.emailMfa(),
+        code,
+        setupToken: this.mfaSetupToken(),
+      })
+      .subscribe({
+        next: (respuesta) => {
+          this.cargando.set(false);
+          this.backupCodes.set(respuesta.backupCodes);
+          this.fase.set('backup');
+        },
+        error: (error: HttpErrorResponse) => {
+          this.cargando.set(false);
+          this.mensajeError.set(this.authService.errorMessage(error, 'No se ha podido confirmar el código TOTP.'));
+        },
+      });
+  }
+
+  verificarMfa(codigos: { totpCode: string; emailOtpCode: string }): void {
+    this.cargando.set(true);
+    this.mensajeError.set('');
+    this.authService.verifyMfa({ email: this.emailMfa(), ...codigos }).subscribe({
+      next: (respuesta) => {
+        this.cargando.set(false);
+        this.navegarTrasLogin(respuesta.rol);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.cargando.set(false);
+        this.mensajeError.set(this.authService.errorMessage(error, 'No se han podido validar los códigos.'));
+      },
+    });
+  }
+
+  finalizarRespaldo(): void {
+    this.reiniciarFlujo();
+  }
+
+  private inicializarConfiguracionMfa(): void {
+    this.authService.initializeMfaSetup(this.emailMfa(), this.mfaSetupToken()).subscribe({
+      next: (respuesta) => {
+        this.qrCodeUri.set(respuesta.qrCodeUri);
+        this.manualSecretKey.set(respuesta.manualSecretKey);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.mensajeError.set(this.authService.errorMessage(error, 'No se ha podido preparar la configuración MFA.'));
+      },
+    });
+  }
+
+  private reiniciarFlujo(): void {
+    this.fase.set('login');
+    this.form.reset();
+    this.mensajeError.set('');
+    this.backupCodes.set([]);
+  }
+
+  private navegarTrasLogin(rol: Rol): void {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    const destino = returnUrl?.startsWith('/') ? returnUrl : this.destinoPorRol(rol);
+    void this.router.navigateByUrl(destino);
+  }
+
+  private destinoPorRol(rol: Rol): string {
+    if (rol === 'ADMINISTRADOR') {
+      return '/administradores/nuevo';
+    }
+    if (rol === 'VENDEDOR') {
+      return '/products';
+    }
+    return '/cart';
   }
 }
