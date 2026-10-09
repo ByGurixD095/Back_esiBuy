@@ -16,6 +16,7 @@
 }
 
 .cabecera-interior {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -47,13 +48,16 @@
 }
 
 .panel {
-  margin-right: auto;
-  padding-left: 16px;
+  position: absolute;
+  left: 50%;
+  padding: 0 16px;
   color: #cbd5e1;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  transform: translateX(-50%);
+  white-space: nowrap;
 }
 
 .volver {
@@ -63,6 +67,37 @@
   color: #e2e8f0;
   font-size: 14px;
   text-decoration: none;
+}
+
+.menu-principal {
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+}
+
+.menu-principal a,
+.menu-principal button {
+  color: #e6ecf5;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-size: 14px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.menu-principal a:hover,
+.menu-principal button:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.menu-principal a:focus-visible,
+.menu-principal button:focus-visible {
+  outline: 2px solid var(--esi-orange);
+  outline-offset: 2px;
 }
 
 .volver:hover {
@@ -112,4 +147,24 @@
 .pie a:hover {
   color: var(--esi-orange-text);
   text-decoration: underline;
+}
+
+@media (max-width: 700px) {
+  .cabecera-interior {
+    flex-wrap: wrap;
+    padding-bottom: 8px;
+  }
+
+  .panel {
+    position: static;
+    order: 2;
+    margin: 0 auto;
+    transform: none;
+  }
+
+  .menu-principal {
+    flex-basis: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
 }

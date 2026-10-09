@@ -44,6 +44,6 @@ describe('MarcoPagina', () => {
   it('muestra el enlace de volver a la tienda cuando se pide', async () => {
     fixture.componentRef.setInput('volver', true);
     await fixture.whenStable();
-    expect(el.querySelector('.volver')?.textContent).toContain('Volver a la tienda');
+    expect(el.querySelector('.volver')?.textContent).toContain('Inicio');
   });
 });

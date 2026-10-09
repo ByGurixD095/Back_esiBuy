@@ -7,8 +7,19 @@
     @if (panel()) {
     <span class="panel">{{ panel() }}</span>
     }
+    <nav class="menu-principal" aria-label="Navegación principal">
+      <a routerLink="/products">Catálogo</a>
+      @if (estaAutenticado()) {
+      <a routerLink="/account">Mi cuenta</a>
+      @if (tieneRol(['ADMINISTRADOR', 'VENDEDOR'])) {
+      <a routerLink="/manage">Gestionar</a>
+      }
+      } @else {
+      <a routerLink="/login">Iniciar sesión / Registro</a>
+      }
+    </nav>
     @if (volver()) {
-    <a routerLink="/" class="volver">← Volver a la tienda</a>
+    <a routerLink="/" class="volver">Inicio</a>
     }
   </div>
 </header>
