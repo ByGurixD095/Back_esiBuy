@@ -32,6 +32,7 @@ class AdminServiceEliminarUsuarioTest {
 
     @Mock private UsuarioRepository usuarioRepository;
     @Mock private PasswordValidatorService passwordValidatorService;
+    @Mock private UserService userService;
 
     private AdminService service;
 
@@ -41,7 +42,7 @@ class AdminServiceEliminarUsuarioTest {
                 usuarioRepository,
                 new BCryptPasswordEncoder(),
                 passwordValidatorService,
-                List.<UsuarioUpdateStrategy>of());
+                List.<UsuarioUpdateStrategy>of(), userService);
     }
 
     @Test
