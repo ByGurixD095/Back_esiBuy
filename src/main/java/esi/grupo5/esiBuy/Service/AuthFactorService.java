@@ -20,6 +20,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.SecureRandom;
 import java.nio.charset.StandardCharsets;
@@ -197,17 +198,38 @@ public class AuthFactorService {
 
     public String cifrar(String textoPlano) {
         try {
-            Cipher cipher = Cipher.getInstance("AES");
-            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(encryptionKey.getBytes(), "AES"));
-            return Base64.getEncoder().encodeToString(cipher.doFinal(textoPlano.getBytes()));
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            byte[] iv = new byte[12];
+            new SecureRandom().nextBytes(iv);
+            GCMParameterSpec parameterSpec = new GCMParameterSpec(128, iv);
+            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(encryptionKey.getBytes(), "AES"), parameterSpec);
+            
+            byte[] cifrado = cipher.doFinal(textoPlano.getBytes());
+            
+            // Combinar IV + texto cifrado
+            byte[] ivYCifrado = new byte[12 + cifrado.length];
+            System.arraycopy(iv, 0, ivYCifrado, 0, 12);
+            System.arraycopy(cifrado, 0, ivYCifrado, 12, cifrado.length);
+            
+            return Base64.getEncoder().encodeToString(ivYCifrado);
         } catch (Exception e) { throw new BusinessException("Error cifrando", 500, "INTERNAL_ERROR", e); }
     }
 
     private String descifrar(String textoCifrado) {
         try {
-            Cipher cipher = Cipher.getInstance("AES");
-            cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(encryptionKey.getBytes(), "AES"));
-            return new String(cipher.doFinal(Base64.getDecoder().decode(textoCifrado)));
+            byte[] ivYCifrado = Base64.getDecoder().decode(textoCifrado);
+            
+            // Extraer el IV (primeros 12 bytes) y el texto cifrado
+            byte[] iv = new byte[12];
+            byte[] cifrado = new byte[ivYCifrado.length - 12];
+            System.arraycopy(ivYCifrado, 0, iv, 0, 12);
+            System.arraycopy(ivYCifrado, 12, cifrado, 0, cifrado.length);
+            
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            GCMParameterSpec parameterSpec = new GCMParameterSpec(128, iv);
+            cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(encryptionKey.getBytes(), "AES"), parameterSpec);
+            
+            return new String(cipher.doFinal(cifrado));
         } catch (Exception e) { throw new BusinessException("Error descifrando", 500, "INTERNAL_ERROR", e); }
     }
 
