@@ -43,7 +43,7 @@
 .header-context { color: #cbd5e1; font: 700 0.9rem Arial, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; }
 .header-actions { display: flex; align-items: center; gap: 1rem; margin-left: auto; }
 .catalog-header .header-actions { position: absolute; right: clamp(1rem, 5vw, 5rem); }
-.account-link, .cart-link { color: #e2e8f0; font: 0.68rem Arial, sans-serif; text-decoration: none; }
+.account-link, .cart-link { color: #e2e8f0; font: 14px Arial, sans-serif; text-decoration: none; }
 .account-link:hover, .cart-link:hover { color: #ff9f43; }
 .cart-link span { color: #ff9f43; font-size: 1rem; vertical-align: -0.08em; }
 .sell-link { padding: 0.62rem 0.85rem; border: 1px solid #f8fafc; color: #f8fafc; font: 0.68rem Arial, sans-serif; text-decoration: none; }

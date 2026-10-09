@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Producto } from '../../models/producto.model';
+import { AuthService } from '../../services/auth.service';
 import { ProductApiError, ProductService } from '../../services/product.service';
 
 type OrdenCatalogo = 'relevancia' | 'precioAsc' | 'precioDesc' | 'descuento';
@@ -14,6 +15,7 @@ type OrdenCatalogo = 'relevancia' | 'precioAsc' | 'precioDesc' | 'descuento';
 })
 export class Catalogo implements OnInit {
   private readonly productService = inject(ProductService);
+  readonly auth = inject(AuthService);
 
   readonly productos = signal<Producto[]>([]);
   readonly cargando = signal(true);

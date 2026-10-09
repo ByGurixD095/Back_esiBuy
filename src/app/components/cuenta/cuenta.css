@@ -1,0 +1,20 @@
+.seccion-vacia {
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.seccion-vacia .esi-titulo {
+  margin-bottom: 16px;
+}
+
+.seccion-vacia p:last-child {
+  margin: 0 0 28px;
+  color: var(--esi-text-2);
+}
+
+.cerrar-sesion {
+  width: auto;
+  min-width: 180px;
+  padding: 0 24px;
+}

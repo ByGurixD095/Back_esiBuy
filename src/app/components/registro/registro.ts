@@ -196,7 +196,7 @@ export class RegistroComponent {
     if (respuesta.mfaStatus === 'SUCCESS') {
       this.authService.applyAuthenticationResponse(respuesta);
       this.mensajeExito.set('Cuenta creada e inicio de sesión completado.');
-      void this.router.navigateByUrl(this.destinoPorRol(respuesta.rol));
+      void this.router.navigate(['/']);
       return;
     }
 
@@ -210,7 +210,7 @@ export class RegistroComponent {
     this.enviando.set(false);
     if (respuesta.mfaStatus === 'SUCCESS') {
       this.mensajeExito.set('Cuenta creada e inicio de sesión completado.');
-      void this.router.navigateByUrl(this.destinoPorRol(respuesta.rol));
+      void this.router.navigate(['/']);
       return;
     }
 
@@ -229,16 +229,6 @@ export class RegistroComponent {
       'La cuenta se creó, pero el inicio de sesión no se completó. Inténtalo de nuevo.',
     );
     this.puedeReintentarLogin.set(true);
-  }
-
-  private destinoPorRol(rol: LoginResponse['rol']): string {
-    if (rol === 'ADMINISTRADOR') {
-      return '/administradores/nuevo';
-    }
-    if (rol === 'VENDEDOR') {
-      return '/products';
-    }
-    return '/cart';
   }
 
   private fechaDeHoy(): string {

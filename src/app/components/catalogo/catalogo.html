@@ -1,9 +1,17 @@
 <main class="catalog-shell">
   <header class="catalog-header">
-    <a class="brand" routerLink="/products" aria-label="EsiBuy, catálogo"><img src="/assets/images/svg/logo.svg" alt="EsiBuy" /></a>
+    <a class="brand" routerLink="/" aria-label="EsiBuy, ir al inicio"><img src="/assets/images/svg/logo.svg" alt="EsiBuy" /></a>
     <div class="header-context">Catálogo de productos</div>
     <nav class="header-actions" aria-label="Acciones de usuario">
-      <a class="account-link" routerLink="/login">Iniciar sesión / Registro</a>
+      <a class="account-link" routerLink="/products">Catálogo</a>
+      @if (auth.isAuthenticated()) {
+        <a class="account-link" routerLink="/account">Mi cuenta</a>
+        @if (auth.hasRole(['ADMINISTRADOR', 'VENDEDOR'])) {
+          <a class="account-link" routerLink="/manage">Gestionar</a>
+        }
+      } @else {
+        <a class="account-link" routerLink="/login">Iniciar sesión / Registro</a>
+      }
     </nav>
   </header>
 

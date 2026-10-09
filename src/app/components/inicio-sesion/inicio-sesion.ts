@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, output, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService, Rol } from '../../services/auth.service';
 import { MfaAuth } from '../mfa-auth/mfa-auth';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
@@ -15,7 +15,6 @@ import { MarcoPagina } from '../marco-pagina/marco-pagina';
 export class InicioSesion {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
 
   readonly iniciarSesion = output<{ username: string; password: string }>();
 
@@ -137,18 +136,6 @@ export class InicioSesion {
   }
 
   private navegarTrasLogin(rol: Rol): void {
-    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
-    const destino = returnUrl?.startsWith('/') ? returnUrl : this.destinoPorRol(rol);
-    void this.router.navigateByUrl(destino);
-  }
-
-  private destinoPorRol(rol: Rol): string {
-    if (rol === 'ADMINISTRADOR') {
-      return '/administradores/nuevo';
-    }
-    if (rol === 'VENDEDOR') {
-      return '/products';
-    }
-    return '/cart';
+    void this.router.navigate(['/']);
   }
 }

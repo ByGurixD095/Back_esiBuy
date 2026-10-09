@@ -105,7 +105,7 @@ describe('RegistroComponent', () => {
       fechaNacimiento: '2000-01-01',
     });
     expect(component.mensajeExito()).toContain('inicio de sesión completado');
-    expect(routerFalso.navigateByUrl).toHaveBeenCalledWith('/cart');
+    expect(routerFalso.navigate).toHaveBeenCalledWith(['/']);
   });
 
   it('valida y envía los campos obligatorios de vendedor', async () => {
@@ -140,7 +140,7 @@ describe('RegistroComponent', () => {
       cifNif: 'B12345678',
       categoriaPrincipalId: 'categoria-1',
     });
-    expect(routerFalso.navigateByUrl).toHaveBeenCalledWith('/products');
+    expect(routerFalso.navigate).toHaveBeenCalledWith(['/']);
   });
 
   it('no intenta registrar otra vez tras crear la cuenta', async () => {
