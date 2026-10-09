@@ -1,113 +1,61 @@
 package esi.grupo5.esiBuy.Service;
 
-import esi.grupo5.esiBuy.Dto.LoginRequestDTO;
-import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
-import esi.grupo5.esiBuy.Model.Cliente;
-import esi.grupo5.esiBuy.Model.RefreshToken;
+import jakarta.validation.Valid;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
 import esi.grupo5.esiBuy.Dto.ClienteRegistroDTO;
+import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
+import esi.grupo5.esiBuy.Dto.UserDto;
+import esi.grupo5.esiBuy.Dto.UserSelfUpdateDTO;
 import esi.grupo5.esiBuy.Dto.VendedorRegisterRequest;
-import esi.grupo5.esiBuy.Dto.AuthResponseDTO;
+import esi.grupo5.esiBuy.Exception.*;
+import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.Usuario;
-import esi.grupo5.esiBuy.Repository.RefreshTokenRepository;
 import esi.grupo5.esiBuy.Model.Vendedor;
 import esi.grupo5.esiBuy.Model.enums.TipoCliente;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-
-import org.springframework.http.HttpStatus;
-
-import jakarta.validation.Valid;
-
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.Optional;
-
 @Service
 public class UserService {
 
-    private BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-
     private final UsuarioRepository usuarioRepository;
-    private final JwtService jwtService;
-    private final RefreshTokenRepository refreshTokenRepository;
+    private final BCryptPasswordEncoder encoder;
+    private final PasswordValidatorService passwordValidatorService;
+    private final AuthService authService;
 
-    public UserService(UsuarioRepository usuarioRepository, JwtService jwtService, RefreshTokenRepository refreshTokenRepository) {
+    public UserService(UsuarioRepository usuarioRepository, BCryptPasswordEncoder encoder,
+                       PasswordValidatorService passwordValidatorService, AuthService authService) {
         this.usuarioRepository = usuarioRepository;
-        this.jwtService = jwtService;
-        this.refreshTokenRepository = refreshTokenRepository;
+        this.encoder = encoder;
+        this.passwordValidatorService = passwordValidatorService;
+        this.authService = authService;
     }
 
-    private Optional<Usuario> findByEmail(String email) {
-        return usuarioRepository.findByEmail(email);
-    }
-
-    public LoginResponseDTO login(LoginRequestDTO loginRequest) {
-
-        Optional<Usuario> optionalUsuario = findByEmail(loginRequest.username());
-        if (optionalUsuario.isEmpty() || !encoder.matches(loginRequest.password(), optionalUsuario.get().getContrasena())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciales inválidas");
-        }
-
-        Usuario usuario = optionalUsuario.get();
-        String token = jwtService.generateToken(usuario);
-        String refreshTokenString = jwtService.generateRefreshToken(usuario);
-
-        // Guardamos el token de refresco en la base de datos
-        RefreshToken refreshToken = new RefreshToken();
-        refreshToken.setToken(refreshTokenString);
-        refreshToken.setUsuario(usuario);
-        long expirationTime = jwtService.getRefreshTokenExpirationSeconds() * 1000L;
-        refreshToken.setFechaExpiracion(LocalDateTime.now().plusSeconds(expirationTime));
-        refreshTokenRepository.save(refreshToken);
-
-        // Retornamos el DTO correspondiente según si es Cliente u otro rol
-        if (usuario instanceof Cliente cliente) {
-            return new LoginResponseDTO(token, refreshTokenString, usuario.getRol().toString(), cliente.getTipoCliente().toString());
-        }
-        return new LoginResponseDTO(token, refreshTokenString, usuario.getRol().toString(), null);
-    }
-
-    public LoginResponseDTO refreshToken(String refreshTokenString) {
-        // 1. Comprobamos que el token de refresco exista en la base de datos
-        Optional<RefreshToken> optionalRefreshToken = refreshTokenRepository.findByToken(refreshTokenString);
-        if (optionalRefreshToken.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token de refresco inválido");
-        }
-        RefreshToken refreshTokenEntity = optionalRefreshToken.get();
-
-        // 2. Comprobamos que la firma matemática siga siendo válida (que no haya caducado)
-        if (!jwtService.isTokenValid(refreshTokenEntity.getToken())) {
-            refreshTokenRepository.delete(refreshTokenEntity); // Lo borramos si ya caducó
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token expirado");
-        }
-
-        // 3. Generamos un nuevo Access Token corto para el usuario
-        Usuario user = refreshTokenEntity.getUsuario();
-        String nuevoAccessToken = jwtService.generateToken(user);
-
-        // 4. Retornamos el DTO correspondiente según si es Cliente u otro rol con el nuevo Access Token y el mismo Refresh Token
-        if (user instanceof Cliente cliente) {
-            return new LoginResponseDTO(nuevoAccessToken, refreshTokenEntity.getToken(), user.getRol().toString(), cliente.getTipoCliente().toString());
-        }
-        return new LoginResponseDTO(nuevoAccessToken, refreshTokenEntity.getToken(), user.getRol().toString(), null);
-
-    }
-
+    // REGISTER
     @Transactional
-    public AuthResponseDTO registrarCliente(@Valid ClienteRegistroDTO dto) {
-        if (usuarioRepository.existsByEmail(dto.email())) {
-            throw new IllegalArgumentException("El email ya está registrado");
+    public LoginResponseDTO registrarCliente(@Valid ClienteRegistroDTO dto) {
+        try {
+            passwordValidatorService.validatePassword(
+                dto.contrasena(),
+                new ArrayList<>()
+            );
+        } catch (ResponseStatusException e) {
+            throw new ValidationException("La contraseña no cumple con los requisitos de seguridad: " + e.getReason());
         }
-
+        
         Cliente cliente = Cliente.builder()
                 .nombre(dto.nombre())
                 .apellidos(dto.apellidos())
                 .email(dto.email())
-                .contrasena(dto.contrasena())
+                .contrasena(encoder.encode(dto.contrasena()))
                 .telefono(dto.telefono())
                 .imagenPerfil(dto.imagenPerfil())
                 .dni(dto.dni())
@@ -115,33 +63,26 @@ public class UserService {
                 .tipoCliente(dto.tipoCliente() != null ? dto.tipoCliente() : TipoCliente.NORMAL)
                 .build();
 
-        cliente.setActivo(true);
-
-        Cliente clientSaved = usuarioRepository.save(cliente);
-
-        //TODO: Guardar un toten de verdad cuando el servicio token de Alberto funcione
-        String token = "dummy-token";
-
-        return new AuthResponseDTO(
-                token,
-                clientSaved.getId(),
-                clientSaved.getNombre(),
-                clientSaved.getEmail(),
-                clientSaved.getRol()
-        );
+        cliente.setHistorialContrasenas(new ArrayList<>(List.of(cliente.getContrasena())));
+        return procesarRegistroUsuario(cliente);
     }
 
     @Transactional
-    public AuthResponseDTO registrarVendedor(@Valid VendedorRegisterRequest dto) {
-        if (usuarioRepository.existsByEmail(dto.email())) {
-            throw new IllegalArgumentException("El email ya está registrado");
+    public LoginResponseDTO registrarVendedor(@Valid VendedorRegisterRequest dto) {
+        try {
+           passwordValidatorService.validatePassword(
+                dto.contrasena(),
+                new ArrayList<>()
+            );
+        } catch (ResponseStatusException e) {
+            throw new ValidationException("La contraseña no cumple con los requisitos de seguridad: " + e.getReason());
         }
 
         Vendedor vendedor = Vendedor.builder()
                 .nombre(dto.nombre())
                 .apellidos(dto.apellidos())
                 .email(dto.email())
-                .contrasena(dto.contrasena())
+                .contrasena(encoder.encode(dto.contrasena()))
                 .telefono(dto.telefono())
                 .imagenPerfil(dto.imagenPerfil())
                 .nombreComercial(dto.nombreComercial())
@@ -149,18 +90,92 @@ public class UserService {
                 .categoriaPrincipalId(dto.categoriaPrincipalId())
                 .build();
 
-        vendedor.setActivo(true);
-        Vendedor guardado = usuarioRepository.save(vendedor);
+        vendedor.setHistorialContrasenas(new ArrayList<>(List.of(vendedor.getContrasena())));
+        return procesarRegistroUsuario(vendedor);
+    }
 
-        //TODO: Guardar un token de verdad cuando el servicio token de Alberto funcione
-        String token = "dummy-jwt-token";
+    // GETTER
+    public List<UserDto> getAllUsers() {
+        List<Usuario> usuarios = usuarioRepository.findAllByEliminadoFalse();
 
-        return new AuthResponseDTO(
-                token,
-                guardado.getId(),
-                guardado.getNombre(),
-                guardado.getEmail(),
-                guardado.getRol()
+        List<UserDto> usuariosDto = new ArrayList<>();
+
+        for (Usuario usuario : usuarios) {
+            usuariosDto.add(toDto(usuario));
+        }
+
+        return usuariosDto;
+    }
+
+
+
+    public UserDto getUserById(String id) {
+    return usuarioRepository.findByIdAndEliminadoFalse(id)
+            .map(this::toDto)
+            .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+    }
+
+    // UPDATE PROFILE
+    @Transactional
+    public void modificarMiPerfil(String id, UserSelfUpdateDTO dto) {
+        Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+
+        actualizarSiValido(dto.nombre(), usuario::setNombre);
+        actualizarSiValido(dto.apellidos(), usuario::setApellidos);
+        actualizarSiValido(dto.telefono(), usuario::setTelefono);
+        actualizarSiValido(dto.imagenPerfil(), usuario::setImagenPerfil);
+
+        if (usuario instanceof Cliente cliente && dto.tipoCliente() != null) {
+            cliente.setTipoCliente(dto.tipoCliente());
+        } else if (usuario instanceof Vendedor vendedor) {
+            actualizarSiValido(dto.categoriaPrincipalId(), vendedor::setCategoriaPrincipalId);
+            actualizarSiValido(dto.nombreComercial(), vendedor::setNombreComercial);
+        }
+
+        try {
+            usuarioRepository.save(usuario);
+        } catch (DuplicateKeyException e) {
+            throw new ConflictException("El campo único nombre comercial ya existe");
+        } catch (Exception e) {
+            throw new BusinessException("Error interno al actualizar el perfil", 500, "INTERNAL_ERROR", e);
+        }
+    }
+
+    // AUXILIAR METHODS
+    private LoginResponseDTO procesarRegistroUsuario(Usuario usuario) {
+        try {
+            if (usuarioRepository.existsByEmail(usuario.getEmail())) {
+                throw new ConflictException("El email ya está registrado");
+            }
+        } catch (ConflictException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BusinessException("Error interno al verificar el usuario", 500, "INTERNAL_ERROR", e);
+        }
+
+        usuario.setActivo(true);
+        Usuario usuarioGuardado;
+
+        try {
+            usuarioGuardado = usuarioRepository.save(usuario);
+        } catch (Exception e) {
+            throw new BusinessException("Error interno al registrar el usuario", 500, "INTERNAL_ERROR", e);
+        }
+
+        return authService.completarAutenticacion(usuarioGuardado);
+    }
+
+    private UserDto toDto(Usuario usuario) {
+        return new UserDto(
+            usuario.getId(), usuario.getNombre(), usuario.getApellidos(),
+            usuario.getEmail(), usuario.getRol(), usuario.isActivo(), usuario.isBloqueado()
         );
+    }
+    
+    private void actualizarSiValido(String valor, Consumer<String> setter) {
+        if (valor != null && !valor.isBlank()) {
+            setter.accept(valor);
+        }
     }
 }
