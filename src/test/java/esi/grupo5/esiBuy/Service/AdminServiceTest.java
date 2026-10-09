@@ -8,7 +8,10 @@ import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Model.Usuario;
 import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
-import esi.grupo5.esiBuy.Service.strategy.UsuarioUpdateStrategy;
+import esi.grupo5.esiBuy.Service.strategy.AdministradorUpdateStrategy;
+import esi.grupo5.esiBuy.Service.strategy.ClienteUpdateStrategy;
+import esi.grupo5.esiBuy.Service.strategy.VendedorUpdateStrategy;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,16 +39,18 @@ class AdminServiceTest {
 
     @Mock private UsuarioRepository usuarioRepository;
     @Mock private PasswordValidatorService passwordValidatorService;
+    @Mock private UserService userService;
 
     private AdminService service;
 
-    @BeforeEach
+   @BeforeEach
     void setUp() {
         service = new AdminService(
-                usuarioRepository,
-                new BCryptPasswordEncoder(),
-                passwordValidatorService,
-                List.<UsuarioUpdateStrategy>of());
+            usuarioRepository,
+            new BCryptPasswordEncoder(),
+            passwordValidatorService,
+            List.of(new AdministradorUpdateStrategy(), new ClienteUpdateStrategy(),new VendedorUpdateStrategy()),
+        userService);
     }
 
     @Test

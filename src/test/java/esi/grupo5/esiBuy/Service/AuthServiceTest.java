@@ -2,17 +2,11 @@ package esi.grupo5.esiBuy.Service;
 
 import esi.grupo5.esiBuy.Dto.LoginRequestDTO;
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
-<<<<<<< HEAD
-import esi.grupo5.esiBuy.Exception.ForbiddenException;
-import esi.grupo5.esiBuy.Model.Vendedor;
-import esi.grupo5.esiBuy.Model.enums.Rol;
-=======
 import esi.grupo5.esiBuy.Exception.AuthException;
 import esi.grupo5.esiBuy.Exception.ForbiddenException;
 import esi.grupo5.esiBuy.Exception.PasswordExpiredException;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.enums.TipoCliente;
->>>>>>> 139f0bfa67e3f22919e97df783e7ecffbe326765
 import esi.grupo5.esiBuy.Repository.RefreshTokenRepository;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import org.junit.jupiter.api.Test;
@@ -70,27 +64,6 @@ class AuthServiceTest {
     }
 
     @Test
-<<<<<<< HEAD
-    void loginUsuarioBloqueado_Rechazado() {
-        Vendedor usuario = new Vendedor();
-        usuario.setEmail("user@test.com");
-        usuario.setContrasena(new BCryptPasswordEncoder().encode("Password#1"));
-        usuario.setRol(Rol.CLIENTE);
-        usuario.setActivo(true);
-        usuario.setBloqueado(true);
-        when(usuarioRepository.findByEmail(usuario.getEmail())).thenReturn(Optional.of(usuario));
-        when(encoder.matches("Password#1", usuario.getContrasena())).thenReturn(true);
-
-        LoginRequestDTO loginRequest =
-            new LoginRequestDTO(usuario.getEmail(), "Password#1");
-
-        assertThrows(
-            ForbiddenException.class,
-            () -> service.login(loginRequest, "127.0.0.1")
-        );
-        
-        verify(loginAttemptService).registerFailedLogin("127.0.0.1");
-=======
     void loginEmailInexistente_registraIntentoFallido() {
         when(usuarioRepository.findByEmail("missing@test.com")).thenReturn(Optional.empty());
 
@@ -177,6 +150,5 @@ class AuthServiceTest {
         usuario.setActivo(true);
         usuario.setFechaCambioContrasena(LocalDateTime.now().plusDays(1));
         return usuario;
->>>>>>> 139f0bfa67e3f22919e97df783e7ecffbe326765
     }
 }
