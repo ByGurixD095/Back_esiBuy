@@ -22,7 +22,7 @@ describe('MarcoPagina', () => {
   });
 
   it('muestra el logo como enlace accesible al inicio', () => {
-    const logo = el.querySelector('a.logo') as HTMLAnchorElement;
+    const logo = el.querySelector('a.brand') as HTMLAnchorElement;
     expect(logo.getAttribute('aria-label')).toBe('EsiBuy, ir al inicio');
   });
 
@@ -31,19 +31,19 @@ describe('MarcoPagina', () => {
   });
 
   it('no muestra la etiqueta de panel ni el enlace de volver por defecto', () => {
-    expect(el.querySelector('.panel')).toBeNull();
-    expect(el.querySelector('.volver')).toBeNull();
+    expect(el.querySelector('.header-context')).toBeNull();
+    expect(el.querySelector('.volver-link')).toBeNull();
   });
 
   it('muestra la etiqueta de panel cuando se indica', async () => {
     fixture.componentRef.setInput('panel', 'Panel de administración');
     await fixture.whenStable();
-    expect(el.querySelector('.panel')?.textContent).toContain('Panel de administración');
+    expect(el.querySelector('.header-context')?.textContent).toContain('Panel de administración');
   });
 
   it('muestra el enlace de volver a la tienda cuando se pide', async () => {
     fixture.componentRef.setInput('volver', true);
     await fixture.whenStable();
-    expect(el.querySelector('.volver')?.textContent).toContain('Inicio');
+    expect(el.querySelector('.volver-link')?.textContent).toContain('Inicio');
   });
 });
