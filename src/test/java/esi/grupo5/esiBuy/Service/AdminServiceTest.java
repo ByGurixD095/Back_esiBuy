@@ -5,8 +5,10 @@ import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 import esi.grupo5.esiBuy.Exception.ConflictException;
 import esi.grupo5.esiBuy.Exception.ValidationException;
 import esi.grupo5.esiBuy.Model.Administrador;
+import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.Usuario;
 import esi.grupo5.esiBuy.Model.enums.Rol;
+import esi.grupo5.esiBuy.Model.enums.TipoCliente;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Service.strategy.UsuarioUpdateStrategy;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +25,7 @@ import esi.grupo5.esiBuy.Service.strategy.AdministradorUpdateStrategy;
 import esi.grupo5.esiBuy.Service.strategy.ClienteUpdateStrategy;
 import esi.grupo5.esiBuy.Service.strategy.VendedorUpdateStrategy;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -142,6 +145,30 @@ class AdminServiceTest {
         assertEquals("Ciudad Real", administrador.getSede());
 
         verify(usuarioRepository).save(administrador);
+    }
+
+    @Test
+    void modificarUsuario_clienteMenorDeEdad() {
+        String id = "cliente1";
+
+        Cliente cliente = Cliente.builder()
+            .nombre("Carlos")
+            .apellidos("López")
+            .email("carlos@esibuy.com")
+            .contrasena("password")
+            .dni("12345678A")
+            .fechaNacimiento(LocalDate.of(2000, 1, 1))
+            .tipoCliente(TipoCliente.NORMAL)
+            .build();
+
+        UserPatchDTO dto = new UserPatchDTO(
+            null, null, null, null,
+            null, LocalDate.now().minusYears(17),
+            null, null, null, null, null);
+
+        when(usuarioRepository.findById(id)).thenReturn(Optional.of(cliente));
+        assertThrows(ResponseStatusException.class, () -> service.modificarUsuario(id, dto));
+        verify(usuarioRepository, never()).save(any(Usuario.class));
     }
 
 }
