@@ -3,6 +3,8 @@ import { RouterLink } from '@angular/router';
 import { Producto } from '../../models/producto.model';
 import { AuthService } from '../../services/auth.service';
 import { ProductApiError, ProductService } from '../../services/product.service';
+import { PaginaProducto, Producto } from '../../models/producto.model';
+import { FiltrosProductos, ProductApiError, ProductService } from '../../services/product.service';
 
 type OrdenCatalogo = 'relevancia' | 'precioAsc' | 'precioDesc' | 'descuento';
 
@@ -18,6 +20,10 @@ export class Catalogo implements OnInit {
   readonly auth = inject(AuthService);
 
   readonly productos = signal<Producto[]>([]);
+  readonly totalElementos = signal(0);
+  readonly totalPaginas = signal(0);
+  readonly paginaActual = signal(0);
+  readonly tamanoPagina = 36;
   readonly cargando = signal(true);
   readonly error = signal<{ status: number; message: string } | null>(null);
   readonly busqueda = signal('');
@@ -33,40 +39,19 @@ export class Catalogo implements OnInit {
   });
   readonly precioMinimoSlider = computed(() => this.precioMinimo() ?? 0);
   readonly precioMaximoSlider = computed(() => this.precioMaximo() ?? this.precioEscalaMaxima());
-  readonly productosVisibles = computed(() => {
-    const termino = this.busqueda().trim().toLocaleLowerCase();
-    const categoria = this.categoriaSeleccionada();
-    const minimo = this.precioMinimo();
-    const maximo = this.precioMaximo();
-
-    const visibles = this.productos().filter((producto) => {
-      const coincideBusqueda = !termino || `${producto.nombre} ${producto.descripcion ?? ''} ${producto.referencia}`.toLocaleLowerCase().includes(termino);
-      const coincideCategoria = categoria === 'Todas' || producto.categoria === categoria;
-      const coincidePrecio = (minimo === null || producto.precioCent >= minimo) && (maximo === null || producto.precioCent <= maximo);
-      const coincideDescuento = !this.soloConDescuento() || producto.descuento > 0;
-      return coincideBusqueda && coincideCategoria && coincidePrecio && coincideDescuento;
-    });
-
-    return [...visibles].sort((a, b) => {
-      switch (this.orden()) {
-        case 'precioAsc': return a.precioCent - b.precioCent;
-        case 'precioDesc': return b.precioCent - a.precioCent;
-        case 'descuento': return b.descuento - a.descuento;
-        default: return 0;
-      }
-    });
-  });
-
   ngOnInit(): void {
     this.cargarCatalogo();
   }
 
-  cargarCatalogo(): void {
+  cargarCatalogo(filtros: FiltrosProductos = this.filtrosActuales()): void {
     this.cargando.set(true);
     this.error.set(null);
-    this.productService.obtenerDisponibles().subscribe({
-      next: (productos) => {
-        this.productos.set(productos);
+    this.productService.obtenerDisponibles(filtros, this.paginaActual(), this.tamanoPagina).subscribe({
+      next: (paginaProductos: PaginaProducto) => {
+        this.productos.set(paginaProductos.content);
+        this.totalPaginas.set(paginaProductos.totalPages);
+        this.totalElementos.set(paginaProductos.totalElements);
+        this.paginaActual.set(paginaProductos.number);
         this.cargando.set(false);
       },
       error: (error: ProductApiError) => {
@@ -78,22 +63,27 @@ export class Catalogo implements OnInit {
 
   actualizarBusqueda(event: Event): void {
     this.busqueda.set((event.target as HTMLInputElement).value);
+    this.recargarDesdePrimeraPagina();
   }
 
   actualizarCategoria(event: Event): void {
     this.categoriaSeleccionada.set((event.target as HTMLSelectElement).value);
+    this.recargarDesdePrimeraPagina();
   }
 
   actualizarOrden(event: Event): void {
     this.orden.set((event.target as HTMLSelectElement).value as OrdenCatalogo);
+    this.recargarDesdePrimeraPagina();
   }
 
   actualizarPrecioMinimo(event: Event): void {
     this.precioMinimo.set(Number((event.target as HTMLInputElement).value));
+    this.recargarDesdePrimeraPagina();
   }
 
   actualizarPrecioMaximo(event: Event): void {
     this.precioMaximo.set(Number((event.target as HTMLInputElement).value));
+    this.recargarDesdePrimeraPagina();
   }
 
   actualizarPrecioTexto(event: Event, limite: 'minimo' | 'maximo'): void {
@@ -106,10 +96,24 @@ export class Catalogo implements OnInit {
     } else {
       this.precioMaximo.set(precioValido);
     }
+    this.recargarDesdePrimeraPagina();
   }
 
   alternarDescuento(event: Event): void {
     this.soloConDescuento.set((event.target as HTMLInputElement).checked);
+    this.recargarDesdePrimeraPagina();
+  }
+
+  paginaAnterior(): void {
+    if (this.paginaActual() === 0) return;
+    this.paginaActual.update((pagina) => pagina - 1);
+    this.cargarCatalogo();
+  }
+
+  paginaSiguiente(): void {
+    if (this.paginaActual() + 1 >= this.totalPaginas()) return;
+    this.paginaActual.update((pagina) => pagina + 1);
+    this.cargarCatalogo();
   }
 
   limpiarFiltros(): void {
@@ -119,6 +123,23 @@ export class Catalogo implements OnInit {
     this.precioMinimo.set(null);
     this.precioMaximo.set(null);
     this.soloConDescuento.set(false);
+    this.recargarDesdePrimeraPagina();
+  }
+
+  private recargarDesdePrimeraPagina(): void {
+    this.paginaActual.set(0);
+    this.cargarCatalogo();
+  }
+
+  private filtrosActuales(): FiltrosProductos {
+    return {
+      busqueda: this.busqueda(),
+      categoria: this.categoriaSeleccionada(),
+      precioMinCent: this.precioMinimo(),
+      precioMaxCent: this.precioMaximo(),
+      soloOfertas: this.soloConDescuento(),
+      orden: this.orden(),
+    };
   }
 
   formatearPrecio(precioCent: number): string {
