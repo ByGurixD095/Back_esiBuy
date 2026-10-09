@@ -22,10 +22,10 @@ class JwtServiceTest {
     @BeforeEach
     void setUp() {
         service = new JwtService();
-        ReflectionTestUtils.setField(service, "SECRET_KEY",
+        ReflectionTestUtils.setField(service, "secretKey",
                 "0123456789012345678901234567890123456789012345678901234567890123");
-        ReflectionTestUtils.setField(service, "EXPIRATION_TIME", 60_000L);
-        ReflectionTestUtils.setField(service, "REFRESH_EXPIRATION_TIME", 120_000L);
+        ReflectionTestUtils.setField(service, "expirationTime", 60_000L);
+        ReflectionTestUtils.setField(service, "refreshExpirationTime", 120_000L);
         user = Cliente.builder()
                 .nombre("Cliente")
                 .apellidos("Prueba")
