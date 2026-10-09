@@ -1,0 +1,67 @@
+.mfa-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mfa-panel h2 {
+  margin: 0;
+  font-family: var(--esi-font-title);
+  font-size: 26px;
+  font-weight: 400;
+}
+
+.tutorial,
+.mfa-panel p {
+  margin: 0;
+  color: var(--esi-soft-ink, var(--esi-muted));
+}
+
+.qr {
+  align-self: center;
+  width: min(240px, 100%);
+  height: auto;
+  border: 8px solid #fff;
+}
+
+.secret {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.secret code,
+.backup-codes code {
+  padding: 10px;
+  border-radius: var(--esi-radius);
+  background: var(--esi-surface);
+  color: var(--esi-text);
+  letter-spacing: 0.12em;
+  overflow-wrap: anywhere;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.backup-codes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.backup-codes code {
+  display: block;
+  text-align: center;
+}
+
+@media (max-width: 420px) {
+  .backup-codes {
+    grid-template-columns: 1fr;
+  }
+}

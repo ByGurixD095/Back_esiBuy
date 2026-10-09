@@ -1,13 +1,28 @@
 import { Routes } from '@angular/router';
-import { AdministradorRegistro } from './administrador-registro/administrador-registro';
-import { InicioSesion } from './inicio-sesion/inicio-sesion';
+import { AdministradorRegistro } from './components/administrador-registro/administrador-registro';
+import { Catalogo } from './components/catalogo/catalogo';
+import { InicioSesion } from './components/inicio-sesion/inicio-sesion';
+import { RecoverPasswordComponent } from './components/recover-password-component/recover-password-component';
+import { ResetPasswordComponent } from './components/reset-password-component/reset-password-component';
+import { ProductoForm } from './components/producto-form/producto-form';
+import { RegistroComponent } from './components/registro/registro';
+import { RegistroInicio } from './components/registro/registro-inicio';
+import { roleGuard } from './guards/role.guard';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'products' },
-  { path: 'products', loadComponent: () => import('./catalogo/catalogo').then((module) => module.Catalogo) },
-  { path: 'products/new', loadComponent: () => import('./producto-form/producto-form').then((module) => module.ProductoForm) },
-  { path: 'register', children: [] },
+  { path: 'products', component: Catalogo, canActivate: [roleGuard(['VENDEDOR'])] },
+  { path: 'products/new', component: ProductoForm, canActivate: [roleGuard(['VENDEDOR'])] },
+  { path: 'register', component: RegistroInicio },
+  { path: 'register/clientes', component: RegistroComponent, data: { tipoRegistro: 'cliente' } },
+  { path: 'register/vendedor', component: RegistroComponent, data: { tipoRegistro: 'vendedor' } },
   { path: 'cart', children: [] },
-  { path: 'administradores/nuevo', component: AdministradorRegistro },
+  {
+    path: 'administradores/nuevo',
+    component: AdministradorRegistro,
+    canActivate: [roleGuard(['ADMINISTRADOR'])],
+  },
   { path: 'login', component: InicioSesion },
+  { path: 'recover-password', component: RecoverPasswordComponent },
+  { path: 'reset-password', component: ResetPasswordComponent },
 ];

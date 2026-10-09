@@ -1,8 +1,8 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, throwError } from 'rxjs';
+import { Observable, catchError, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { Producto } from '../models/producto.model';
+import { PaginaProducto } from '../models/producto.model';
 
 export class ProductApiError extends Error {
   constructor(
@@ -14,22 +14,39 @@ export class ProductApiError extends Error {
   }
 }
 
+export interface FiltrosProductos {
+  busqueda?: string;
+  categoria?: string;
+  precioMinCent?: number | null;
+  precioMaxCent?: number | null;
+  soloOfertas?: boolean;
+  orden?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProductService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = `${environment.apiUrl}/products/disponibles`;
+  private readonly apiUrl = `${environment.apiUrl}/products`;
 
-  obtenerDisponibles(): Observable<Producto[]> {
-    return this.http.get<Producto[]>(this.apiUrl, { withCredentials: true }).pipe(
-      map((productos) => productos.filter((producto) => producto.activo && producto.numStock > 0)),
+  obtenerDisponibles(filtros: FiltrosProductos = {}, pagina = 0, tamanoPagina = 36): Observable<PaginaProducto> {
+    let params = new HttpParams();
+
+    if (filtros.busqueda?.trim()) params = params.set('busqueda', filtros.busqueda.trim());
+    if (filtros.categoria && filtros.categoria !== 'Todas' && filtros.categoria !== 'TODAS') params = params.set('categoria', filtros.categoria);
+    if (filtros.precioMinCent != null) params = params.set('precioMinCent', filtros.precioMinCent);
+    if (filtros.precioMaxCent != null) params = params.set('precioMaxCent', filtros.precioMaxCent);
+    if (filtros.soloOfertas) params = params.set('soloOfertas', true);
+    if (filtros.orden && filtros.orden !== 'relevancia') params = params.set('orden', filtros.orden);
+    params = params.set('page', pagina).set('size', tamanoPagina);
+
+    return this.http.get<PaginaProducto>(`${this.apiUrl}/disponibles`, { params, withCredentials: true }).pipe(
       catchError((error: HttpErrorResponse) => {
         return throwError(() => new ProductApiError(error.status, mensajeParaStatus(error)));
       }),
     );
   }
 
-  // TODO: añadir aquí los parámetros/endpoints de paginación, búsqueda y filtros
-  // cuando estén disponibles en el backend.
+  // TODO: añadir aquí paginación cuando el backend exponga sus parámetros.
 }
 
 function mensajeParaStatus(error: HttpErrorResponse): string {

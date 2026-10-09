@@ -14,7 +14,21 @@
         <h1 id="catalog-title">Encuentra algo<br /><em>para ti.</em></h1>
         <p class="intro-copy">Explora los productos disponibles en EsiBuy.</p>
       </div>
-      <div class="intro-note"><span class="note-mark" aria-hidden="true">✳</span><span>Compra local.<br />Elige diferente.</span></div>
+      <aside class="catalog-summary" aria-label="Resumen del catálogo">
+        <span class="summary-label">Ahora mismo</span>
+        @if (cargando()) {
+          <strong class="summary-number">...</strong>
+          <p>Consultando disponibilidad</p>
+        } @else if (error()) {
+          <strong class="summary-number">!</strong>
+          <p>No se pudo consultar el catálogo</p>
+        } @else {
+          <strong class="summary-number">{{ productos().length }}</strong>
+          <p>{{ productos().length === 1 ? 'producto disponible' : 'productos disponibles' }}</p>
+        }
+        <span class="summary-line" aria-hidden="true"></span>
+        <small>Stock actualizado desde el catálogo online</small>
+      </aside>
     </div>
 
     <section class="filters-panel" aria-label="Filtros del catálogo">
@@ -30,17 +44,28 @@
         </select>
       </label>
       <label class="filter-select">
-        <span>Precio máximo</span>
-        <select [value]="precioMaximo() ?? ''" (change)="actualizarPrecioMaximo($event)">
-          <option value="">Cualquier precio</option>
-          <option value="2000">Hasta 20 €</option>
-          <option value="5000">Hasta 50 €</option>
-          <option value="10000">Hasta 100 €</option>
+        <span>Ordenar por</span>
+        <select [value]="orden()" (change)="actualizarOrden($event)">
+          <option value="relevancia">Relevancia</option>
+          <option value="precioAsc">Precio menor</option>
+          <option value="precioDesc">Precio mayor</option>
+          <option value="descuento">Mayor descuento</option>
         </select>
       </label>
+      <fieldset class="price-filter">
+        <legend>Precio</legend>
+        <div class="price-range" [style.--price-min]="precioMinimoSlider() + 'c'" [style.--price-max]="precioMaximoSlider() + 'c'" [style.--price-scale]="precioEscalaMaxima() + 'c'">
+          <input class="range-input range-min" type="range" min="0" [max]="precioEscalaMaxima()" step="1" [value]="precioMinimoSlider()" aria-label="Precio mínimo" (input)="actualizarPrecioMinimo($event)" />
+          <input class="range-input range-max" type="range" min="0" [max]="precioEscalaMaxima()" step="1" [value]="precioMaximoSlider()" aria-label="Precio máximo" (input)="actualizarPrecioMaximo($event)" />
+        </div>
+        <div class="price-inputs">
+          <label>Desde (€)<input type="number" min="0" step="0.01" inputmode="decimal" [value]="precioMinimo() === null ? '' : precioMinimo()! / 100" placeholder="Sin mínimo" (input)="actualizarPrecioTexto($event, 'minimo')" /></label>
+          <label>Hasta (€)<input type="number" min="0" step="0.01" inputmode="decimal" [value]="precioMaximo() === null ? '' : precioMaximo()! / 100" placeholder="Sin máximo" (input)="actualizarPrecioTexto($event, 'maximo')" /></label>
+        </div>
+      </fieldset>
       <label class="discount-filter"><input type="checkbox" [checked]="soloConDescuento()" (change)="alternarDescuento($event)" /> Solo ofertas</label>
-      @if (busqueda() || categoriaSeleccionada() !== 'Todas' || precioMaximo() !== null || soloConDescuento()) {
-        <button class="clear-filter" type="button" (click)="limpiarFiltros()">Limpiar</button>
+      @if (busqueda() || categoriaSeleccionada() !== 'Todas' || orden() !== 'relevancia' || precioMinimo() !== null || precioMaximo() !== null || soloConDescuento()) {
+        <button class="clear-filter" type="button" (click)="limpiarFiltros()"><span aria-hidden="true">↺</span> Limpiar</button>
       }
     </section>
 
@@ -68,21 +93,14 @@
         <h2>El catálogo está vacío</h2>
         <p>Ahora mismo no hay productos con stock disponibles.</p>
       </section>
-    } @else if (productosVisibles().length === 0) {
-      <section class="state-panel empty-state" aria-live="polite">
-        <span class="state-symbol" aria-hidden="true">⌕</span>
-        <h2>No hay resultados</h2>
-        <p>Ningún producto coincide con los filtros seleccionados.</p>
-        <button type="button" class="state-action" (click)="limpiarFiltros()">Ver todos los productos</button>
-      </section>
     } @else {
       <div class="results-toolbar" aria-live="polite">
-        <p><strong>{{ productosVisibles().length }}</strong> productos disponibles</p>
-        <p class="success-note"><span aria-hidden="true">●</span> Catálogo actualizado</p>
+        <p>Mostrando <strong>{{ totalElementos() }}</strong> artículos</p>
+        <p class="success-note"><span aria-hidden="true">●</span> Catálogo actualizado · 36 por página</p>
       </div>
 
       <div class="product-grid">
-        @for (producto of productosVisibles(); track producto.id) {
+        @for (producto of productos(); track producto.id) {
           <article class="product-card">
             <div class="product-image-wrap">
               @if (producto.urlImagen) {
@@ -108,6 +126,13 @@
           </article>
         }
       </div>
+      @if (totalPaginas() > 1) {
+        <nav class="pagination" aria-label="Paginación del catálogo">
+          <button type="button" [disabled]="paginaActual() === 0" (click)="paginaAnterior()">Anterior</button>
+          <span>Página {{ paginaActual() + 1 }} de {{ totalPaginas() }}</span>
+          <button type="button" [disabled]="paginaActual() + 1 >= totalPaginas()" (click)="paginaSiguiente()">Siguiente</button>
+        </nav>
+      }
     }
   </section>
 
