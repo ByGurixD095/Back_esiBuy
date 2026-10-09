@@ -14,3 +14,10 @@ export interface ProductoDTO {
 export interface Producto extends ProductoDTO {
   id: string;
 }
+
+export interface PaginaProducto {
+  content: Producto[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+}

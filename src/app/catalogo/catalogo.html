@@ -93,21 +93,14 @@
         <h2>El catálogo está vacío</h2>
         <p>Ahora mismo no hay productos con stock disponibles.</p>
       </section>
-    } @else if (productosVisibles().length === 0) {
-      <section class="state-panel empty-state" aria-live="polite">
-        <span class="state-symbol" aria-hidden="true">⌕</span>
-        <h2>No hay resultados</h2>
-        <p>Ningún producto coincide con los filtros seleccionados.</p>
-        <button type="button" class="state-action" (click)="limpiarFiltros()">Ver todos los productos</button>
-      </section>
     } @else {
       <div class="results-toolbar" aria-live="polite">
-        <p><strong>{{ productosVisibles().length }}</strong> productos disponibles</p>
-        <p class="success-note"><span aria-hidden="true">●</span> Catálogo actualizado</p>
+        <p>Mostrando <strong>{{ totalElementos() }}</strong> artículos</p>
+        <p class="success-note"><span aria-hidden="true">●</span> Catálogo actualizado · 36 por página</p>
       </div>
 
       <div class="product-grid">
-        @for (producto of productosVisibles(); track producto.id) {
+        @for (producto of productos(); track producto.id) {
           <article class="product-card">
             <div class="product-image-wrap">
               @if (producto.urlImagen) {
@@ -133,6 +126,13 @@
           </article>
         }
       </div>
+      @if (totalPaginas() > 1) {
+        <nav class="pagination" aria-label="Paginación del catálogo">
+          <button type="button" [disabled]="paginaActual() === 0" (click)="paginaAnterior()">Anterior</button>
+          <span>Página {{ paginaActual() + 1 }} de {{ totalPaginas() }}</span>
+          <button type="button" [disabled]="paginaActual() + 1 >= totalPaginas()" (click)="paginaSiguiente()">Siguiente</button>
+        </nav>
+      }
     }
   </section>
 
