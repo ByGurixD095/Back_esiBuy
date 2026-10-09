@@ -16,13 +16,13 @@ import io.jsonwebtoken.security.Keys;
 public class JwtService {
 
     @Value("${jwt.secret}")
-    private String SECRET_KEY;
+    private String secretKey;
 
     @Value("${jwt.expiration}")
-    private long EXPIRATION_TIME;
+    private long expirationTime;
 
     @Value("${jwt.refresh.expiration}")
-    private long REFRESH_EXPIRATION_TIME;
+    private long refreshExpirationTime;
 
     // generar token JWT
     public String generateToken(Usuario userDetails) {
@@ -30,7 +30,7 @@ public class JwtService {
                 .subject(userDetails.getId())   
                 .claim("rol", userDetails.getRol().toString())
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .expiration(new Date(System.currentTimeMillis() + expirationTime))
                 .signWith(getSignInKey(), Jwts.SIG.HS256)
                 .compact();
     }
@@ -40,17 +40,17 @@ public class JwtService {
         return Jwts.builder()
                 .subject(userDetails.getId())    
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + REFRESH_EXPIRATION_TIME))
+                .expiration(new Date(System.currentTimeMillis() + refreshExpirationTime))
                 .signWith(getSignInKey(), Jwts.SIG.HS256)
                 .compact();
     }
 
     // Obetener clave de firma a partir de la clave secreta
     private SecretKey getSignInKey() {
-        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+        return Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
-    // 2. Leer todo el contenido (Payload/Claims) del token
+    // 2. Extraer todos los claims del token
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getSignInKey()) // Verifica matemáticamente que la firma sea tuya
@@ -82,10 +82,10 @@ public class JwtService {
     }
 
     public int getAccessTokenExpirationSeconds() {
-        return (int) (EXPIRATION_TIME / 1000L);
+        return (int) (expirationTime / 1000L);
     }
 
     public int getRefreshTokenExpirationSeconds() {
-        return (int) (REFRESH_EXPIRATION_TIME / 1000L);
+        return (int) (refreshExpirationTime / 1000L);
     }
 }

@@ -7,19 +7,17 @@ import dev.samstevens.totp.qr.ZxingPngQrGenerator;
 import dev.samstevens.totp.secret.DefaultSecretGenerator;
 import dev.samstevens.totp.time.SystemTimeProvider;
 import esi.grupo5.esiBuy.Dto.MfaBackupCodesDTO;
-import esi.grupo5.esiBuy.Dto.MfaConfigRequestDTO;
 import esi.grupo5.esiBuy.Dto.MfaSetupConfirmDTO;
 import esi.grupo5.esiBuy.Dto.MfaSetupResponseDTO;
 import esi.grupo5.esiBuy.Dto.MfaVerifyRequestDTO;
+import esi.grupo5.esiBuy.Exception.*;
 import esi.grupo5.esiBuy.Model.Usuario;
 import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
@@ -32,7 +30,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.HexFormat;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Service
@@ -44,6 +41,8 @@ public class AuthFactorService {
     private final BCryptPasswordEncoder encoder;
     private final EmailService emailService;
     private final UsuarioRepository usuarioRepository;
+
+    private static final String MSG_USUARIO_NO_ENCONTRADO = "Usuario no encontrado";
 
     public AuthFactorService(EmailService emailService, BCryptPasswordEncoder encoder,
                              UsuarioRepository usuarioRepository) {
@@ -69,13 +68,14 @@ public class AuthFactorService {
 
     public Usuario requireSetupAccess(String email, String setupToken) {
             Usuario usuario = usuarioRepository.findByEmail(email)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+                    .orElseThrow(() -> new NotFoundException(MSG_USUARIO_NO_ENCONTRADO));
+                    
             if (setupToken == null || usuario.getMfaSetupTokenHash() == null
                     || usuario.getMfaSetupTokenExpiracion() == null
                     || usuario.getMfaSetupTokenExpiracion().isBefore(LocalDateTime.now())
                     || !MessageDigest.isEqual(usuario.getMfaSetupTokenHash().getBytes(StandardCharsets.UTF_8),
                                               hash(setupToken).getBytes(StandardCharsets.UTF_8))) {
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token de configuración MFA inválido o expirado");
+                throw new ExpiredTokenException("Token de configuración MFA inválido o expirado");
             }
             return usuario;
         }
@@ -91,7 +91,7 @@ public class AuthFactorService {
     public MfaBackupCodesDTO confirmSetup(MfaSetupConfirmDTO dto) {
             Usuario usuario = requireSetupAccess(dto.email(), dto.setupToken());
             if (!verificarCodigoTotp(usuario, dto.code())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El código TOTP es incorrecto.");
+                throw new ValidationException("El código TOTP es incorrecto.");
             }
             usuario.setMfaConfigurado(true);
             usuario.setMfaSetupTokenHash(null);
@@ -104,7 +104,7 @@ public class AuthFactorService {
 
     public void configureMfa(String userId, boolean enable2fa, boolean enable3fa) {
             Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(userId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+                    .orElseThrow(() -> new NotFoundException(MSG_USUARIO_NO_ENCONTRADO));
             usuario.setIs2faActivoCliente(enable2fa);
             usuario.setIs3faActivoCliente(enable3fa);
             usuarioRepository.save(usuario);
@@ -117,17 +117,16 @@ public class AuthFactorService {
 
     public Usuario verifyFactors(MfaVerifyRequestDTO dto) {
             Usuario usuario = usuarioRepository.findByEmail(dto.email())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+                    .orElseThrow(() -> new NotFoundException(MSG_USUARIO_NO_ENCONTRADO));
             boolean totpValid = verificarCodigoTotp(usuario, dto.totpCode())
                     || verificarCodigoRespaldo(usuario, dto.totpCode());
             if (!totpValid) {
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Código TOTP inválido");
+                throw new AuthException("Código TOTP inválido");
             }
             if (usuario.getRol() == Rol.ADMINISTRADOR || usuario.getRol() == Rol.VENDEDOR
                     || usuario.is3faActivoCliente()) {
                 if (!verificarEmailOtp(usuario, dto.emailOtpCode())) {
-                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
-                            "Código de Email inválido o expirado");
+                    throw new ExpiredTokenException("Código de Email inválido o expirado");
                 }
                 usuario.setEmailOtpHash(null);
                 usuario.setEmailOtpExpiracion(null);
@@ -147,7 +146,7 @@ public class AuthFactorService {
                     .label(email).secret(secretoPlano).issuer("esiBuy").digits(6).period(30).build();
             byte[] imageData = new ZxingPngQrGenerator().generate(data);
             return "data:image/png;base64," + Base64.getEncoder().encodeToString(imageData);
-        } catch (Exception e) { throw new RuntimeException("Error generando QR", e); }
+        } catch (Exception e) { throw new BusinessException("Error generando QR", 500, "INTERNAL_ERROR", e); }
     }
 
     public boolean verificarCodigoTotp(Usuario usuario, String codigoUsuario) {
@@ -173,8 +172,8 @@ public class AuthFactorService {
         SecureRandom random = new SecureRandom();
         List<String> codigosPlanos = IntStream.range(0, 8)
                 .mapToObj(i -> String.format("%08d", random.nextInt(100000000)))
-                .collect(Collectors.toList());
-        usuario.setCodigosRespaldoHasheados(codigosPlanos.stream().map(encoder::encode).collect(Collectors.toList()));
+                .toList();
+        usuario.setCodigosRespaldoHasheados(codigosPlanos.stream().map(encoder::encode).toList());
         return codigosPlanos;
     }
 
@@ -186,7 +185,7 @@ public class AuthFactorService {
         String html = "<h2>Código de Verificación</h2><p>Tu código es: <strong>" + otp + "</strong></p><p>Caduca en 10 minutos.</p>";
         try {
             emailService.sendHtmlEmail(usuario.getEmail(), "Código de acceso esiBuy", html);
-        } catch (MessagingException e) { throw new RuntimeException("Error enviando email MFA", e); }
+        } catch (MessagingException e) { throw new BusinessException("Error enviando email MFA", 500, "INTERNAL_ERROR", e); }
     }
 
     public boolean verificarEmailOtp(Usuario usuario, String codigoUsuario) {
@@ -196,20 +195,20 @@ public class AuthFactorService {
         return encoder.matches(codigoUsuario, usuario.getEmailOtpHash());
     }
 
-    public String cifrar(String textoPlano) {
+public String cifrar(String textoPlano) {
         try {
-            Cipher cipher = Cipher.getInstance("AES");
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
             cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(encryptionKey.getBytes(), "AES"));
             return Base64.getEncoder().encodeToString(cipher.doFinal(textoPlano.getBytes()));
-        } catch (Exception e) { throw new RuntimeException("Error cifrando", e); }
+        } catch (Exception e) { throw new BusinessException("Error cifrando", 500, "INTERNAL_ERROR", e); }
     }
 
     private String descifrar(String textoCifrado) {
         try {
-            Cipher cipher = Cipher.getInstance("AES");
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
             cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(encryptionKey.getBytes(), "AES"));
             return new String(cipher.doFinal(Base64.getDecoder().decode(textoCifrado)));
-        } catch (Exception e) { throw new RuntimeException("Error descifrando", e); }
+        } catch (Exception e) { throw new BusinessException("Error descifrando", 500, "INTERNAL_ERROR", e); }
     }
 
     private String hash(String value) {
@@ -218,7 +217,7 @@ public class AuthFactorService {
                     MessageDigest.getInstance("SHA-256")
                             .digest(value.getBytes(StandardCharsets.UTF_8)));
         } catch (Exception exception) {
-            throw new IllegalStateException("No se pudo generar el hash del desafío MFA", exception);
+            throw new BusinessException("No se pudo generar el hash del desafío MFA", 500, "INTERNAL_ERROR", exception);
         }
     }
 }

@@ -5,10 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +16,7 @@ import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
 import esi.grupo5.esiBuy.Dto.UserDto;
 import esi.grupo5.esiBuy.Dto.UserSelfUpdateDTO;
 import esi.grupo5.esiBuy.Dto.VendedorRegisterRequest;
+import esi.grupo5.esiBuy.Exception.*;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.Usuario;
 import esi.grupo5.esiBuy.Model.Vendedor;
@@ -27,8 +25,6 @@ import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 
 @Service
 public class UserService {
-
-    private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final UsuarioRepository usuarioRepository;
     private final BCryptPasswordEncoder encoder;
@@ -52,7 +48,7 @@ public class UserService {
                 new ArrayList<>()
             );
         } catch (ResponseStatusException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña no cumple con los requisitos de seguridad: " + e.getReason());
+            throw new ValidationException("La contraseña no cumple con los requisitos de seguridad: " + e.getReason());
         }
         
         Cliente cliente = Cliente.builder()
@@ -79,7 +75,7 @@ public class UserService {
                 new ArrayList<>()
             );
         } catch (ResponseStatusException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña no cumple con los requisitos de seguridad: " + e.getReason());
+            throw new ValidationException("La contraseña no cumple con los requisitos de seguridad: " + e.getReason());
         }
 
         Vendedor vendedor = Vendedor.builder()
@@ -116,16 +112,14 @@ public class UserService {
     public UserDto getUserById(String id) {
     return usuarioRepository.findByIdAndEliminadoFalse(id)
             .map(this::toDto)
-            .orElseThrow(() -> new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Usuario no encontrado"));
+            .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
     }
 
     // UPDATE PROFILE
     @Transactional
     public void modificarMiPerfil(String id, UserSelfUpdateDTO dto) {
         Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
 
         actualizarSiValido(dto.nombre(), usuario::setNombre);
         actualizarSiValido(dto.apellidos(), usuario::setApellidos);
@@ -142,9 +136,9 @@ public class UserService {
         try {
             usuarioRepository.save(usuario);
         } catch (DuplicateKeyException e) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "El campo único nombre comercial ya existe");
+            throw new ConflictException("El campo único nombre comercial ya existe");
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno al actualizar el perfil");
+            throw new BusinessException("Error interno al actualizar el perfil", 500, "INTERNAL_ERROR", e);
         }
     }
 
@@ -152,13 +146,12 @@ public class UserService {
     private LoginResponseDTO procesarRegistroUsuario(Usuario usuario) {
         try {
             if (usuarioRepository.existsByEmail(usuario.getEmail())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "El email ya está registrado");
+                throw new ConflictException("El email ya está registrado");
             }
-        } catch (ResponseStatusException e) {
+        } catch (ConflictException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Error al comprobar la existencia del email {}: {}", usuario.getEmail(), e.getMessage());
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno al verificar el usuario");
+            throw new BusinessException("Error interno al verificar el usuario", 500, "INTERNAL_ERROR", e);
         }
 
         usuario.setActivo(true);
@@ -167,8 +160,7 @@ public class UserService {
         try {
             usuarioGuardado = usuarioRepository.save(usuario);
         } catch (Exception e) {
-            log.error("Error al guardar el nuevo usuario {}: {}", usuario.getEmail(), e.getMessage());
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno al registrar el usuario");
+            throw new BusinessException("Error interno al registrar el usuario", 500, "INTERNAL_ERROR", e);
         }
 
         return authService.completarAutenticacion(usuarioGuardado);

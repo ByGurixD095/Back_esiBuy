@@ -10,12 +10,11 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import esi.grupo5.esiBuy.Dto.*;
+import esi.grupo5.esiBuy.Exception.*;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.RefreshToken;
 import esi.grupo5.esiBuy.Model.Usuario;
@@ -36,7 +35,7 @@ public class AuthService {
     private final BCryptPasswordEncoder encoder;
     private final AuthFactorService authFactorService;
 
-    @Value("${app.frontend.password-reset-url:http://localhost:4200/reset-password?token=}")
+    @Value("${app.password-reset-url}")
     private String passwordResetUrl;
 
     public AuthService(UsuarioRepository usuarioRepository, JwtService jwtService,
@@ -58,21 +57,21 @@ public class AuthService {
         Usuario usuario = usuarioRepository.findByEmail(loginRequest.username())
                 .orElseThrow(() -> {
                     loginAttempService.registerFailedLogin(ipAddress);
-                    return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciales inválidas");
+                    throw new AuthException("Credenciales inválidas");
                 });
 
         if (!encoder.matches(loginRequest.password(), usuario.getContrasena())) {
             loginAttempService.registerFailedLogin(ipAddress);
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciales inválidas");
+            throw new AuthException("Credenciales inválidas");
         }
         
         if (usuario.isBloqueado() || !usuario.isActivo()) {
             loginAttempService.registerFailedLogin(ipAddress);
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "El usuario no puede iniciar sesión");
+            throw new ForbiddenException("El usuario no puede iniciar sesión");
         }
         if (usuario.getFechaCambioContrasena() != null && LocalDateTime.now().isAfter(usuario.getFechaCambioContrasena())) {
             loginAttempService.registerFailedLogin(ipAddress);
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tu contraseña ha caducado. Debes cambiarla.");
+            throw new PasswordExpiredException("Tu contraseña ha caducado. Debes cambiarla.");
         }
         
         loginAttempService.registerSuccessfulLogin(ipAddress);
@@ -115,7 +114,7 @@ public class AuthService {
             refreshTokenRepository.save(refreshToken);
         } catch (Exception e) { 
             log.error("Error al guardar el refresh token del usuario {}: {}", usuario.getEmail(), e.getMessage());
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Ocurrió un error interno");
+            throw new BusinessException("Ocurrió un error interno", 500, "INTERNAL_ERROR");
         }
         String tipoCliente = (usuario instanceof Cliente cliente) ? cliente.getTipoCliente().toString() : null;
         return new LoginResponseDTO(token, refreshTokenString, usuario.getRol().toString(), tipoCliente, "SUCCESS", usuario.getEmail());
@@ -123,11 +122,11 @@ public class AuthService {
 
     public LoginResponseDTO refreshToken(String refreshTokenString) {
         RefreshToken refreshTokenEntity = refreshTokenRepository.findByToken(refreshTokenString)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token de refresco inválido"));
+            .orElseThrow(() -> new AuthException("Token de refresco inválido"));
             
         if (!jwtService.isTokenValid(refreshTokenEntity.getToken())) {
             refreshTokenRepository.delete(refreshTokenEntity);
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token expirado");
+            throw new ExpiredTokenException("Refresh token expirado");
         }
         Usuario usuario = refreshTokenEntity.getUsuario(); 
         String nuevoAccessToken = jwtService.generateToken(usuario);
@@ -150,19 +149,19 @@ public class AuthService {
         try {
             emailService.sendRecoveryEmail(email, usuario.getNombre(), passwordResetUrl + resetToken);
         } catch (MessagingException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No se ha podido enviar el email de recuperación", e);
+            throw new BusinessException("No se ha podido enviar el email de recuperación", 500, "INTERNAL_ERROR", e);
         }
     }
 
     public void resetPassword(PasswordResetConfirmDTO request) {
         if (!request.pwd1().equals(request.pwd2())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Las contraseñas no coinciden");
+            throw new ValidationException("Las contraseñas no coinciden");
         }
         Usuario usuario = usuarioRepository.findByTokenRecuperacionContrasena(hashToken(request.token()))
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token de recuperación inválido"));
+            .orElseThrow(() -> new NotFoundException("Token de recuperación inválido"));
 
         if (usuario.getFechaExpiracionTokenRecuperacion() == null || usuario.getFechaExpiracionTokenRecuperacion().isBefore(LocalDateTime.now())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token de recuperación expirado");
+            throw new ValidationException("Token de recuperación expirado");
         }
         
         passwordValidatorService.validatePassword(request.pwd1(), usuario.getHistorialContrasenas());
@@ -177,14 +176,12 @@ public class AuthService {
         usuarioRepository.save(usuario);
     }
 
-    private Usuario buscarUsuario(String email) {
-        return usuarioRepository.findByEmail(email).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
-    }
-
     private String hashToken(String token) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             return HexFormat.of().formatHex(digest.digest(token.getBytes(StandardCharsets.UTF_8))); 
-        } catch (Exception e) { throw new RuntimeException("Error crítico al inicializar SHA-256", e); }
+        } catch (Exception e) { 
+            throw new BusinessException("Error al generar el hash del token", 500, "INTERNAL_ERROR", e);
+        }
     }
 }
