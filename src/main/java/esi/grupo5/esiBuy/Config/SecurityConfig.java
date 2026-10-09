@@ -69,8 +69,23 @@ public class SecurityConfig {
                     "/users/refresh",
                     "/users/register/**",
                     "/users/recover-password",
-                    "/users/reset-password"
+                    "/users/reset-password",
+                    "/mfa/verify-mfa",
+                    "/mfa/setup-init",
+                    "/mfa/setup-confirm"
                 ).permitAll();
+
+                // El catalogo es publico; no necesita una cookie JWT para consultarse.
+                auth.requestMatchers(HttpMethod.GET, "/products/disponibles").permitAll();
+
+                // Las operaciones de administracion requieren un JWT de administrador.
+                auth.requestMatchers(HttpMethod.POST, "/users/administradores")
+                    .hasRole("ADMINISTRADOR");
+                auth.requestMatchers(HttpMethod.PATCH, "/users/*")
+                    .hasRole("ADMINISTRADOR");
+                auth.requestMatchers("/api/admin/usuarios/**")
+                    .hasRole("ADMINISTRADOR");
+                auth.requestMatchers("/mfa/config").authenticated();
 
                 // -------------------------------------------------
                 // ADMINISTRADOR

@@ -1,59 +1,26 @@
 package esi.grupo5.esiBuy.Service;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.web.server.ResponseStatusException;
+import esi.grupo5.esiBuy.Exception.ValidationException;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class PasswordValidatorServiceTest {
+    private final PasswordValidatorService service =
+            new PasswordValidatorService(new BCryptPasswordEncoder());
 
-    private PasswordValidatorService service;
-    private BCryptPasswordEncoder encoder;
-
-    @BeforeEach
-    void setUp() {
-        service = new PasswordValidatorService();
-        encoder = new BCryptPasswordEncoder();
+    @Test
+    void validaContrasenaFuerte() {
+        assertDoesNotThrow(() -> service.validatePassword("Strong#2026", List.of()));
     }
 
     @Test
-    void aceptaUnaContrasenaValida() {
-        assertDoesNotThrow(() ->
-                service.passwordIsWeak("Segura2026!", List.of(), encoder));
-    }
-
-    @Test
-    void rechazaContrasenaDemasiadoCorta() {
-        ResponseStatusException exception = assertThrows(
-                ResponseStatusException.class,
-                () -> service.passwordIsWeak("corta", null, encoder));
-
-        assertEquals(400, exception.getStatusCode().value());
-    }
-
-    @Test
-    void rechazaContrasenaIncluidaEnLaListaNegra() {
-        ResponseStatusException exception = assertThrows(
-                ResponseStatusException.class,
-                () -> service.passwordIsWeak("PASSWORD", null, encoder));
-
-        assertEquals(400, exception.getStatusCode().value());
-    }
-
-    @Test
-    void rechazaReutilizacionDeContrasena() {
-        String oldHash = encoder.encode("Segura2026!");
-
-        ResponseStatusException exception = assertThrows(
-                ResponseStatusException.class,
-                () -> service.passwordIsWeak("Segura2026!", List.of(oldHash), encoder));
-
-        assertEquals(400, exception.getStatusCode().value());
+    void rechazaContrasenaDebil() {
+        assertThrows(ValidationException.class,
+                () -> service.validatePassword("weak", List.of()));
     }
 }

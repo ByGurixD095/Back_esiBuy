@@ -58,15 +58,11 @@ public class EmailService {
         message.setContent(htmlContent, "text/html; charset=UTF-8");
         logger.info("Enviando email a {} con asunto '{}'", to, subject);
 
-        try {
-            Transport.send(message);
-        } catch (MessagingException e) {
-            logger.error("Error al enviar email a {}: {}", to, e.getMessage());
-            throw e;
-        }
+        Transport.send(message);
         logger.info("Email enviado correctamente a {}", to);
     }
-        public void sendRecoveryEmail(String to, String nombre, String resetLink) throws MessagingException {
+
+    public void sendRecoveryEmail(String to, String nombre, String resetLink) throws MessagingException {
         String subject = "Recuperar contraseña de esiBuy";
         String nombreApp = "esiBuy";
 
