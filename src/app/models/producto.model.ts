@@ -10,7 +10,7 @@ export interface ProductoDTO {
   descuentoPremium: number;
   activo: boolean;
 }
-
+// Deveria ir en el service al inicio
 export interface Producto extends ProductoDTO {
   id: string;
 }
