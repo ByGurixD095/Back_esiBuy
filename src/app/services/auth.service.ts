@@ -103,6 +103,10 @@ export class AuthService {
     );
   }
 
+  applyAuthenticationResponse(respuesta: LoginResponse): void {
+    this.storeSessionIfComplete(respuesta);
+  }
+
   isAuthenticated(): boolean {
     return this.rolSignal() !== null;
   }
