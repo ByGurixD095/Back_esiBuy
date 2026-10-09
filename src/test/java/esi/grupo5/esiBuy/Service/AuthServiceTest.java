@@ -2,6 +2,7 @@ package esi.grupo5.esiBuy.Service;
 
 import esi.grupo5.esiBuy.Dto.LoginRequestDTO;
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
+import esi.grupo5.esiBuy.Exception.ForbiddenException;
 import esi.grupo5.esiBuy.Model.Vendedor;
 import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Repository.RefreshTokenRepository;
@@ -52,5 +53,27 @@ class AuthServiceTest {
         assertEquals("access", result.accessToken());
         assertEquals("refresh", result.refreshToken());
         verify(refreshTokenRepository).save(any());
+    }
+
+    @Test
+    void loginUsuarioBloqueado_Rechazado() {
+        Vendedor usuario = new Vendedor();
+        usuario.setEmail("user@test.com");
+        usuario.setContrasena(new BCryptPasswordEncoder().encode("Password#1"));
+        usuario.setRol(Rol.CLIENTE);
+        usuario.setActivo(true);
+        usuario.setBloqueado(true);
+        when(usuarioRepository.findByEmail(usuario.getEmail())).thenReturn(Optional.of(usuario));
+        when(encoder.matches("Password#1", usuario.getContrasena())).thenReturn(true);
+
+        LoginRequestDTO loginRequest =
+            new LoginRequestDTO(usuario.getEmail(), "Password#1");
+
+        assertThrows(
+            ForbiddenException.class,
+            () -> service.login(loginRequest, "127.0.0.1")
+        );
+        
+        verify(loginAttemptService).registerFailedLogin("127.0.0.1");
     }
 }
