@@ -1,12 +1,15 @@
 package esi.grupo5.esiBuy.Controller;
 
 import esi.grupo5.esiBuy.Dto.ProductoDTO;
+import esi.grupo5.esiBuy.Dto.FiltroCatalogoDTO;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Service.ProductoService;
 import jakarta.validation.Valid;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,11 +22,18 @@ public class ProductoController {
         this.productoService = productoService;
     }
 
-    // --------- POST ------------ 
-    @PostMapping("/createProduct")
+    @PostMapping({"", "/createProduct"})
     public ResponseEntity<Producto> crearProducto(
             @Valid @RequestBody ProductoDTO dto) {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(productoService.crearProducto(dto));
+    }
+
+    @GetMapping("/disponibles")
+    public ResponseEntity<Page<Producto>> obtenerProductosDisponibles(
+            FiltroCatalogoDTO filtros,
+            @PageableDefault(size = 36) Pageable pageable
+    ) {
+        return ResponseEntity.ok(productoService.obtenerProductosDisponibles(filtros, pageable));
     }
 }
