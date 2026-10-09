@@ -265,8 +265,8 @@ class ProductoServiceTest {
         private ProductoDTO dtoConValores(String nombre, String referencia, Integer numStock,
                                       int precioCent, String descripcion, String categoria,
                                       String urlImagen, int descuento, int descuentoPremium) {
-        return new ProductoDTO(nombre, referencia, numStock, precioCent,
-                descripcion, categoria, urlImagen, descuento, descuentoPremium, null);
+        return new ProductoDTO(nombre, referencia, precioCent,
+                descripcion, categoria, urlImagen, numStock, descuento, descuentoPremium, null);
     }
 
     private ProductoDTO dtoConDescuentos(int descuento, int descuentoPremium) {

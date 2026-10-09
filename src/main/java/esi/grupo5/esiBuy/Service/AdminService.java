@@ -15,6 +15,7 @@ import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 import esi.grupo5.esiBuy.Dto.UserDto;
 import esi.grupo5.esiBuy.Dto.UserPatchDTO;
+import esi.grupo5.esiBuy.Exception.*;
 import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Model.Usuario;
 import esi.grupo5.esiBuy.Model.enums.Rol;
@@ -43,7 +44,7 @@ public class AdminService {
 
     public void modificarUsuario(String id, UserPatchDTO dto) {
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
 
         actualizarDatosComunes(usuario, dto);
 
@@ -70,7 +71,7 @@ public class AdminService {
     private void actualizarTexto(String valor, Consumer<String> setter, String mensajeError) {
         if (valor != null) {
             if (valor.isBlank()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, mensajeError);
+                throw new ValidationException(mensajeError);
             }
             setter.accept(valor);
         }
@@ -104,7 +105,7 @@ public class AdminService {
 
     public ResponseEntity<AdministradorResponseDTO> crearAdministrador(AdministradorRegistroDTO dto) {
         if (usuarioRepository.findByEmail(dto.email()).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se ha podido crear el administrador");
+            throw new ConflictException("El email ya está registrado");
         }
 
         try {
@@ -113,7 +114,7 @@ public class AdminService {
                 new ArrayList<>()
             );
         } catch (ResponseStatusException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña no cumple con los requisitos de seguridad: " + e.getReason());
+            throw new ValidationException("La contraseña no cumple con los requisitos de seguridad: " + e.getReason());
         }
 
         Administrador admin = Administrador.builder()
@@ -141,19 +142,13 @@ public class AdminService {
     public void eliminarUsuario(String id, String usuarioActualId) {
 
         if (id.equals(usuarioActualId)) {
-        throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "No puedes eliminar tu propia cuenta"
-        );
+            throw new ForbiddenException("No puedes eliminar tu propia cuenta");
         }
 
         Optional<Usuario> optionalUsuario = usuarioRepository.findByIdAndEliminadoFalse(id);
 
         if (optionalUsuario.isEmpty()) {
-            throw new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Usuario no encontrado"
-            );
+            throw new NotFoundException("Usuario no encontrado");
         }
 
         Usuario usuario = optionalUsuario.get();
@@ -164,10 +159,7 @@ public class AdminService {
                 .countByRolAndEliminadoFalse(Rol.ADMINISTRADOR);
 
         if (administradores <= 1) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "No se puede eliminar el último administrador"
-            );
+            throw new ForbiddenException("No se puede eliminar el último administrador");
         }
     }
 
