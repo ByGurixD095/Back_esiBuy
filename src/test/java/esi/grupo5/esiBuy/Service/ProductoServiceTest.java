@@ -211,8 +211,7 @@ class ProductoServiceTest {
                                       int precioCent, String descripcion, String categoria,
                                       String urlImagen, int descuento, int descuentoPremium) {
         return new ProductoDTO(nombre, referencia, precioCent,
-                descripcion, categoria, urlImagen, numStock,
-                descuento, descuentoPremium, null);
+                descripcion, categoria, urlImagen, numStock, descuento, descuentoPremium, null);
     }
 
     private ProductoDTO dtoConDescuentos(int descuento, int descuentoPremium) {
