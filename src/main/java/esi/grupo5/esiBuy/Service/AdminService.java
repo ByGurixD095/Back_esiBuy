@@ -81,10 +81,8 @@ public class AdminService {
 
     public UserDto bloquearUsuario(String id) {
         Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
-            .orElseThrow(() -> new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Usuario no encontrado"));
-
+            .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+            
         usuario.setBloqueado(true);
         usuarioRepository.save(usuario);
 
@@ -93,9 +91,7 @@ public class AdminService {
 
     public UserDto desbloquearUsuario(String id) {
         Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
-            .orElseThrow(() -> new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Usuario no encontrado"));
+            .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
 
         usuario.setBloqueado(false);
         usuarioRepository.save(usuario);

@@ -52,12 +52,12 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{id}/bloquear")
+    @PatchMapping("/bloquear/{id}")
     public ResponseEntity<UserDto> bloquearUsuario(@PathVariable String id) {
         return ResponseEntity.ok(adminService.bloquearUsuario(id));
     }
 
-    @PatchMapping("/{id}/desbloquear")
+    @PatchMapping("/desbloquear/{id}")
     public ResponseEntity<UserDto> desbloquearUsuario(@PathVariable String id) {
         return ResponseEntity.ok(adminService.desbloquearUsuario(id));
     }

@@ -4,6 +4,7 @@ import esi.grupo5.esiBuy.Model.Vendedor;
 import esi.grupo5.esiBuy.Dto.UserDto;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Service.strategy.UsuarioUpdateStrategy;
+import esi.grupo5.esiBuy.Exception.NotFoundException;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,7 +12,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -75,7 +76,7 @@ class AdminServiceBloquearDesbloquearTest {
     void bloquearUsuario_noExiste() {
         when(usuarioRepository.findByIdAndEliminadoFalse(id)).thenReturn(Optional.empty());
 
-        assertThrows(ResponseStatusException.class, () -> adminService.bloquearUsuario(id));
+        assertThrows(NotFoundException.class, () -> adminService.bloquearUsuario(id));
 
         verify(usuarioRepository, never()).save(any());
     }
@@ -84,7 +85,7 @@ class AdminServiceBloquearDesbloquearTest {
     void desbloquearUsuario_noExiste() {
         when(usuarioRepository.findByIdAndEliminadoFalse(id)).thenReturn(Optional.empty());
 
-        assertThrows(ResponseStatusException.class, () -> adminService.desbloquearUsuario(id));
+        assertThrows(NotFoundException.class, () -> adminService.desbloquearUsuario(id));
 
         verify(usuarioRepository, never()).save(any());
     }
