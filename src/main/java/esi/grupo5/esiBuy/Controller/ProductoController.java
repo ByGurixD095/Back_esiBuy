@@ -5,8 +5,9 @@ import esi.grupo5.esiBuy.Dto.FiltroCatalogoDTO;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Service.ProductoService;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import jakarta.validation.Valid;
 
@@ -32,7 +33,11 @@ public class ProductoController {
     }
 
     @GetMapping("/disponibles")
-    public ResponseEntity<List<Producto>> obtenerProductosDisponibles(@ModelAttribute FiltroCatalogoDTO filtros) {
-        return ResponseEntity.ok(productoService.obtenerProductosDisponibles(filtros));
+    public ResponseEntity<Page<Producto>> obtenerProductosDisponibles(
+            FiltroCatalogoDTO filtros,
+            @PageableDefault(size = 36) Pageable pageable
+    ) {
+        return ResponseEntity.ok(productoService.obtenerProductosDisponibles(filtros, pageable));
     }
+    
 }

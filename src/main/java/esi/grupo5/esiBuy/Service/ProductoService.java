@@ -7,6 +7,9 @@ import esi.grupo5.esiBuy.Repository.ProductoRepository;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -44,6 +47,23 @@ public class ProductoService {
     }
 
     public List<Producto> obtenerProductosDisponibles(FiltroCatalogoDTO filtros) {
+        return mongoTemplate.find(construirConsulta(filtros), Producto.class);
+    }
+
+    public Page<Producto> obtenerProductosDisponibles(FiltroCatalogoDTO filtros, Pageable pageable) {
+        Query query = construirConsulta(filtros);
+        long total = mongoTemplate.count(query, Producto.class);
+
+        if (!pageable.isUnpaged()) {
+            query.skip(pageable.getOffset());
+            query.limit(pageable.getPageSize());
+        }
+
+        List<Producto> productos = mongoTemplate.find(query, Producto.class);
+        return new PageImpl<>(productos, pageable, total);
+    }
+
+    private Query construirConsulta(FiltroCatalogoDTO filtros) {
         Query query = new Query();
         query.addCriteria(Criteria.where("activo").is(true).and("numStock").gt(0));
 
@@ -55,7 +75,7 @@ public class ProductoService {
             aplicarOrden(query, filtros.orden());
         }
 
-        return mongoTemplate.find(query, Producto.class);
+        return query;
     }
 
     private void aplicarBusqueda(Query query, String busqueda) {

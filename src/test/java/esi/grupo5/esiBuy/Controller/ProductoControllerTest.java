@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -223,8 +225,9 @@ class ProductoControllerTest {
                 "Camiseta oficial de algodón", "Ropa", "url_imagen.jpg", 0, 0);
         producto.setId("mongo-id-123");
 
-        when(productoService.obtenerProductosDisponibles(any(FiltroCatalogoDTO.class)))
-            .thenReturn(List.of(producto));
+        when(productoService.obtenerProductosDisponibles(
+                any(FiltroCatalogoDTO.class), any(org.springframework.data.domain.Pageable.class)))
+            .thenReturn(new PageImpl<>(List.of(producto), PageRequest.of(1, 36), 37));
 
         mockMvc.perform(get("/products/disponibles")
             .param("busqueda", "camiseta")
@@ -232,29 +235,38 @@ class ProductoControllerTest {
             .param("precioMinCent", "1000")
             .param("precioMaxCent", "5000")
             .param("soloOfertas", "true")
-            .param("orden", "Precio Ascendente"))
+            .param("orden", "Precio Ascendente")
+            .param("page", "1")
+            .param("size", "36"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].id").value("mongo-id-123"))
-                .andExpect(jsonPath("$[0].nombre").value("Camiseta ESI"))
-                .andExpect(jsonPath("$[0].referencia").value("REF-092026a"))
-                .andExpect(jsonPath("$[0].numStock").value(10))
-                .andExpect(jsonPath("$[0].precioCent").value(1999))
-                .andExpect(jsonPath("$[0].activo").value(true));
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].id").value("mongo-id-123"))
+                .andExpect(jsonPath("$.content[0].nombre").value("Camiseta ESI"))
+                .andExpect(jsonPath("$.content[0].referencia").value("REF-092026a"))
+                .andExpect(jsonPath("$.content[0].numStock").value(10))
+                .andExpect(jsonPath("$.content[0].precioCent").value(1999))
+                .andExpect(jsonPath("$.content[0].activo").value(true))
+                .andExpect(jsonPath("$.totalElements").value(37))
+                .andExpect(jsonPath("$.totalPages").value(2))
+                .andExpect(jsonPath("$.number").value(1));
 
-        verify(productoService).obtenerProductosDisponibles(any(FiltroCatalogoDTO.class));
+        verify(productoService).obtenerProductosDisponibles(
+                any(FiltroCatalogoDTO.class), any(org.springframework.data.domain.Pageable.class));
     }
 
     @Test
     void obtenerDisponibles_sinResultados_devuelveListaVacia() throws Exception {
-        when(productoService.obtenerProductosDisponibles(any(FiltroCatalogoDTO.class)))
-            .thenReturn(List.of());
+        when(productoService.obtenerProductosDisponibles(
+                any(FiltroCatalogoDTO.class), any(org.springframework.data.domain.Pageable.class)))
+            .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 36), 0));
 
         mockMvc.perform(get("/products/disponibles"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(0));
+                .andExpect(jsonPath("$.content.length()").value(0))
+                .andExpect(jsonPath("$.totalElements").value(0));
 
-        verify(productoService).obtenerProductosDisponibles(any(FiltroCatalogoDTO.class));
+            verify(productoService).obtenerProductosDisponibles(
+                any(FiltroCatalogoDTO.class), any(org.springframework.data.domain.Pageable.class));
     }
 }
 
