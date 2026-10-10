@@ -13,7 +13,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.web.server.ResponseStatusException;
+import esi.grupo5.esiBuy.Exception.AuthException;
 
 import java.util.List;
 import java.util.Optional;
@@ -85,10 +85,10 @@ class AuthServiceLoginNuevoAdministradorTest {
 
     @Test
     void nuevoAdministrador_conContrasenaIncorrecta_noPuedeIniciarSesion() {
-        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+        AuthException error = assertThrows(AuthException.class,
                 () -> authService.login(new LoginRequestDTO(EMAIL, "OtraClave#1"), "127.0.0.1"));
 
-        assertEquals(401, error.getStatusCode().value());
+        assertEquals(401, error.getHttpStatusCode());
         verify(jwtService, never()).generateToken(any(Usuario.class));
     }
 }
