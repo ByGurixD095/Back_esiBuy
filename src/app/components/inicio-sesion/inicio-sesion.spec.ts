@@ -1,19 +1,33 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router } from '@angular/router';
+import { of } from 'rxjs';
+import { vi } from 'vitest';
+import { AuthService } from '../../services/auth.service';
 import { InicioSesion } from './inicio-sesion';
 
 describe('InicioSesion', () => {
   let component: InicioSesion;
   let fixture: ComponentFixture<InicioSesion>;
   let el: HTMLElement;
+  const authServiceFalso = {
+    login: vi.fn(),
+  };
+  const routerFalso = {
+    navigate: vi.fn().mockResolvedValue(true),
+  };
 
   const rellenar = (usuario: string, contrasena: string) =>
     component.form.setValue({ usuario, contrasena });
 
   beforeEach(async () => {
+    authServiceFalso.login.mockReset();
+    routerFalso.navigate.mockReset();
     await TestBed.configureTestingModule({
       imports: [InicioSesion],
-      providers: [provideRouter([])],
+      providers: [
+        { provide: AuthService, useValue: authServiceFalso },
+        { provide: Router, useValue: routerFalso },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(InicioSesion);
@@ -56,12 +70,43 @@ describe('InicioSesion', () => {
 
   it('al enviar emite las credenciales con el formato que espera el back', () => {
     const emitidas: { username: string; password: string }[] = [];
+    authServiceFalso.login.mockReturnValue(
+      of({
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        rol: 'CLIENTE',
+        tipoCliente: null,
+        mfaStatus: 'SUCCESS',
+        email: 'ana@esi.es',
+        mfaSetupToken: null,
+      }),
+    );
     component.iniciarSesion.subscribe((credenciales) => emitidas.push(credenciales));
     rellenar('ana@esi.es', 'Clave#2026x');
 
     component.enviar();
 
     expect(emitidas).toEqual([{ username: 'ana@esi.es', password: 'Clave#2026x' }]);
+    expect(routerFalso.navigate).toHaveBeenCalledWith(['/products']);
+  });
+
+  it('mantiene a los administradores fuera del flujo de catálogo', () => {
+    authServiceFalso.login.mockReturnValue(
+      of({
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        rol: 'ADMINISTRADOR',
+        tipoCliente: null,
+        mfaStatus: 'SUCCESS',
+        email: 'admin@esi.es',
+        mfaSetupToken: null,
+      }),
+    );
+    rellenar('admin@esi.es', 'Clave#2026x');
+
+    component.enviar();
+
+    expect(routerFalso.navigate).toHaveBeenCalledWith(['/']);
   });
 
   it('no emite nada si el formulario es inválido', () => {
