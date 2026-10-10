@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { AdministradorRegistro } from './components/administrador-registro/administrador-registro';
 import { Catalogo } from './components/catalogo/catalogo';
+import { CatalogoVendedor } from './components/catalogo-vendedor/catalogo-vendedor';
 import { InicioSesion } from './components/inicio-sesion/inicio-sesion';
 import { RecoverPasswordComponent } from './components/recover-password-component/recover-password-component';
 import { ResetPasswordComponent } from './components/reset-password-component/reset-password-component';
@@ -17,6 +18,7 @@ import { AdminEditarUsuario } from './components/admin-editar-usuario/admin-edit
 export const routes: Routes = [
   { path: '', pathMatch: 'full', component: Inicio },
   { path: 'products', component: Catalogo },
+  { path: 'products/catalogo', component: CatalogoVendedor, canActivate: [roleGuard(['VENDEDOR'])] },
   { path: 'products/new', component: ProductoForm, canActivate: [roleGuard(['VENDEDOR'])] },
   { path: 'register', component: RegistroInicio },
   { path: 'register/clientes', component: RegistroComponent, data: { tipoRegistro: 'cliente' } },

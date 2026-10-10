@@ -1,0 +1,120 @@
+<main class="seller-shell">
+  <header class="seller-header">
+    <a class="brand" routerLink="/products" aria-label="EsiBuy, catálogo">
+      <img src="/assets/images/svg/logo.svg" alt="EsiBuy" />
+    </a>
+    <span class="header-context">Panel del vendedor</span>
+    <nav class="header-actions" aria-label="Acciones del vendedor">
+      <a routerLink="/products">Ver tienda</a>
+      <a class="new-product-link" routerLink="/products/new">Añadir producto</a>
+    </nav>
+  </header>
+
+  <section class="seller-content" aria-labelledby="seller-title">
+    <div class="seller-intro">
+      <div>
+        <p class="eyebrow">Gestión de inventario</p>
+        <h1 id="seller-title">Mis <em>productos.</em></h1>
+        <p class="intro-copy">Consulta y controla los artículos que tienes publicados en EsiBuy.</p>
+      </div>
+      <aside class="catalog-summary" aria-label="Resumen de tus productos">
+        <span class="summary-label">Total publicado</span>
+        @if (cargando()) {
+          <strong class="summary-number">...</strong>
+          <p>Consultando inventario</p>
+        } @else if (error()) {
+          <strong class="summary-number">!</strong>
+          <p>No se pudo consultar</p>
+        } @else {
+          <strong class="summary-number">{{ totalElementos() }}</strong>
+          <p>{{ totalElementos() === 1 ? 'producto' : 'productos' }}</p>
+        }
+        <span class="summary-line" aria-hidden="true"></span>
+        <small>Inventario asociado a tu cuenta</small>
+      </aside>
+    </div>
+
+    @if (cargando()) {
+      <section class="state-panel" aria-live="polite" aria-busy="true">
+        <span class="loader" aria-hidden="true"></span>
+        <h2>Cargando tus productos</h2>
+        <p>Estamos consultando tu inventario.</p>
+      </section>
+    } @else if (error(); as catalogoError) {
+      <section class="state-panel error-state" role="alert">
+        <span class="state-symbol" aria-hidden="true">!</span>
+        <h2>No se ha podido cargar tu catálogo</h2>
+        <p>{{ catalogoError.message }}</p>
+        <button type="button" class="state-action" (click)="cargarCatalogo()">Reintentar</button>
+      </section>
+    } @else if (productos().length === 0) {
+      <section class="state-panel" aria-live="polite">
+        <span class="state-symbol" aria-hidden="true">○</span>
+        <h2>Aún no tienes productos</h2>
+        <p>Publica tu primer artículo para verlo aparecer aquí.</p>
+        <a class="state-action state-link" routerLink="/products/new">Añadir producto</a>
+      </section>
+    } @else {
+      <div class="results-toolbar" aria-live="polite">
+        <p>Mostrando <strong>{{ productos().length }}</strong> de <strong>{{ totalElementos() }}</strong> artículos</p>
+        <span>36 por página</span>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <caption class="visually-hidden">Productos publicados por el vendedor</caption>
+          <thead>
+            <tr>
+              <th scope="col">Producto</th>
+              <th scope="col">Referencia</th>
+              <th scope="col">Categoría</th>
+              <th scope="col">Precio</th>
+              <th scope="col">Stock</th>
+              <th scope="col">Descuento</th>
+              <th scope="col">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (producto of productos(); track producto.id) {
+              <tr>
+                <td class="product-cell">
+                  @if (producto.urlImagen) {
+                    <img [src]="producto.urlImagen" [alt]="producto.nombre" loading="lazy" />
+                  } @else {
+                    <span class="image-placeholder" aria-hidden="true">—</span>
+                  }
+                  <span>
+                    <strong>{{ producto.nombre }}</strong>
+                    @if (producto.descripcion) { <small>{{ producto.descripcion }}</small> }
+                  </span>
+                </td>
+                <td data-label="Referencia">{{ producto.referencia }}</td>
+                <td data-label="Categoría">{{ producto.categoria }}</td>
+                <td class="price-cell" data-label="Precio">{{ formatearPrecio(producto.precioCent) }}</td>
+                <td data-label="Stock">{{ producto.numStock }}</td>
+                <td data-label="Descuento">
+                  @if (producto.descuento > 0) { <span class="discount">{{ producto.descuento }}%</span> } @else { <span>—</span> }
+                </td>
+                <td data-label="Estado">
+                  <span class="status" [class.status-inactive]="!producto.activo">
+                    {{ producto.activo ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (totalPaginas() > 1) {
+        <nav class="pagination" aria-label="Paginación de mis productos">
+          <button type="button" [disabled]="paginaActual() === 0" (click)="paginaAnterior()">Anterior</button>
+          <span>Página {{ paginaActual() + 1 }} de {{ totalPaginas() }}</span>
+          <button type="button" [disabled]="paginaActual() + 1 >= totalPaginas()" (click)="paginaSiguiente()">Siguiente</button>
+        </nav>
+      }
+    }
+  </section>
+
+  <footer class="seller-footer"><span>© 2026 EsiBuy</span><span>Panel del vendedor</span></footer>
+</main>

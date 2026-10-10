@@ -28,6 +28,25 @@ export interface UsuarioDetalle extends Usuario {
   fechaIncorporacion?: string | null;
 }
 
+export interface UsuarioDetalle extends Usuario {
+  telefono?: string | null;
+  imagenPerfil?: string | null;
+  fechaAlta?: string | null;
+  fechaModificacion?: string | null;
+  fechaCambioContrasena?: string | null;
+  mfaConfigurado?: boolean;
+  dosFactorActivoCliente?: boolean;
+  tresFactorActivoCliente?: boolean;
+  dni?: string | null;
+  fechaNacimiento?: string | null;
+  tipoCliente?: 'NORMAL' | 'PREMIUM' | null;
+  nombreComercial?: string | null;
+  cifNif?: string | null;
+  categoriaPrincipalId?: string | null;
+  sede?: string | null;
+  fechaIncorporacion?: string | null;
+}
+
 export interface ModificarUsuarioRequest {
   nombre: string;
   apellidos: string;
@@ -62,6 +81,22 @@ export class Usuarios {
     return this.http.patch<void>(`${environment.apiUrl}/admin/${encodeURIComponent(id)}`, datos, {
       withCredentials: true,
     });
+  }
+
+  bloquear(id: string): Observable<Usuario> {
+    return this.http.patch<Usuario>(
+      `${environment.apiUrl}/admin/bloquear/${encodeURIComponent(id)}`,
+      {},
+      { withCredentials: true },
+    );
+  }
+
+  desbloquear(id: string): Observable<Usuario> {
+    return this.http.patch<Usuario>(
+      `${environment.apiUrl}/admin/desbloquear/${encodeURIComponent(id)}`,
+      {},
+      { withCredentials: true },
+    );
   }
 
   eliminar(id: string): Observable<void> {
