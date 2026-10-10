@@ -34,7 +34,7 @@ public class AdminController {
 
     @GetMapping("/{id}")
     public ResponseEntity<UsuarioResponseDTO> getUserById(@PathVariable String id) {
-        return ResponseEntity.ok(userService.getUserById(id));
+        return ResponseEntity.ok(userService.getAdminUserById(id));
     }
 
 

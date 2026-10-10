@@ -103,7 +103,7 @@ class AdminControllerConsultaUsuariosEndpointTest {
 
     @Test
     void consultarUsuarioPorId_devuelveElUsuarioSolicitado() throws Exception {
-        when(userService.getUserById("vendedor-1")).thenReturn(
+        when(userService.getAdminUserById("vendedor-1")).thenReturn(
                 VendedorResponseDTO.builder()
                         .id("vendedor-1")
                         .name("Ana")
@@ -132,6 +132,6 @@ class AdminControllerConsultaUsuariosEndpointTest {
                 .andExpect(jsonPath("$.tokenRecuperacionContrasena").doesNotExist())
                 .andExpect(jsonPath("$.historialContrasenas").doesNotExist());
 
-        verify(userService).getUserById("vendedor-1");
+        verify(userService).getAdminUserById("vendedor-1");
     }
 }
