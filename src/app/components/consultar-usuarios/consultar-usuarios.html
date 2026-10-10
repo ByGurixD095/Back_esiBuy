@@ -1,7 +1,7 @@
 <app-marco-pagina panel="Panel de administración" [volver]="true">
   <section class="pagina" aria-labelledby="usuarios-titulo" [attr.aria-busy]="cargando()">
     <p class="esi-eyebrow">Administradores</p>
-    <h1 id="usuarios-titulo" class="esi-titulo">gestionar <em>usuarios.</em></h1>
+    <h1 id="usuarios-titulo" class="esi-titulo">Gestionar <em>usuarios.</em></h1>
     <p class="descripcion">Usuarios registrados y estado actual de sus cuentas.</p>
 
     <div class="filtros">
@@ -67,7 +67,7 @@
         <tbody>
           @for (usuario of usuariosFiltrados(); track usuario.id) {
           <tr [class.fila-eliminada]="usuario.eliminado">
-            <td>
+            <td data-label="ID">
               <button
                 type="button"
                 class="usuario-id"
@@ -78,17 +78,17 @@
                 {{ usuario.id }}
               </button>
             </td>
-            <td>{{ usuario.name }} {{ usuario.apellidos }}</td>
-            <td>{{ usuario.email }}</td>
-            <td>{{ usuario.rol }}</td>
-            <td>
+            <td data-label="Nombre">{{ usuario.name }} {{ usuario.apellidos }}</td>
+            <td data-label="Correo electrónico">{{ usuario.email }}</td>
+            <td data-label="Rol">{{ usuario.rol }}</td>
+            <td data-label="Actividad">
               @if (usuario.activo) {
               <span class="estado-cuenta activo">Activo</span>
               } @else {
               <span class="estado-cuenta inactivo">Inactivo</span>
               }
             </td>
-            <td>
+            <td data-label="Bloqueado">
               <span
                 class="estado-cuenta"
                 [class.bloqueado]="usuario.bloqueado"
@@ -97,7 +97,7 @@
                 {{ usuario.bloqueado ? 'Sí' : 'No' }}
               </span>
             </td>
-            <td>
+            <td data-label="Eliminado">
               <span
                 class="estado-cuenta"
                 [class.eliminado]="usuario.eliminado"
@@ -106,7 +106,7 @@
                 {{ usuario.eliminado ? 'Sí' : 'No' }}
               </span>
             </td>
-            <td>
+            <td data-label="Acciones">
               <div class="acciones" aria-label="Acciones de usuario">
                 @if (usuario.eliminado) {
                 <button
@@ -179,7 +179,7 @@
     }
 
     @if (usuarioSeleccionado(); as seleccionado) {
-    <div class="confirmacion-fondo">
+    <div class="confirmacion-fondo detalle-fondo">
       <dialog
         open
         class="confirmacion-dialogo detalle-dialogo"

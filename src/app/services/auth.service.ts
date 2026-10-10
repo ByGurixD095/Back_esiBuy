@@ -43,6 +43,11 @@ export interface MfaSetupConfirmRequest {
   setupToken: string;
 }
 
+interface SessionProfile {
+  rol: Rol;
+  email: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
@@ -86,9 +91,12 @@ export class AuthService {
     );
   }
 
-  checkSessionOnLoad(): Observable<LoginResponse | null> {
-    return this.refresh().pipe(
-      tap(() => this.sessionCheckedSignal.set(true)),
+  checkSessionOnLoad(): Observable<SessionProfile | null> {
+    return this.http.get<SessionProfile>(`${environment.apiUrl}/users/me`).pipe(
+      tap((perfil) => {
+        this.storeSessionFromProfile(perfil);
+        this.sessionCheckedSignal.set(true);
+      }),
       catchError(() => {
         this.clearSession();
         this.sessionCheckedSignal.set(true);
@@ -145,6 +153,15 @@ export class AuthService {
       if (respuesta.email) {
         sessionStorage.setItem('esiBuy.email', respuesta.email);
       }
+    }
+  }
+
+  private storeSessionFromProfile(perfil: SessionProfile): void {
+    this.rolSignal.set(perfil.rol);
+    this.emailSignal.set(perfil.email);
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('esiBuy.rol', perfil.rol);
+      sessionStorage.setItem('esiBuy.email', perfil.email);
     }
   }
 

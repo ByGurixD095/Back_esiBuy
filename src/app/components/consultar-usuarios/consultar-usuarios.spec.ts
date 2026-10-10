@@ -94,7 +94,7 @@ describe('ConsultarUsuarios', () => {
   it('carga desde el servicio los usuarios y sus tres estados', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(servicioFalso.consultar).toHaveBeenCalledOnce();
-    expect(el.textContent).toContain('gestionar usuarios.');
+    expect(el.textContent).toContain('Gestionar usuarios.');
     expect(el.textContent).toContain('user-db-1');
     expect(el.textContent).toContain('Ana López');
     expect(el.textContent).toContain('user-db-2');
