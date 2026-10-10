@@ -107,15 +107,63 @@
 	<build>
 		<plugins>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-pmd-plugin</artifactId>
+				<version>3.21.2</version>
+				<executions>
+					<execution>
+						<id>pmd-unused-code</id>
+						<phase>verify</phase>
+						<goals><goal>check</goal></goals>
+						<configuration>
+							<rulesets>
+								<!-- Bloquea código sin usar -->
+								<ruleset>/category/java/bestpractices.xml</ruleset>
+							</rulesets>
+							<failOnViolation>true</failOnViolation>
+						</configuration>
+					</execution>
+					<execution>
+						<id>cpd-duplications</id>
+						<phase>verify</phase>
+						<goals><goal>cpd-check</goal></goals>
+						<configuration>
+							<!-- Ajusta los tokens según el nivel de duplicidad deseado -->
+							<minimumTokens>50</minimumTokens>
+							<failOnViolation>true</failOnViolation>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
 				<version>${jacoco.version}</version>
 				<executions>
 					<execution>
+						<id>check-coverage</id>
+						<phase>verify</phase>
+						<goals><goal>check</goal></goals>
+						<configuration>
+							<rules>
+								<rule>
+									<element>BUNDLE</element>
+									<limits>
+										<limit>
+											<counter>INSTRUCTION</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.60</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+						</configuration>
+					</execution>
+					<execution>
 						<id>prepare-agent</id>
 						<configuration>
 							<propertyName>surefireArgLine</propertyName>
-							<destFile>${project.build.directory}/jacoco.execx</destFile>
+							<destFile>${project.build.directory}/jacoco.exec</destFile>
 						</configuration>
 						<goals>
 							<goal>prepare-agent</goal>
