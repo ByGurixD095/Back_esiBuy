@@ -1,1 +1,152 @@
-/* You can add global styles to this file, and also import other style files */
+/* Tokens y piezas comunes de EsiBuy (tono y tipografía del catálogo /products,
+   con tamaños y contrastes pensados para formularios accesibles). */
+:root {
+  --esi-ink: #172126;
+  --esi-soft-ink: #536166;
+  --esi-paper: #f7f5ef;
+  --esi-card: #fffefa;
+  --esi-line: #deddd5;
+  --esi-field-border: #8f8d82;
+  --esi-header: #0d162d;
+  --esi-header-line: #263452;
+  --esi-orange: #e4683d;
+  --esi-orange-text: #b84a24;
+  --esi-orange-hover: #c8512a;
+  --esi-orange-soft: #f8e2d6;
+  --esi-ok-bg: #e3f4e9;
+  --esi-ok-text: #1b6b3a;
+  --esi-error-bg: #fbe4e4;
+  --esi-error-text: #8f1f1f;
+  --esi-radius: 5px;
+  --esi-font-title: Georgia, 'Times New Roman', serif;
+  --esi-font-body: Arial, Helvetica, sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: var(--esi-font-body);
+  color: var(--esi-ink);
+  background: var(--esi-paper);
+}
+
+.esi-eyebrow {
+  margin: 0 0 8px;
+  color: var(--esi-orange-text);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.esi-titulo {
+  margin: 0 0 24px;
+  color: var(--esi-ink);
+  font-family: var(--esi-font-title);
+  font-size: clamp(34px, 6vw, 52px);
+  font-weight: 400;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+.esi-titulo em {
+  color: var(--esi-orange-text);
+  font-style: italic;
+}
+
+.esi-tarjeta {
+  padding: 28px;
+  background: var(--esi-card);
+  border: 1px solid var(--esi-line);
+  border-radius: var(--esi-radius);
+}
+
+.esi-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.esi-campo label {
+  color: var(--esi-ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.esi-campo input,
+.esi-campo select {
+  box-sizing: border-box;
+  height: 46px;
+  padding: 0 12px;
+  color: var(--esi-ink);
+  background: #fff;
+  border: 1px solid var(--esi-field-border);
+  border-radius: var(--esi-radius);
+  font-family: inherit;
+  font-size: 15px;
+}
+
+.esi-campo input:focus-visible,
+.esi-campo select:focus-visible {
+  outline: 3px solid var(--esi-orange);
+  outline-offset: 1px;
+}
+
+.esi-campo input.ng-invalid.ng-touched {
+  border-color: var(--esi-error-text);
+}
+
+.esi-ayuda {
+  color: var(--esi-soft-ink);
+  font-size: 12px;
+}
+
+.esi-ayuda.esi-error {
+  color: var(--esi-error-text);
+  font-weight: 700;
+}
+
+.esi-boton {
+  min-height: 48px;
+  padding: 0 24px;
+  color: #fff;
+  background: var(--esi-ink);
+  border: 1px solid var(--esi-ink);
+  border-radius: var(--esi-radius);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.esi-boton:hover:not(:disabled) {
+  background: var(--esi-orange-hover);
+  border-color: var(--esi-orange-hover);
+}
+
+.esi-boton:focus-visible {
+  outline: 3px solid var(--esi-orange);
+  outline-offset: 2px;
+}
+
+.esi-boton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.esi-alerta {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--esi-radius);
+  font-size: 14px;
+}
+
+.esi-alerta--ok {
+  color: var(--esi-ok-text);
+  background: var(--esi-ok-bg);
+}
+
+.esi-alerta--error {
+  color: var(--esi-error-text);
+  background: var(--esi-error-bg);
+}

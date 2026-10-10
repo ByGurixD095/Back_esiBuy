@@ -31,6 +31,7 @@ yarn-error.log
 
 # Miscellaneous
 /.angular/cache
+Bocetos EsiBuy.html
 .sass-cache/
 /connect.lock
 /coverage
@@ -42,3 +43,8 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# SonarQube
+sonar-project.properties
+sonar-scanner.properties
+.scannerwork/

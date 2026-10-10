@@ -44,6 +44,16 @@ To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use th
 ng test
 ```
 
+## User registration
+
+The `/register` page lets visitors choose between creating a customer account and registering as a seller.
+The customer form submits to `POST /users/register/clientes` with personal details, DNI, and birth date.
+The seller form submits to `POST /users/register/vendedor` with commercial name, CIF/NIF, and primary category ID.
+Both requests also include the optional phone and profile-image URL fields. When registration succeeds,
+the frontend signs in with `POST /users/login`, sends credentials with cookies enabled, and navigates to
+the products page when `mfaStatus` is `SUCCESS`. MFA setup and verification are not yet implemented;
+the frontend reports when the backend requires either step.
+
 ## Running end-to-end tests
 
 For end-to-end (e2e) testing, run:
