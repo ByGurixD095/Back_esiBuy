@@ -54,9 +54,15 @@ class SecurityAdminAuthorizationTest {
         stubAuthenticatedRole("ADMINISTRADOR");
         when(adminService.crearAdministrador(any())).thenReturn(ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(new AdministradorResponseDTO(
-                        "1", "Ana", "Lopez", "ana@esi.es", "Ciudad Real",
-                        "ADMINISTRADOR", "Administrador creado correctamente")));
+                .body(AdministradorResponseDTO.builder()
+                        .id("1")
+                        .name("Ana")
+                        .apellidos("Lopez")
+                        .email("ana@esi.es")
+                        .sede("Ciudad Real")
+                        .rol(esi.grupo5.esiBuy.Model.enums.Rol.ADMINISTRADOR)
+                        .mensaje("Administrador creado correctamente")
+                        .build()));
 
         mockMvc.perform(post("/admin")
                         .cookie(new Cookie("accessToken", "token"))

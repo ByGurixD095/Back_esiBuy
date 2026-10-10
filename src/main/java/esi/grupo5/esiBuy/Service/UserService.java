@@ -12,11 +12,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import esi.grupo5.esiBuy.Dto.ClienteRegistroDTO;
+import esi.grupo5.esiBuy.Dto.ClienteResponseDTO;
+import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
-import esi.grupo5.esiBuy.Dto.UserDto;
 import esi.grupo5.esiBuy.Dto.UserSelfUpdateDTO;
+import esi.grupo5.esiBuy.Dto.UsuarioResponseDTO;
 import esi.grupo5.esiBuy.Dto.VendedorRegisterRequest;
+import esi.grupo5.esiBuy.Dto.VendedorResponseDTO;
 import esi.grupo5.esiBuy.Exception.*;
+import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.Usuario;
 import esi.grupo5.esiBuy.Model.Vendedor;
@@ -95,13 +99,13 @@ public class UserService {
     }
 
     // GETTER
-    public List<UserDto> getAllUsers() {
+    public List<UsuarioResponseDTO> getAllUsers() {
         List<Usuario> usuarios = usuarioRepository.findAllByEliminadoFalse();
 
-        List<UserDto> usuariosDto = new ArrayList<>();
+        List<UsuarioResponseDTO> usuariosDto = new ArrayList<>();
 
         for (Usuario usuario : usuarios) {
-            usuariosDto.add(toDto(usuario));
+            usuariosDto.add(toResponseDto(usuario));
         }
 
         return usuariosDto;
@@ -109,9 +113,9 @@ public class UserService {
 
 
 
-    public UserDto getUserById(String id) {
+    public UsuarioResponseDTO getUserById(String id) {
     return usuarioRepository.findByIdAndEliminadoFalse(id)
-            .map(this::toDto)
+            .map(this::toResponseDto)
             .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
     }
 
@@ -166,11 +170,65 @@ public class UserService {
         return authService.completarAutenticacion(usuarioGuardado);
     }
 
-    private UserDto toDto(Usuario usuario) {
-        return new UserDto(
-            usuario.getId(), usuario.getNombre(), usuario.getApellidos(),
-            usuario.getEmail(), usuario.getRol(), usuario.isActivo(), usuario.isBloqueado()
-        );
+    public UsuarioResponseDTO toResponseDto(Usuario usuario) {
+        // CLIENTE
+        if (usuario instanceof Cliente cliente) {
+            ClienteResponseDTO.Builder builder = ClienteResponseDTO.builder();
+            populateCommonFields(builder, cliente);
+            return builder.dni(cliente.getDni())
+                    .fechaNacimiento(cliente.getFechaNacimiento())
+                    .tipoCliente(cliente.getTipoCliente())
+                    .build();
+        }
+
+        // VENDEDOR
+        if (usuario instanceof Vendedor vendedor) {
+            VendedorResponseDTO.Builder builder = VendedorResponseDTO.builder();
+            populateCommonFields(builder, vendedor);
+            return builder.nombreComercial(vendedor.getNombreComercial())
+                    .cifNif(vendedor.getCifNif())
+                    .categoriaPrincipalId(vendedor.getCategoriaPrincipalId())
+                    .build();
+        }
+
+        // ADMINISTRADOR
+        if (usuario instanceof Administrador administrador) {
+            return toAdministradorResponseDto(administrador, null);
+        }
+
+        //CAMPOS COMUNES USUARIO
+        UsuarioResponseDTO.UsuarioBuilder builder = UsuarioResponseDTO.usuarioBuilder();
+        populateCommonFields(builder, usuario);
+        return builder.build();
+    }
+
+    public AdministradorResponseDTO toAdministradorResponseDto(Administrador administrador, String mensaje) {
+        AdministradorResponseDTO.Builder builder = AdministradorResponseDTO.builder();
+        populateCommonFields(builder, administrador);
+        return builder.sede(administrador.getSede())
+                .fechaIncorporacion(administrador.getFechaIncorporacion())
+                .mensaje(mensaje)
+                .build();
+    }
+
+    private <T extends UsuarioResponseDTO.Builder<T>> void populateCommonFields(
+            UsuarioResponseDTO.Builder<T> builder, Usuario usuario) {
+        builder.id(usuario.getId())
+                .name(usuario.getNombre())
+                .apellidos(usuario.getApellidos())
+                .email(usuario.getEmail())
+                .telefono(usuario.getTelefono())
+                .imagenPerfil(usuario.getImagenPerfil())
+                .rol(usuario.getRol())
+                .activo(usuario.isActivo())
+                .bloqueado(usuario.isBloqueado())
+                .eliminado(usuario.isEliminado())
+                .fechaAlta(usuario.getFechaAlta())
+                .fechaModificacion(usuario.getFechaModificacion())
+                .fechaCambioContrasena(usuario.getFechaCambioContrasena())
+                .mfaConfigurado(usuario.isMfaConfigurado())
+                .dosFactorActivoCliente(usuario.is2faActivoCliente())
+                .tresFactorActivoCliente(usuario.is3faActivoCliente());
     }
     
     private void actualizarSiValido(String valor, Consumer<String> setter) {

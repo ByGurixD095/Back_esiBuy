@@ -4,10 +4,12 @@ import esi.grupo5.esiBuy.Dto.FiltroCatalogoDTO;
 import esi.grupo5.esiBuy.Dto.ProductoDTO;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
+
 import java.util.List;
 import java.util.regex.Pattern;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -74,6 +76,7 @@ public class ProductoService {
             aplicarCategoria(query, filtros.categoria());
             aplicarRangoPrecio(query, filtros.precioMinCent(), filtros.precioMaxCent());
             aplicarOferta(query, filtros.soloOfertas());
+            aplicarOrden(query, filtros.orden());
         }
 
         return query;
@@ -81,17 +84,17 @@ public class ProductoService {
 
     private void aplicarBusqueda(Query query, String busqueda) {
         if (busqueda != null && !busqueda.isBlank()) {
-            String textoLiteral = Pattern.quote(busqueda.trim());
+            String textoBusqueda = Pattern.quote(busqueda.trim());
             query.addCriteria(new Criteria().orOperator(
-                    Criteria.where("nombre").regex(textoLiteral, "i"),
-                    Criteria.where("referencia").regex(textoLiteral, "i")
+                    Criteria.where("nombre").regex(textoBusqueda, "i"),
+                    Criteria.where("referencia").regex(textoBusqueda, "i")
             ));
         }
     }
 
     private void aplicarCategoria(Query query, String categoria) {
-        if (categoria != null && !categoria.isBlank() && !categoria.trim().equalsIgnoreCase("Todas")) {
-            query.addCriteria(Criteria.where("categoria").is(categoria.trim()));
+        if (categoria != null && !categoria.isBlank() && !categoria.equalsIgnoreCase("Todas")) {
+            query.addCriteria(Criteria.where("categoria").is(categoria));
         }
     }
 
@@ -114,18 +117,28 @@ public class ProductoService {
         }
     }
 
-    private void aplicarOrden(Query query, String orden, Sort ordenPaginado) {
+    private void aplicarOrden(Query query, String orden) {
         if ("Precio Ascendente".equalsIgnoreCase(orden)) {
             query.with(Sort.by(Sort.Direction.ASC, PRECIO_CENT_FIELD));
         } else if ("Precio Descendente".equalsIgnoreCase(orden)) {
             query.with(Sort.by(Sort.Direction.DESC, PRECIO_CENT_FIELD));
-        } else if (ordenPaginado.isSorted()) {
-            query.with(ordenPaginado);
+        }
+    }
+
+    private void aplicarOrden(Query query, String orden, Sort pageableSort) {
+        aplicarOrden(query, orden);
+        if ((orden == null || orden.isBlank()) && pageableSort != null && pageableSort.isSorted()) {
+            query.with(pageableSort);
         }
     }
 
     public List<Producto> obtenerProductosDisponibles() {
         return productoRepository.findByActivoTrueAndNumStockGreaterThan(0);
+    }
+
+    public Page<Producto> obtenerCatalogoVendedor(String idVendedor, int numeroPagina, int tamanoPagina) {
+        Pageable pageable = PageRequest.of(numeroPagina, tamanoPagina);
+        return productoRepository.findByIdVendedor(idVendedor, pageable);
     }
 
     private int valorPorDefecto(Integer valor) {

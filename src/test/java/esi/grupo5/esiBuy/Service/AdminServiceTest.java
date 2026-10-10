@@ -10,6 +10,10 @@ import esi.grupo5.esiBuy.Model.Usuario;
 import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Model.enums.TipoCliente;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
+import esi.grupo5.esiBuy.Service.strategy.AdministradorUpdateStrategy;
+import esi.grupo5.esiBuy.Service.strategy.ClienteUpdateStrategy;
+import esi.grupo5.esiBuy.Service.strategy.VendedorUpdateStrategy;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -43,16 +48,18 @@ class AdminServiceTest {
 
     @Mock private UsuarioRepository usuarioRepository;
     @Mock private PasswordValidatorService passwordValidatorService;
+    @Mock private UserService userService;
 
     private AdminService service;
 
-    @BeforeEach
+   @BeforeEach
     void setUp() {
         service = new AdminService(
-                usuarioRepository,
-                new BCryptPasswordEncoder(),
-                passwordValidatorService,
-                List.of(new AdministradorUpdateStrategy(), new ClienteUpdateStrategy(), new VendedorUpdateStrategy()));
+            usuarioRepository,
+            new BCryptPasswordEncoder(),
+            passwordValidatorService,
+            List.of(new AdministradorUpdateStrategy(), new ClienteUpdateStrategy(),new VendedorUpdateStrategy()),
+        userService);
     }
 
     @Test
@@ -60,14 +67,31 @@ class AdminServiceTest {
         AdministradorRegistroDTO dto = administradorDTO();
         when(usuarioRepository.findByEmail(dto.email())).thenReturn(Optional.empty());
         when(usuarioRepository.save(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userService.toAdministradorResponseDto(
+                any(Administrador.class), eq("Administrador creado correctamente")))
+                .thenAnswer(invocation -> {
+                    Administrador admin = invocation.getArgument(0);
+                    return AdministradorResponseDTO.builder()
+                            .id(admin.getId())
+                            .name(admin.getNombre())
+                            .apellidos(admin.getApellidos())
+                            .email(admin.getEmail())
+                            .rol(admin.getRol())
+                            .activo(admin.isActivo())
+                            .sede(admin.getSede())
+                            .fechaIncorporacion(admin.getFechaIncorporacion())
+                            .mensaje(invocation.getArgument(1))
+                            .build();
+                });
 
         var response = service.crearAdministrador(dto);
 
         assertEquals(201, response.getStatusCode().value());
         AdministradorResponseDTO body = response.getBody();
-        assertEquals("ana@esibuy.com", body.email());
-        assertEquals("ADMINISTRADOR", body.rol());
-        assertEquals("Administrador creado correctamente", body.mensaje());
+        assertEquals("ana@esibuy.com", body.getEmail());
+        assertEquals(Rol.ADMINISTRADOR, body.getRol());
+        assertEquals("Madrid", body.getSede());
+        assertEquals("Administrador creado correctamente", body.getMensaje());
 
         ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
         verify(usuarioRepository).save(captor.capture());
