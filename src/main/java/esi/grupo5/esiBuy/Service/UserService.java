@@ -166,7 +166,7 @@ public class UserService {
         return authService.completarAutenticacion(usuarioGuardado);
     }
 
-    private UserDto toDto(Usuario usuario) {
+    public UserDto toDto(Usuario usuario) {
         return new UserDto(
             usuario.getId(), usuario.getNombre(), usuario.getApellidos(),
             usuario.getEmail(), usuario.getRol(), usuario.isActivo(), usuario.isBloqueado()

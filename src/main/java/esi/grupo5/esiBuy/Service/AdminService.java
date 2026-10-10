@@ -13,6 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
+import esi.grupo5.esiBuy.Dto.UserDto;
 import esi.grupo5.esiBuy.Dto.UserPatchDTO;
 import esi.grupo5.esiBuy.Exception.*;
 import esi.grupo5.esiBuy.Model.Administrador;
@@ -28,15 +29,17 @@ public class AdminService {
     private final BCryptPasswordEncoder encoder;
     private final PasswordValidatorService passwordValidatorService;
     private final List<UsuarioUpdateStrategy> updateStrategies;
+    private final UserService userService;
 
     public AdminService(UsuarioRepository usuarioRepository, 
                         BCryptPasswordEncoder encoder, 
                         PasswordValidatorService passwordValidatorService,
-                        List<UsuarioUpdateStrategy> updateStrategies) {
+                        List<UsuarioUpdateStrategy> updateStrategies, UserService userService) {
         this.usuarioRepository = usuarioRepository;
         this.encoder = encoder;
         this.passwordValidatorService = passwordValidatorService;
         this.updateStrategies = updateStrategies;
+        this.userService = userService;
     }
 
     public void modificarUsuario(String id, UserPatchDTO dto) {
@@ -72,6 +75,28 @@ public class AdminService {
             }
             setter.accept(valor);
         }
+    }
+
+    // --------- BLOQUEAR/DESBLOQUEAR USUARIOS ---------
+
+    public UserDto bloquearUsuario(String id) {
+        Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
+            .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+            
+        usuario.setBloqueado(true);
+        usuarioRepository.save(usuario);
+
+        return userService.toDto(usuario);
+    }
+
+    public UserDto desbloquearUsuario(String id) {
+        Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
+            .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+
+        usuario.setBloqueado(false);
+        usuarioRepository.save(usuario);
+
+        return userService.toDto(usuario);
     }
 
     public ResponseEntity<AdministradorResponseDTO> crearAdministrador(AdministradorRegistroDTO dto) {
