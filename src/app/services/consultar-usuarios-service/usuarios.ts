@@ -24,4 +24,10 @@ export class Usuarios {
       withCredentials: true,
     });
   }
+
+  eliminar(id: string): Observable<void> {
+    return this.http.delete<void>(`${environment.apiUrl}/admin/${encodeURIComponent(id)}`, {
+      withCredentials: true,
+    });
+  }
 }

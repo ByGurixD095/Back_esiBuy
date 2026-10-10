@@ -1,15 +1,28 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
-import { vi } from 'vitest';
+import { afterEach, vi } from 'vitest';
+import { AuthService } from '../../services/auth.service';
 import { Usuarios, type Usuario } from '../../services/consultar-usuarios-service/usuarios';
 import { ConsultarUsuarios } from './consultar-usuarios';
 
 describe('ConsultarUsuarios', () => {
   let fixture: ComponentFixture<ConsultarUsuarios>;
-  const servicioFalso = { consultar: vi.fn() };
+  const servicioFalso = { consultar: vi.fn(), eliminar: vi.fn() };
+  const authServiceFalso = { email: signal<string | null>('admin@test.com') };
   const usuarios: Usuario[] = [
+    {
+      id: 'admin-1',
+      name: 'Admin',
+      apellidos: 'Prueba',
+      email: 'admin@test.com',
+      rol: 'ADMINISTRADOR',
+      activo: true,
+      bloqueado: false,
+      eliminado: false,
+    },
     {
       id: 'user-db-1',
       name: 'Ana',
@@ -35,15 +48,27 @@ describe('ConsultarUsuarios', () => {
   beforeEach(async () => {
     servicioFalso.consultar.mockReset();
     servicioFalso.consultar.mockReturnValue(of(usuarios));
+    servicioFalso.eliminar.mockReset();
+    servicioFalso.eliminar.mockReturnValue(of(undefined));
+    authServiceFalso.email.set('admin@test.com');
     await TestBed.configureTestingModule({
       imports: [ConsultarUsuarios],
-      providers: [provideRouter([]), { provide: Usuarios, useValue: servicioFalso }],
+      providers: [
+        provideRouter([]),
+        { provide: Usuarios, useValue: servicioFalso },
+        { provide: AuthService, useValue: authServiceFalso },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ConsultarUsuarios);
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it('carga desde el servicio los usuarios y sus tres estados', () => {
@@ -95,7 +120,7 @@ describe('ConsultarUsuarios', () => {
     fixture.detectChanges();
 
     filas = el.querySelectorAll('tbody tr');
-    expect(filas.length).toBe(1);
+    expect(filas.length).toBe(2);
     expect(filas[0].textContent).toContain('user-db-1');
   });
 
@@ -112,18 +137,98 @@ describe('ConsultarUsuarios', () => {
     );
   });
 
-  it('muestra las acciones como boceto sin cambiar los estados de la base de datos', () => {
+  it('mantiene las acciones de editar y bloqueo como boceto y habilita eliminar', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('[aria-label="Modificar usuario, próximamente"]')).not.toBeNull();
     expect(el.querySelector('[aria-label="Bloquear usuario, próximamente"]')).not.toBeNull();
     expect(el.querySelector('[aria-label="Desbloquear usuario, próximamente"]')).not.toBeNull();
-    expect(el.querySelector('[aria-label="Eliminar usuario, próximamente"]')).not.toBeNull();
     expect(el.querySelectorAll('.accion-boceto:disabled').length).toBeGreaterThan(0);
-    expect(el.textContent).toContain('no realizan cambios');
+    expect(el.querySelector('[aria-label="Eliminar usuario"]:disabled')).toBeNull();
+    expect(el.querySelector('.aviso-boceto')).toBeNull();
 
     expect(el.querySelectorAll('.bloqueado').length).toBe(1);
     expect(el.querySelectorAll('.eliminado').length).toBe(1);
+    expect(el.querySelector('[aria-label="No puedes eliminar tu propia cuenta"]:disabled')).not.toBeNull();
     expect(servicioFalso.consultar).toHaveBeenCalledOnce();
+  });
+
+  it('no abre confirmación ni envía la petición para la cuenta de la sesión', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    const botonEliminar = el.querySelector(
+      '[aria-label="No puedes eliminar tu propia cuenta"]',
+    ) as HTMLButtonElement;
+
+    expect(botonEliminar.disabled).toBe(true);
+    botonEliminar.click();
+    expect(el.querySelector('dialog[open]')).toBeNull();
+    expect(servicioFalso.eliminar).not.toHaveBeenCalled();
+  });
+
+  it('muestra una ventana en página y elimina tras confirmar', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    const botonEliminar = el.querySelector('[aria-label="Eliminar usuario"]') as HTMLButtonElement;
+
+    botonEliminar.click();
+    fixture.detectChanges();
+
+    expect(el.querySelector('dialog[open]')).not.toBeNull();
+    expect(el.textContent).toContain('¿Estás segura de que quieres eliminar a Ana López?');
+    expect(servicioFalso.eliminar).not.toHaveBeenCalled();
+
+    (el.querySelector('.confirmacion-eliminar') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(servicioFalso.eliminar).toHaveBeenCalledWith('user-db-1');
+    expect(el.textContent).toContain('Se ha marcado como eliminado a Ana López.');
+    expect(el.querySelector('.mensaje-accion')).not.toBeNull();
+    expect(el.querySelectorAll('.eliminado').length).toBe(2);
+    expect(el.querySelector('[aria-label="Usuario ya eliminado"]')).not.toBeNull();
+    expect(el.querySelector('dialog[open]')).toBeNull();
+  });
+
+  it('oculta el mensaje de éxito a los cinco segundos', () => {
+    vi.useFakeTimers();
+    const el = fixture.nativeElement as HTMLElement;
+    (el.querySelector('[aria-label="Eliminar usuario"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (el.querySelector('.confirmacion-eliminar') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(el.querySelector('.mensaje-accion')).not.toBeNull();
+    vi.advanceTimersByTime(4999);
+    fixture.detectChanges();
+    expect(el.querySelector('.mensaje-accion')).not.toBeNull();
+
+    vi.advanceTimersByTime(1);
+    fixture.detectChanges();
+    expect(el.querySelector('.mensaje-accion')).toBeNull();
+  });
+
+  it('cierra la ventana al cancelar sin eliminar al usuario', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    (el.querySelector('[aria-label="Eliminar usuario"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (el.querySelector('.confirmacion-acciones button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(el.querySelector('dialog[open]')).toBeNull();
+    expect(servicioFalso.eliminar).not.toHaveBeenCalled();
+  });
+
+  it('muestra el error devuelto si la eliminación falla', () => {
+    servicioFalso.eliminar.mockReturnValueOnce(
+      throwError(() => new HttpErrorResponse({ status: 403, error: { message: 'No puedes eliminar tu propia cuenta' } })),
+    );
+    const el = fixture.nativeElement as HTMLElement;
+    (el.querySelector('[aria-label="Eliminar usuario"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    (el.querySelector('.confirmacion-eliminar') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain(
+      'No puedes eliminar tu propia cuenta',
+    );
+    expect(el.querySelectorAll('.eliminado').length).toBe(1);
   });
 
   it('muestra el estado vacío si el back devuelve una lista vacía', async () => {

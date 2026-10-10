@@ -29,7 +29,7 @@ export const authSessionInterceptor: HttpInterceptorFn = (request, next) => {
   return next(requestWithCookies).pipe(
     catchError((error: HttpErrorResponse) => {
       const canRefresh =
-        (error.status === 401 || error.status === 403) &&
+        error.status === 401 &&
         isRefreshableRequest(request) &&
         !request.context.get(RETRIED_AFTER_REFRESH);
 
