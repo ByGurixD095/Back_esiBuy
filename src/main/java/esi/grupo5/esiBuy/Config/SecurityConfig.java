@@ -10,6 +10,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 
 @Configuration
@@ -51,8 +54,11 @@ public class SecurityConfig {
             // La API no guarda sesiones.
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            ).exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint((request, response, authException) -> 
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token expirado o no proporcionado")
+                )
             )
-
             .authorizeHttpRequests(auth -> {
 
                 // CORS

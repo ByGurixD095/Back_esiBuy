@@ -19,8 +19,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -88,6 +91,25 @@ class SecurityAdminAuthorizationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(BODY))
                 .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    void administradorPuedeConsultarUsuarios() throws Exception {
+        stubAuthenticatedRole("ADMINISTRADOR");
+        when(userService.getAllUsers()).thenReturn(List.of());
+
+        mockMvc.perform(get("/admin/users")
+                        .cookie(new Cookie("accessToken", "token")))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void clienteNoPuedeConsultarUsuarios() throws Exception {
+        stubAuthenticatedRole("CLIENTE");
+
+        mockMvc.perform(get("/admin/users")
+                        .cookie(new Cookie("accessToken", "token")))
+                .andExpect(status().isForbidden());
     }
 
     private void stubAuthenticatedRole(String role) {
