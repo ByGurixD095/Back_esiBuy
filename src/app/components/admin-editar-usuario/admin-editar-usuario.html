@@ -71,6 +71,8 @@
                 type="text"
                 formControlName="nombre"
                 autocomplete="given-name"
+                maxlength="30"
+                (input)="truncarLongitud($event, 'nombre')"
                 required
               />
               @if (esInvalido('nombre')) {
@@ -84,6 +86,8 @@
                 type="text"
                 formControlName="apellidos"
                 autocomplete="family-name"
+                maxlength="30"
+                (input)="truncarLongitud($event, 'apellidos')"
                 required
               />
               @if (esInvalido('apellidos')) {
