@@ -39,4 +39,13 @@ describe('Usuarios', () => {
       },
     ]);
   });
+
+  it('solicita la eliminación lógica del usuario con credenciales', () => {
+    servicio.eliminar('user-db-1').subscribe();
+
+    const peticion = http.expectOne('http://localhost:8080/admin/user-db-1');
+    expect(peticion.request.method).toBe('DELETE');
+    expect(peticion.request.withCredentials).toBe(true);
+    peticion.flush(null);
+  });
 });

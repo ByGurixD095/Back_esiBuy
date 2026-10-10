@@ -3,9 +3,6 @@
     <p class="esi-eyebrow">Administradores</p>
     <h1 id="usuarios-titulo" class="esi-titulo">gestionar <em>usuarios.</em></h1>
     <p class="descripcion">Usuarios registrados y estado actual de sus cuentas.</p>
-    <p class="aviso-boceto" role="note">
-      🧪 Las acciones son solo un boceto visual y todavía no realizan cambios.
-    </p>
 
     <div class="filtros">
       <div class="busqueda esi-campo">
@@ -32,6 +29,11 @@
         </select>
       </div>
     </div>
+    @if (mensajeErrorAccion()) {
+    <p class="esi-alerta esi-alerta--error" role="alert">{{ mensajeErrorAccion() }}</p>
+    } @else if (mensajeAccion()) {
+    <output class="mensaje-accion esi-alerta esi-alerta--ok">{{ mensajeAccion() }}</output>
+    }
 
     @if (cargando()) {
     <output class="estado" aria-live="polite">Cargando usuarios...</output>
@@ -49,7 +51,7 @@
     } @else {
     <div class="tabla-contenedor esi-tarjeta">
       <table>
-        <caption>Usuarios registrados · acciones de ejemplo</caption>
+        <caption>Usuarios registrados y opciones de gestión</caption>
         <thead>
           <tr>
             <th scope="col">ID</th>
@@ -59,7 +61,7 @@
             <th scope="col">Actividad</th>
             <th scope="col">Bloqueado</th>
             <th scope="col">Eliminado</th>
-            <th scope="col">Acciones (boceto)</th>
+            <th scope="col">Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -95,7 +97,7 @@
               </span>
             </td>
             <td>
-              <div class="acciones" aria-label="Acciones futuras, no disponibles">
+              <div class="acciones" aria-label="Acciones de usuario">
                 <button
                   type="button"
                   class="accion-boceto"
@@ -122,17 +124,59 @@
                 }
                 <button
                   type="button"
-                  class="accion-boceto"
-                  disabled
-                  aria-label="Eliminar usuario, próximamente"
-                  title="Eliminar usuario (boceto)"
-                >🗑️</button>
+                  class="accion-eliminar"
+                  [disabled]="usuario.eliminado || esUsuarioActual(usuario) || eliminandoId() !== null"
+                  [attr.aria-label]="
+                    usuario.eliminado
+                      ? 'Usuario ya eliminado'
+                      : esUsuarioActual(usuario)
+                        ? 'No puedes eliminar tu propia cuenta'
+                        : 'Eliminar usuario'
+                  "
+                  [title]="
+                    usuario.eliminado
+                      ? 'El usuario ya está eliminado'
+                      : esUsuarioActual(usuario)
+                        ? 'No puedes eliminar tu propia cuenta'
+                        : 'Eliminar usuario'
+                  "
+                  (click)="eliminarUsuario(usuario)"
+                >
+                  {{ eliminandoId() === usuario.id ? '⏳' : '🗑️' }}
+                </button>
               </div>
             </td>
           </tr>
           }
         </tbody>
       </table>
+    </div>
+    }
+
+    @if (usuarioPendienteDeEliminar(); as usuario) {
+    <div class="confirmacion-fondo">
+      <dialog
+        open
+        class="confirmacion-dialogo"
+        aria-modal="true"
+        aria-labelledby="confirmacion-titulo"
+        aria-describedby="confirmacion-descripcion"
+        (keydown.escape)="cancelarEliminacion()"
+      >
+        <h2 id="confirmacion-titulo">¿Eliminar usuario?</h2>
+        <p id="confirmacion-descripcion">
+          ¿Estás segura de que quieres eliminar a <strong>{{ usuario.name }} {{ usuario.apellidos }}</strong>?
+          Su cuenta se marcará como eliminada, pero no se borrará físicamente.
+        </p>
+        <div class="confirmacion-acciones">
+          <button type="button" class="esi-boton confirmacion-cancelar" autofocus (click)="cancelarEliminacion()">
+            Cancelar
+          </button>
+          <button type="button" class="esi-boton confirmacion-eliminar" (click)="confirmarEliminacion()">
+            Sí, eliminar
+          </button>
+        </div>
+      </dialog>
     </div>
     }
   </section>
