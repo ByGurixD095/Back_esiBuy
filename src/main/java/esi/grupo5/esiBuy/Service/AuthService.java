@@ -82,7 +82,7 @@ public class AuthService {
         if (!authFactorService.requiereMfaObligatorio(usuario)) {
             return generarTokens(usuario);
         }
-        String tipoCliente = (usuario instanceof Cliente cliente) ? cliente.getTipoCliente().toString() : null;
+        String tipoCliente = usuario instanceof Cliente cliente ? cliente.getTipoCliente().toString() : null;
         
         if (!usuario.isMfaConfigurado()) {
             String setupToken = authFactorService.createSetupChallenge(usuario);
@@ -116,7 +116,7 @@ public class AuthService {
             log.error("Error al guardar el refresh token del usuario {}: {}", usuario.getEmail(), e.getMessage());
             throw new BusinessException("Ocurrió un error interno", 500, "INTERNAL_ERROR");
         }
-        String tipoCliente = (usuario instanceof Cliente cliente) ? cliente.getTipoCliente().toString() : null;
+        String tipoCliente = usuario instanceof Cliente cliente ? cliente.getTipoCliente().toString() : null;
         return new LoginResponseDTO(token, refreshTokenString, usuario.getRol().toString(), tipoCliente, "SUCCESS", usuario.getEmail());
     }
 
@@ -130,7 +130,7 @@ public class AuthService {
         }
         Usuario usuario = refreshTokenEntity.getUsuario(); 
         String nuevoAccessToken = jwtService.generateToken(usuario);
-        String tipoCliente = (usuario instanceof Cliente cliente) ? cliente.getTipoCliente().toString() : null;
+        String tipoCliente = usuario instanceof Cliente cliente ? cliente.getTipoCliente().toString() : null;
         
         return new LoginResponseDTO(nuevoAccessToken, refreshTokenEntity.getToken(), usuario.getRol().toString(), tipoCliente, "SUCCESS", usuario.getEmail());
     }
