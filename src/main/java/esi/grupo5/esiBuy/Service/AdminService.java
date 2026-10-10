@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -24,6 +23,8 @@ import esi.grupo5.esiBuy.Service.strategy.UsuarioUpdateStrategy;
 
 @Service
 public class AdminService {
+
+    private static final String USER_NOT_FOUND = "Usuario no encontrado";
     
     private final UsuarioRepository usuarioRepository;
     private final BCryptPasswordEncoder encoder;
@@ -44,7 +45,7 @@ public class AdminService {
 
     public void modificarUsuario(String id, UserPatchDTO dto) {
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND));
 
         actualizarDatosComunes(usuario, dto);
 
@@ -80,22 +81,19 @@ public class AdminService {
     // --------- BLOQUEAR/DESBLOQUEAR USUARIOS ---------
 
     public UsuarioResponseDTO bloquearUsuario(String id) {
-        Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
-            .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
-            
-        usuario.setBloqueado(true);
-        usuarioRepository.save(usuario);
-
-        return userService.toResponseDto(usuario);
+        return actualizarEstadoBloqueo(id, true);
     }
 
     public UsuarioResponseDTO desbloquearUsuario(String id) {
+        return actualizarEstadoBloqueo(id, false);
+    }
+
+    private UsuarioResponseDTO actualizarEstadoBloqueo(String id, boolean bloqueado) {
         Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
-            .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND));
 
-        usuario.setBloqueado(false);
+        usuario.setBloqueado(bloqueado);
         usuarioRepository.save(usuario);
-
         return userService.toResponseDto(usuario);
     }
 
@@ -130,28 +128,19 @@ public class AdminService {
     }
 
     public void eliminarUsuario(String id, String usuarioActualId) {
-
         if (id.equals(usuarioActualId)) {
             throw new ForbiddenException("No puedes eliminar tu propia cuenta");
         }
 
-        Optional<Usuario> optionalUsuario = usuarioRepository.findByIdAndEliminadoFalse(id);
-
-        if (optionalUsuario.isEmpty()) {
-            throw new NotFoundException("Usuario no encontrado");
-        }
-
-        Usuario usuario = optionalUsuario.get();
+        Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND));
 
         if (usuario.getRol() == Rol.ADMINISTRADOR) {
-
-        long administradores = usuarioRepository
-                .countByRolAndEliminadoFalse(Rol.ADMINISTRADOR);
-
-        if (administradores <= 1) {
-            throw new ForbiddenException("No se puede eliminar el último administrador");
+            long administradores = usuarioRepository.countByRolAndEliminadoFalse(Rol.ADMINISTRADOR);
+            if (administradores <= 1) {
+                throw new ForbiddenException("No se puede eliminar el último administrador");
+            }
         }
-    }
 
         usuario.setEliminado(true);
         usuarioRepository.save(usuario);

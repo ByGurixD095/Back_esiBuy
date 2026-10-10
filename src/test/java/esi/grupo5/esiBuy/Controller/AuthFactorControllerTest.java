@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -52,8 +51,8 @@ class AuthFactorControllerTest {
         assertEquals(withToken, controller.verifyMFA(request, response).getBody());
         assertEquals(withoutToken, controller.verifyMFA(request, response).getBody());
 
-        verify(cookieUtil).setTokenCookies(response, withToken);
-        verify(cookieUtil, never()).setTokenCookies(response, withoutToken);
+        verify(cookieUtil).setTokenCookiesIfPresent(response, withToken);
+        verify(cookieUtil).setTokenCookiesIfPresent(response, withoutToken);
     }
 
     @Test

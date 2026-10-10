@@ -277,6 +277,25 @@ class UserServiceConsultarUsuariosLecturaTest {
                 "missing", new UserSelfUpdateDTO(null, null, null, null, null, null, null)));
     }
 
+    @Test
+    void modificarPerfil_ignoraCamposComunesEnBlanco() {
+        Cliente cliente = cliente("cliente-1", "Ana", "ana@test.com");
+        cliente.setApellidos("López");
+        cliente.setTelefono("123456789");
+        cliente.setImagenPerfil("avatar.png");
+        when(usuarioRepository.findByIdAndEliminadoFalse("cliente-1"))
+                .thenReturn(Optional.of(cliente));
+
+        service.modificarMiPerfil("cliente-1", new UserSelfUpdateDTO(
+                " ", "", " ", " ", null, null, null));
+
+        assertEquals("Ana", cliente.getNombre());
+        assertEquals("López", cliente.getApellidos());
+        assertEquals("123456789", cliente.getTelefono());
+        assertEquals("avatar.png", cliente.getImagenPerfil());
+        verify(usuarioRepository).save(cliente);
+    }
+
     private Cliente cliente(String id, String nombre, String email) {
         Cliente cliente = new Cliente();
         cliente.setId(id);

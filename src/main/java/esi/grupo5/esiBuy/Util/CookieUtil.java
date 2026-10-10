@@ -39,6 +39,12 @@ public class CookieUtil {
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
     }
 
+    public void setTokenCookiesIfPresent(HttpServletResponse response, LoginResponseDTO loginResponse) {
+        if (loginResponse.accessToken() != null) {
+            setTokenCookies(response, loginResponse);
+        }
+    }
+
     public void clearTokenCookies(HttpServletResponse response) {
         ResponseCookie accessCookie = ResponseCookie.from("accessToken", "")
                 .httpOnly(true)

@@ -1,5 +1,28 @@
 # Back_esiBuy
 
+## Arranque local
+
+La aplicación lee su configuración desde un fichero `.env` en la raíz del
+repositorio. Crea uno a partir de la plantilla:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Antes de arrancar, sustituye los valores de `jwt.secret`, `mail.username` y
+`mail.password`. Para generar una clave JWT aleatoria de 32 bytes en PowerShell:
+
+```powershell
+$bytes = [byte[]]::new(32)
+[System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+[Convert]::ToHexString($bytes)
+```
+
+Copia el resultado en `jwt.secret`. Necesitas MongoDB disponible en la dirección
+configurada en `MONGODB_URI`; la configuración de correo debe ser válida para
+enviar correos de recuperación. El fichero `.env` está excluido de Git para no
+publicar credenciales.
+
 ## Cobertura con JaCoCo
 
 La cobertura se genera durante la fase `verify`, junto con la ejecución de los

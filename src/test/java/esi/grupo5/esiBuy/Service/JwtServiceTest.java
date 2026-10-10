@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JwtServiceTest {
@@ -56,6 +57,7 @@ class JwtServiceTest {
         assertTrue(service.isTokenValid(refreshToken));
         assertNotEquals(accessToken, refreshToken);
         assertEquals("user-1", service.extractId(refreshToken));
+        assertNull(service.extractRol(refreshToken));
         assertEquals(120, service.getRefreshTokenExpirationSeconds());
     }
 
@@ -64,5 +66,14 @@ class JwtServiceTest {
         String token = service.generateToken(user);
 
         assertFalse(service.isTokenValid(token + "alterado"));
+    }
+
+    @Test
+    void devuelveLaExpiracionEnSegundosTruncandoMilisegundosRestantes() {
+        ReflectionTestUtils.setField(service, "expirationTime", 60_999L);
+        ReflectionTestUtils.setField(service, "refreshExpirationTime", 120_999L);
+
+        assertEquals(60, service.getAccessTokenExpirationSeconds());
+        assertEquals(120, service.getRefreshTokenExpirationSeconds());
     }
 }

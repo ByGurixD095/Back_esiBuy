@@ -31,9 +31,7 @@ public class AuthFactorController {
     public ResponseEntity<LoginResponseDTO> verifyMFA(@Valid @RequestBody MfaVerifyRequestDTO dto, HttpServletResponse response) {
         try {
             LoginResponseDTO loginResponse = authService.verifyMFA(dto);
-            if (loginResponse.accessToken() != null) {
-                cookieUtil.setTokenCookies(response, loginResponse);
-            }
+            cookieUtil.setTokenCookiesIfPresent(response, loginResponse);
             return ResponseEntity.ok(loginResponse);
         } catch (BusinessException e) {
             throw new BusinessException(e.getMessage(), e.getHttpStatusCode(), e.getErrorCode());

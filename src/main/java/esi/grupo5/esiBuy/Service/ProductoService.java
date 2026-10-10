@@ -23,6 +23,9 @@ public class ProductoService {
     private static final String ACTIVO_FIELD = "activo";
     private static final String STOCK_FIELD = "numStock";
     private static final String PRECIO_CENT_FIELD = "precioCent";
+    private static final String NOMBRE_FIELD = "nombre";
+    private static final String REFERENCIA_FIELD = "referencia";
+    private static final String DESCUENTO_FIELD = "descuento";
 
     private final ProductoRepository productoRepository;
     private final MongoTemplate mongoTemplate;
@@ -36,7 +39,7 @@ public class ProductoService {
         Producto producto = new Producto(
                 dto.nombre(),
                 dto.referencia(),
-                dto.numStock() != null ? dto.numStock() : 0,
+                valorPorDefecto(dto.numStock()),
                 dto.precioCent(),
                 dto.descripcion(),
                 dto.categoria(),
@@ -50,12 +53,11 @@ public class ProductoService {
     }
 
     public List<Producto> obtenerProductosDisponibles(FiltroCatalogoDTO filtros) {
-        return mongoTemplate.find(construirConsulta(filtros), Producto.class);
+        return mongoTemplate.find(construirConsulta(filtros, Sort.unsorted()), Producto.class);
     }
 
     public Page<Producto> obtenerProductosDisponibles(FiltroCatalogoDTO filtros, Pageable pageable) {
-        Query query = construirConsulta(filtros);
-        aplicarOrden(query, filtros == null ? null : filtros.orden(), pageable.getSort());
+        Query query = construirConsulta(filtros, pageable.getSort());
         long total = mongoTemplate.count(query, Producto.class);
 
         if (!pageable.isUnpaged()) {
@@ -67,7 +69,7 @@ public class ProductoService {
         return new PageImpl<>(productos, pageable, total);
     }
 
-    private Query construirConsulta(FiltroCatalogoDTO filtros) {
+    private Query construirConsulta(FiltroCatalogoDTO filtros, Sort ordenAlternativo) {
         Query query = new Query();
         query.addCriteria(Criteria.where(ACTIVO_FIELD).is(true).and(STOCK_FIELD).gt(0));
 
@@ -76,9 +78,10 @@ public class ProductoService {
             aplicarCategoria(query, filtros.categoria());
             aplicarRangoPrecio(query, filtros.precioMinCent(), filtros.precioMaxCent());
             aplicarOferta(query, filtros.soloOfertas());
-            aplicarOrden(query, filtros.orden());
         }
 
+        String ordenSolicitado = filtros == null ? null : filtros.orden();
+        aplicarOrden(query, ordenSolicitado, ordenAlternativo);
         return query;
     }
 
@@ -86,8 +89,8 @@ public class ProductoService {
         if (busqueda != null && !busqueda.isBlank()) {
             String textoBusqueda = Pattern.quote(busqueda.trim());
             query.addCriteria(new Criteria().orOperator(
-                    Criteria.where("nombre").regex(textoBusqueda, "i"),
-                    Criteria.where("referencia").regex(textoBusqueda, "i")
+                    Criteria.where(NOMBRE_FIELD).regex(textoBusqueda, "i"),
+                    Criteria.where(REFERENCIA_FIELD).regex(textoBusqueda, "i")
             ));
         }
     }
@@ -113,7 +116,7 @@ public class ProductoService {
 
     private void aplicarOferta(Query query, Boolean soloOfertas) {
         if (Boolean.TRUE.equals(soloOfertas)) {
-            query.addCriteria(Criteria.where("descuento").gt(0));
+            query.addCriteria(Criteria.where(DESCUENTO_FIELD).gt(0));
         }
     }
 
@@ -125,10 +128,10 @@ public class ProductoService {
         }
     }
 
-    private void aplicarOrden(Query query, String orden, Sort pageableSort) {
+    private void aplicarOrden(Query query, String orden, Sort ordenAlternativo) {
         aplicarOrden(query, orden);
-        if ((orden == null || orden.isBlank()) && pageableSort != null && pageableSort.isSorted()) {
-            query.with(pageableSort);
+        if ((orden == null || orden.isBlank()) && ordenAlternativo != null && ordenAlternativo.isSorted()) {
+            query.with(ordenAlternativo);
         }
     }
 

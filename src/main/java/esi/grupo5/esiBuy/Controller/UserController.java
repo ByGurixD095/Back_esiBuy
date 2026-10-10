@@ -49,10 +49,7 @@ public class UserController {
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO dto, HttpServletResponse response, HttpServletRequest request) {
         try {
             LoginResponseDTO loginResponse = authService.login(dto, request.getRemoteAddr());
-            
-            if (loginResponse.accessToken() != null) {
-                cookieUtil.setTokenCookies(response, loginResponse);
-            }
+            cookieUtil.setTokenCookiesIfPresent(response, loginResponse);
             return ResponseEntity.ok(loginResponse);
         }  catch (AuthException | ForbiddenException | PasswordExpiredException e) {
             throw e;
@@ -85,9 +82,7 @@ public class UserController {
         
         try {
             LoginResponseDTO loginResponse = userService.registrarCliente(dto);
-            if (loginResponse.accessToken() != null) {
-                cookieUtil.setTokenCookies(response, loginResponse);
-            }
+            cookieUtil.setTokenCookiesIfPresent(response, loginResponse);
             return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
         } catch (ValidationException | ConflictException e) {
             throw e;
@@ -103,9 +98,7 @@ public class UserController {
 
         try {
             LoginResponseDTO loginResponse = userService.registrarVendedor(request);
-            if (loginResponse.accessToken() != null) {
-                cookieUtil.setTokenCookies(response, loginResponse);
-            }
+            cookieUtil.setTokenCookiesIfPresent(response, loginResponse);
             return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
         } catch (ValidationException | ConflictException e) {
             throw e;

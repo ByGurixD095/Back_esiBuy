@@ -26,21 +26,25 @@ public class JwtService {
 
     // generar token JWT
     public String generateToken(Usuario userDetails) {
-        return Jwts.builder()
-                .subject(userDetails.getId())   
-                .claim("rol", userDetails.getRol().toString())
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expirationTime))
-                .signWith(getSignInKey(), Jwts.SIG.HS256)
-                .compact();
+        return generateToken(userDetails, expirationTime, true);
     }
 
     // Generar token de refresco JWT
     public String generateRefreshToken(Usuario userDetails) {
-        return Jwts.builder()
-                .subject(userDetails.getId())    
+        return generateToken(userDetails, refreshExpirationTime, false);
+    }
+
+    private String generateToken(Usuario userDetails, long tokenExpirationTime, boolean includeRole) {
+        var tokenBuilder = Jwts.builder()
+                .subject(userDetails.getId());
+
+        if (includeRole) {
+            tokenBuilder.claim("rol", userDetails.getRol().toString());
+        }
+
+        return tokenBuilder
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + refreshExpirationTime))
+                .expiration(new Date(System.currentTimeMillis() + tokenExpirationTime))
                 .signWith(getSignInKey(), Jwts.SIG.HS256)
                 .compact();
     }
@@ -82,10 +86,14 @@ public class JwtService {
     }
 
     public int getAccessTokenExpirationSeconds() {
-        return (int) (expirationTime / 1000L);
+        return toSeconds(expirationTime);
     }
 
     public int getRefreshTokenExpirationSeconds() {
-        return (int) (refreshExpirationTime / 1000L);
+        return toSeconds(refreshExpirationTime);
+    }
+
+    private int toSeconds(long durationInMilliseconds) {
+        return (int) (durationInMilliseconds / 1000L);
     }
 }

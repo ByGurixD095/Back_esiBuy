@@ -1,9 +1,11 @@
 package esi.grupo5.esiBuy.Service;
 
-import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
+import jakarta.validation.Valid;
 
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -11,15 +13,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 import esi.grupo5.esiBuy.Dto.ClienteRegistroDTO;
 import esi.grupo5.esiBuy.Dto.ClienteResponseDTO;
-import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
 import esi.grupo5.esiBuy.Dto.UserSelfUpdateDTO;
 import esi.grupo5.esiBuy.Dto.UsuarioResponseDTO;
 import esi.grupo5.esiBuy.Dto.VendedorRegisterRequest;
 import esi.grupo5.esiBuy.Dto.VendedorResponseDTO;
-import esi.grupo5.esiBuy.Exception.*;
+import esi.grupo5.esiBuy.Exception.BusinessException;
+import esi.grupo5.esiBuy.Exception.ConflictException;
+import esi.grupo5.esiBuy.Exception.NotFoundException;
+import esi.grupo5.esiBuy.Exception.ValidationException;
 import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.Usuario;
@@ -29,6 +34,8 @@ import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 
 @Service
 public class UserService {
+
+    private static final String USER_NOT_FOUND_MESSAGE = "Usuario no encontrado";
 
     private final UsuarioRepository usuarioRepository;
     private final BCryptPasswordEncoder encoder;
@@ -46,14 +53,7 @@ public class UserService {
     // REGISTER
     @Transactional
     public LoginResponseDTO registrarCliente(@Valid ClienteRegistroDTO dto) {
-        try {
-            passwordValidatorService.validatePassword(
-                dto.contrasena(),
-                new ArrayList<>()
-            );
-        } catch (ResponseStatusException e) {
-            throw new ValidationException("La contraseña no cumple con los requisitos de seguridad: " + e.getReason());
-        }
+        validarContrasenaRegistro(dto.contrasena());
         
         Cliente cliente = Cliente.builder()
                 .nombre(dto.nombre())
@@ -67,20 +67,13 @@ public class UserService {
                 .tipoCliente(dto.tipoCliente() != null ? dto.tipoCliente() : TipoCliente.NORMAL)
                 .build();
 
-        cliente.setHistorialContrasenas(new ArrayList<>(List.of(cliente.getContrasena())));
+        inicializarHistorialContrasenas(cliente);
         return procesarRegistroUsuario(cliente);
     }
 
     @Transactional
     public LoginResponseDTO registrarVendedor(@Valid VendedorRegisterRequest dto) {
-        try {
-           passwordValidatorService.validatePassword(
-                dto.contrasena(),
-                new ArrayList<>()
-            );
-        } catch (ResponseStatusException e) {
-            throw new ValidationException("La contraseña no cumple con los requisitos de seguridad: " + e.getReason());
-        }
+        validarContrasenaRegistro(dto.contrasena());
 
         Vendedor vendedor = Vendedor.builder()
                 .nombre(dto.nombre())
@@ -94,59 +87,73 @@ public class UserService {
                 .categoriaPrincipalId(dto.categoriaPrincipalId())
                 .build();
 
-        vendedor.setHistorialContrasenas(new ArrayList<>(List.of(vendedor.getContrasena())));
+        inicializarHistorialContrasenas(vendedor);
         return procesarRegistroUsuario(vendedor);
     }
 
     // GETTER
     public List<UsuarioResponseDTO> getAllUsers() {
-        List<Usuario> usuarios = usuarioRepository.findAll();
-
-        List<UsuarioResponseDTO> usuariosDto = new ArrayList<>();
-
-        for (Usuario usuario : usuarios) {
-            usuariosDto.add(toResponseDto(usuario));
-        }
-
-        return usuariosDto;
+        return usuarioRepository.findAll().stream()
+                .map(this::toResponseDto)
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
-
-
     public UsuarioResponseDTO getUserById(String id) {
-    return usuarioRepository.findByIdAndEliminadoFalse(id)
-            .map(this::toResponseDto)
-            .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+        return usuarioRepository.findByIdAndEliminadoFalse(id)
+                .map(this::toResponseDto)
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND_MESSAGE));
     }
 
     // UPDATE PROFILE
     @Transactional
     public void modificarMiPerfil(String id, UserSelfUpdateDTO dto) {
         Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
-                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND_MESSAGE));
 
+        actualizarDatosComunes(usuario, dto);
+        actualizarDatosEspecificos(usuario, dto);
+        guardarPerfilActualizado(usuario);
+    }
+
+    private void actualizarDatosComunes(Usuario usuario, UserSelfUpdateDTO dto) {
         actualizarSiValido(dto.nombre(), usuario::setNombre);
         actualizarSiValido(dto.apellidos(), usuario::setApellidos);
         actualizarSiValido(dto.telefono(), usuario::setTelefono);
         actualizarSiValido(dto.imagenPerfil(), usuario::setImagenPerfil);
+    }
 
+    private void actualizarDatosEspecificos(Usuario usuario, UserSelfUpdateDTO dto) {
         if (usuario instanceof Cliente cliente && dto.tipoCliente() != null) {
             cliente.setTipoCliente(dto.tipoCliente());
         } else if (usuario instanceof Vendedor vendedor) {
             actualizarSiValido(dto.categoriaPrincipalId(), vendedor::setCategoriaPrincipalId);
             actualizarSiValido(dto.nombreComercial(), vendedor::setNombreComercial);
         }
+    }
 
+    private void guardarPerfilActualizado(Usuario usuario) {
         try {
             usuarioRepository.save(usuario);
         } catch (DuplicateKeyException e) {
             throw new ConflictException("El campo único nombre comercial ya existe");
         } catch (Exception e) {
-            throw new BusinessException("Error interno al actualizar el perfil", 500, "INTERNAL_ERROR", e);
+            throw new BusinessException("Error interno al actualizar el perfil", 500, "SERVER_ERROR", e);
         }
     }
 
     // AUXILIAR METHODS
+    private void validarContrasenaRegistro(String contrasena) {
+        try {
+            passwordValidatorService.validatePassword(contrasena, new ArrayList<>());
+        } catch (ResponseStatusException e) {
+            throw new ValidationException("La contraseña no cumple con los requisitos de seguridad: " + e.getReason());
+        }
+    }
+
+    private void inicializarHistorialContrasenas(Usuario usuario) {
+        usuario.setHistorialContrasenas(new ArrayList<>(List.of(usuario.getContrasena())));
+    }
+
     private LoginResponseDTO procesarRegistroUsuario(Usuario usuario) {
         try {
             if (usuarioRepository.existsByEmail(usuario.getEmail())) {

@@ -153,6 +153,24 @@ class ProductoServiceTest {
         assertFalse(nombrePattern.matcher("CamisetaXX").find());
     }
 
+    @Test
+    void obtenerProductosDisponibles_priorizaElOrdenDelCatalogoSobreElDePaginacion() {
+        FiltroCatalogoDTO filtros = new FiltroCatalogoDTO(
+                null, null, null, null, null, "Precio Ascendente");
+        PageRequest pageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "nombre"));
+        when(mongoTemplate.count(any(Query.class), eq(Producto.class))).thenReturn(0L);
+        when(mongoTemplate.find(any(Query.class), eq(Producto.class))).thenReturn(List.of());
+
+        productoService.obtenerProductosDisponibles(filtros, pageable);
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(Producto.class));
+        Query query = queryCaptor.getValue();
+
+        assertEquals(1, query.getSortObject().get("precioCent"));
+        assertNull(query.getSortObject().get("nombre"));
+    }
+
     private ProductoDTO productoDTO(Integer stock, Integer precio, Integer descuento,
                                     Integer descuentoPremium, Boolean activo) {
         return new ProductoDTO(

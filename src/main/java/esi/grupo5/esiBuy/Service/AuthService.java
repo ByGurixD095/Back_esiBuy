@@ -24,7 +24,12 @@ import jakarta.mail.MessagingException;
 
 @Service
 public class AuthService {
+
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+    private static final int RECOVERY_TOKEN_VALIDITY_MINUTES = 5;
+    private static final int PASSWORD_VALIDITY_DAYS = 30;
+    private static final int PASSWORD_HISTORY_LIMIT = 5;
+    private static final String SERVER_ERROR_MESSAGE = "INTERNAL_ERROR";
     
     private final UsuarioRepository usuarioRepository;
     private final JwtService jwtService;
@@ -82,7 +87,7 @@ public class AuthService {
         if (!authFactorService.requiereMfaObligatorio(usuario)) {
             return generarTokens(usuario);
         }
-        String tipoCliente = usuario instanceof Cliente cliente ? cliente.getTipoCliente().toString() : null;
+        String tipoCliente = obtenerTipoCliente(usuario);
         
         if (!usuario.isMfaConfigurado()) {
             String setupToken = authFactorService.createSetupChallenge(usuario);
@@ -114,10 +119,9 @@ public class AuthService {
             refreshTokenRepository.save(refreshToken);
         } catch (Exception e) { 
             log.error("Error al guardar el refresh token del usuario {}: {}", usuario.getEmail(), e.getMessage());
-            throw new BusinessException("Ocurrió un error interno", 500, "INTERNAL_ERROR");
+            throw new BusinessException("Ocurrió un error interno", 500, SERVER_ERROR_MESSAGE);
         }
-        String tipoCliente = usuario instanceof Cliente cliente ? cliente.getTipoCliente().toString() : null;
-        return new LoginResponseDTO(token, refreshTokenString, usuario.getRol().toString(), tipoCliente, "SUCCESS", usuario.getEmail());
+        return crearRespuestaAutenticacion(usuario, token, refreshTokenString);
     }
 
     public LoginResponseDTO refreshToken(String refreshTokenString) {
@@ -130,9 +134,8 @@ public class AuthService {
         }
         Usuario usuario = refreshTokenEntity.getUsuario(); 
         String nuevoAccessToken = jwtService.generateToken(usuario);
-        String tipoCliente = usuario instanceof Cliente cliente ? cliente.getTipoCliente().toString() : null;
         
-        return new LoginResponseDTO(nuevoAccessToken, refreshTokenEntity.getToken(), usuario.getRol().toString(), tipoCliente, "SUCCESS", usuario.getEmail());
+        return crearRespuestaAutenticacion(usuario, nuevoAccessToken, refreshTokenEntity.getToken());
     }
 
     public void requestPasswordReset(PasswordResetRequestDTO request) {
@@ -143,7 +146,8 @@ public class AuthService {
         Usuario usuario = optionalUsuario.get();
         String resetToken = UUID.randomUUID().toString();
         usuario.setTokenRecuperacionContrasena(hashToken(resetToken));
-        usuario.setFechaExpiracionTokenRecuperacion(LocalDateTime.now().plusMinutes(5));
+        usuario.setFechaExpiracionTokenRecuperacion(
+                LocalDateTime.now().plusMinutes(RECOVERY_TOKEN_VALIDITY_MINUTES));
         usuarioRepository.save(usuario);
         
         try {
@@ -166,14 +170,29 @@ public class AuthService {
         
         passwordValidatorService.validatePassword(request.pwd1(), usuario.getHistorialContrasenas());
         usuario.setContrasena(encoder.encode(request.pwd1()));
-        usuario.setFechaCambioContrasena(LocalDateTime.now().plusDays(30));
+        usuario.setFechaCambioContrasena(LocalDateTime.now().plusDays(PASSWORD_VALIDITY_DAYS));
         usuario.getHistorialContrasenas().add(0, usuario.getContrasena());
-        if (usuario.getHistorialContrasenas().size() > 5) {
-            usuario.getHistorialContrasenas().remove(5);
+        if (usuario.getHistorialContrasenas().size() > PASSWORD_HISTORY_LIMIT) {
+            usuario.getHistorialContrasenas().remove(PASSWORD_HISTORY_LIMIT);
         }
         usuario.setTokenRecuperacionContrasena(null);
         usuario.setFechaExpiracionTokenRecuperacion(null);
         usuarioRepository.save(usuario);
+    }
+
+    private String obtenerTipoCliente(Usuario usuario) {
+        return usuario instanceof Cliente cliente ? cliente.getTipoCliente().toString() : null;
+    }
+
+    private LoginResponseDTO crearRespuestaAutenticacion(
+            Usuario usuario, String accessToken, String refreshToken) {
+        return new LoginResponseDTO(
+                accessToken,
+                refreshToken,
+                usuario.getRol().toString(),
+                obtenerTipoCliente(usuario),
+                "SUCCESS",
+                usuario.getEmail());
     }
 
     private String hashToken(String token) {
@@ -181,7 +200,7 @@ public class AuthService {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             return HexFormat.of().formatHex(digest.digest(token.getBytes(StandardCharsets.UTF_8))); 
         } catch (Exception e) { 
-            throw new BusinessException("Error al generar el hash del token", 500, "INTERNAL_ERROR", e);
+            throw new BusinessException("Error al generar el hash del token", 500, SERVER_ERROR_MESSAGE, e);
         }
     }
 }
