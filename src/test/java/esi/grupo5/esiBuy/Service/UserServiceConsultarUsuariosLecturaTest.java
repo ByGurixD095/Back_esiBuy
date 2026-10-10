@@ -54,11 +54,13 @@ class UserServiceConsultarUsuariosLecturaTest {
         cliente.setMfaConfigurado(true);
         cliente.setIs2faActivoCliente(true);
         cliente.setIs3faActivoCliente(true);
-        when(usuarioRepository.findAllByEliminadoFalse()).thenReturn(List.of(cliente));
+        Cliente usuarioEliminado = cliente("cliente-eliminado", "Luis", "luis@test.com");
+        usuarioEliminado.setEliminado(true);
+        when(usuarioRepository.findAll()).thenReturn(List.of(cliente, usuarioEliminado));
 
         List<UsuarioResponseDTO> resultado = service.getAllUsers();
 
-        assertEquals(1, resultado.size());
+        assertEquals(2, resultado.size());
         assertEquals("cliente-1", resultado.get(0).getId());
         assertEquals("Ana", resultado.get(0).getName());
         assertEquals("López", resultado.get(0).getApellidos());
@@ -72,7 +74,9 @@ class UserServiceConsultarUsuariosLecturaTest {
         assertEquals(true, resultado.get(0).isMfaConfigurado());
         assertEquals(true, resultado.get(0).isDosFactorActivoCliente());
         assertEquals(true, resultado.get(0).isTresFactorActivoCliente());
-        verify(usuarioRepository).findAllByEliminadoFalse();
+        assertEquals("cliente-eliminado", resultado.get(1).getId());
+        assertEquals(true, resultado.get(1).isEliminado());
+        verify(usuarioRepository).findAll();
     }
 
     @Test
@@ -83,7 +87,7 @@ class UserServiceConsultarUsuariosLecturaTest {
         vendedor.setNombreComercial("Tienda Luis");
         vendedor.setCifNif("B12345678");
         vendedor.setCategoriaPrincipalId("electronica");
-        when(usuarioRepository.findAllByEliminadoFalse()).thenReturn(List.of(vendedor));
+        when(usuarioRepository.findAll()).thenReturn(List.of(vendedor));
 
         List<UsuarioResponseDTO> resultado = service.getAllUsers();
 
@@ -104,7 +108,7 @@ class UserServiceConsultarUsuariosLecturaTest {
                 .build();
         administrador.setId("admin-1");
         administrador.setMfaConfigurado(true);
-        when(usuarioRepository.findAllByEliminadoFalse()).thenReturn(List.of(administrador));
+        when(usuarioRepository.findAll()).thenReturn(List.of(administrador));
 
         AdministradorResponseDTO resultado =
                 (AdministradorResponseDTO) service.getAllUsers().get(0);
@@ -119,12 +123,12 @@ class UserServiceConsultarUsuariosLecturaTest {
 
     @Test
     void consultarUsuarios_sinUsuariosDevuelveListaVacia() {
-        when(usuarioRepository.findAllByEliminadoFalse()).thenReturn(List.of());
+        when(usuarioRepository.findAll()).thenReturn(List.of());
 
         List<UsuarioResponseDTO> resultado = service.getAllUsers();
 
         assertEquals(List.of(), resultado);
-        verify(usuarioRepository).findAllByEliminadoFalse();
+        verify(usuarioRepository).findAll();
     }
 
     @Test
