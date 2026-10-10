@@ -1,0 +1,34 @@
+<app-marco-pagina panel="Gestionar" [volver]="true">
+  <section class="gestionar" aria-labelledby="gestionar-titulo">
+    <p class="esi-eyebrow">Área de trabajo</p>
+    <h1 id="gestionar-titulo" class="esi-titulo">gestionar.</h1>
+    <p class="descripcion">Selecciona el área que quieres administrar.</p>
+
+    <div class="opciones">
+      @if (auth.hasRole(['ADMINISTRADOR'])) {
+      <a class="opcion esi-tarjeta" routerLink="/administradores/nuevo">
+        <strong>Administradores</strong>
+        <span>Crear y gestionar administradores.</span>
+      </a>
+      <a class="opcion esi-tarjeta" routerLink="/admin/usuarios">
+        <strong>Gestionar usuarios</strong>
+        <span>Consultar cuentas y ver una propuesta de acciones.</span>
+      </a>
+      }
+      @if (auth.hasRole(['VENDEDOR'])) {
+      <a class="opcion esi-tarjeta" routerLink="/products/new">
+        <strong>Productos</strong>
+        <span>Gestionar los productos de tu catálogo.</span>
+      </a>
+      }
+    </div>
+
+    @if (auth.hasRole(['ADMINISTRADOR', 'VENDEDOR'])) {
+    <p class="nota">Más opciones de gestión estarán disponibles próximamente.</p>
+    } @else {
+    <p class="esi-alerta esi-alerta--error" role="alert">
+      Tu cuenta no tiene todavía opciones de gestión disponibles.
+    </p>
+    }
+  </section>
+</app-marco-pagina>

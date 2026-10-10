@@ -1,0 +1,181 @@
+import { HttpErrorResponse } from '@angular/common/http';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import { MarcoPagina } from '../marco-pagina/marco-pagina';
+import { AuthService, Rol } from '../../services/auth.service';
+import {
+  ActualizarPerfilRequest,
+  PerfilService,
+  PerfilUsuario,
+  TipoCliente,
+} from '../../services/perfil.service';
+
+const NO_VACIO = /\S/;
+const TELEFONO_PATTERN = /^\d{9}$/;
+
+@Component({
+  selector: 'app-cuenta',
+  imports: [MarcoPagina, ReactiveFormsModule],
+  templateUrl: './cuenta.html',
+  styleUrl: './cuenta.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class Cuenta {
+  private readonly auth = inject(AuthService);
+  private readonly perfilService = inject(PerfilService);
+  private readonly router = inject(Router);
+
+  readonly rol = this.auth.rol;
+  readonly esPerfilEditable = computed(() => {
+    const rol = this.rol();
+    return rol === 'CLIENTE' || rol === 'VENDEDOR';
+  });
+  readonly perfil = signal<PerfilUsuario | null>(null);
+  readonly cargando = signal(false);
+  readonly guardando = signal(false);
+  readonly mensajeExito = signal('');
+  readonly mensajeError = signal('');
+
+  readonly form = new FormGroup({
+    nombre: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.pattern(NO_VACIO)],
+    }),
+    apellidos: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.pattern(NO_VACIO)],
+    }),
+    telefono: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.pattern(TELEFONO_PATTERN)],
+    }),
+    imagenPerfil: new FormControl('', { nonNullable: true }),
+    tipoCliente: new FormControl<TipoCliente>('NORMAL', { nonNullable: true }),
+    nombreComercial: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.pattern(NO_VACIO)],
+    }),
+    categoriaPrincipalId: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.pattern(NO_VACIO)],
+    }),
+  });
+
+  constructor() {
+    if (this.esPerfilEditable()) {
+      if (this.rol() === 'CLIENTE') {
+        this.form.controls.nombreComercial.disable();
+        this.form.controls.categoriaPrincipalId.disable();
+      }
+      this.cargarPerfil();
+    }
+  }
+
+  cargarPerfil(): void {
+    if (!this.esPerfilEditable() || this.cargando()) {
+      return;
+    }
+    this.cargando.set(true);
+    this.mensajeError.set('');
+
+    this.perfilService.obtenerMiPerfil().subscribe({
+      next: (perfil) => {
+        this.perfil.set(perfil);
+        this.form.patchValue({
+          nombre: perfil.name,
+          apellidos: perfil.apellidos,
+          telefono: perfil.telefono ?? '',
+          imagenPerfil: perfil.imagenPerfil ?? '',
+          tipoCliente: perfil.tipoCliente ?? 'NORMAL',
+          nombreComercial: perfil.nombreComercial ?? '',
+          categoriaPrincipalId: perfil.categoriaPrincipalId ?? '',
+        });
+        this.cargando.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.cargando.set(false);
+        this.mensajeError.set(
+          this.auth.errorMessage(error, 'No se han podido cargar los datos del perfil.'),
+        );
+      },
+    });
+  }
+
+  guardar(): void {
+    if (this.cargando() || this.guardando() || this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    const rol = this.rol();
+    if (rol !== 'CLIENTE' && rol !== 'VENDEDOR') {
+      return;
+    }
+
+    const valores = this.form.getRawValue();
+    const datos: ActualizarPerfilRequest = {
+      nombre: valores.nombre.trim(),
+      apellidos: valores.apellidos.trim(),
+      ...(valores.telefono.trim() ? { telefono: valores.telefono.trim() } : {}),
+      ...(valores.imagenPerfil.trim() ? { imagenPerfil: valores.imagenPerfil.trim() } : {}),
+      ...(rol === 'CLIENTE'
+        ? { tipoCliente: valores.tipoCliente }
+        : {
+            nombreComercial: valores.nombreComercial.trim(),
+            categoriaPrincipalId: valores.categoriaPrincipalId.trim(),
+          }),
+    };
+
+    this.guardando.set(true);
+    this.mensajeError.set('');
+    this.mensajeExito.set('');
+    this.perfilService.actualizarMiPerfil(datos).subscribe({
+      next: () => {
+        this.aplicarCambiosLocales(datos, rol);
+        this.guardando.set(false);
+        this.mensajeExito.set('Los datos de tu perfil se han actualizado.');
+      },
+      error: (error: HttpErrorResponse) => {
+        this.guardando.set(false);
+        this.mensajeError.set(
+          this.auth.errorMessage(error, 'No se han podido guardar los cambios del perfil.'),
+        );
+      },
+    });
+  }
+
+  esInvalido(campo: keyof typeof this.form.controls): boolean {
+    const control = this.form.controls[campo];
+    return control.invalid && (control.touched || control.dirty);
+  }
+
+  cerrarSesion(): void {
+    this.auth.logout().subscribe({
+      next: () => void this.router.navigate(['/']),
+      error: () => void this.router.navigate(['/']),
+    });
+  }
+
+  private aplicarCambiosLocales(datos: ActualizarPerfilRequest, rol: Rol): void {
+    this.perfil.update((perfil) => {
+      if (!perfil) {
+        return perfil;
+      }
+
+      return {
+        ...perfil,
+        name: datos.nombre || perfil.name,
+        apellidos: datos.apellidos || perfil.apellidos,
+        telefono: datos.telefono || perfil.telefono,
+        imagenPerfil: datos.imagenPerfil || perfil.imagenPerfil,
+        ...(rol === 'CLIENTE'
+          ? { tipoCliente: datos.tipoCliente }
+          : {
+              nombreComercial: datos.nombreComercial || perfil.nombreComercial,
+              categoriaPrincipalId: datos.categoriaPrincipalId || perfil.categoriaPrincipalId,
+            }),
+      };
+    });
+  }
+}

@@ -1,16 +1,28 @@
-<header class="cabecera">
-  <div class="cabecera-interior">
-    <a routerLink="/" class="logo" aria-label="EsiBuy, ir al inicio">
-      <img src="/assets/images/svg/logo.svg" alt="" />
-    </a>
+<header class="catalog-header">
+  <a routerLink="/" class="brand" aria-label="EsiBuy, ir al inicio">
+    <img src="/assets/images/svg/logo.svg" alt="" />
+  </a>
 
-    @if (panel()) {
-    <span class="panel">{{ panel() }}</span>
+  @if (panel()) {
+  <div class="header-context">{{ panel() }}</div>
+  }
+
+  <nav class="header-actions" aria-label="Navegación principal">
+    <a class="account-link" routerLink="/products">Catálogo</a>
+
+    @if (estaAutenticado()) {
+    <a class="account-link" routerLink="/account">Mi cuenta</a>
+    @if (tieneRol(['ADMINISTRADOR', 'VENDEDOR'])) {
+    <a class="account-link" routerLink="/manage">Gestionar</a>
     }
+    } @else {
+    <a class="account-link" routerLink="/login">Iniciar sesión / Registro</a>
+    }
+
     @if (volver()) {
-    <a routerLink="/" class="volver">← Volver a la tienda</a>
+    <a class="account-link volver-link" routerLink="/">Inicio</a>
     }
-  </div>
+  </nav>
 </header>
 
 <main class="contenido">

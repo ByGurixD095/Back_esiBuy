@@ -2,10 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import {
-  Autenticacion,
-  LoginResponseDTO,
-} from '../../services/autenticacion-service/autenticacion';
+import { AuthService, LoginResponse } from '../../services/auth.service';
 import { Registro as RegistroService } from '../../services/registro-service/registro';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
 
@@ -32,7 +29,7 @@ function fechaAnteriorAHoy(fecha: string): boolean {
 })
 export class RegistroComponent {
   private readonly registroService = inject(RegistroService);
-  private readonly autenticacion = inject(Autenticacion);
+  private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   readonly tipo: TipoRegistro =
     inject(ActivatedRoute).snapshot.data['tipoRegistro'] === 'vendedor' ? 'vendedor' : 'cliente';
@@ -139,10 +136,9 @@ export class RegistroComponent {
         });
 
     peticion.subscribe({
-      next: () => {
+      next: (respuesta) => {
         this.cuentaCreada.set(true);
-        this.mensajeExito.set('Cuenta creada. Iniciando sesión…');
-        this.iniciarSesionTrasRegistro();
+        this.procesarRespuestaRegistro(respuesta);
       },
       error: (error: HttpErrorResponse) => {
         this.enviando.set(false);
@@ -182,7 +178,7 @@ export class RegistroComponent {
     this.puedeReintentarLogin.set(false);
 
     const { email, contrasena } = this.form.getRawValue();
-    this.autenticacion.iniciarSesion(email, contrasena).subscribe({
+    this.authService.login({ username: email, password: contrasena }).subscribe({
       next: (respuesta) => this.procesarRespuestaLogin(respuesta),
       error: () => {
         this.enviando.set(false);
@@ -195,11 +191,28 @@ export class RegistroComponent {
     });
   }
 
-  private procesarRespuestaLogin(respuesta: LoginResponseDTO): void {
+  private procesarRespuestaRegistro(respuesta: LoginResponse): void {
+    this.enviando.set(false);
+    if (respuesta.mfaStatus === 'SUCCESS') {
+      this.authService.applyAuthenticationResponse(respuesta);
+      this.mensajeExito.set('Cuenta creada e inicio de sesión completado.');
+      void this.router.navigate(['/products']);
+      return;
+    }
+
+    this.mensajeExito.set(
+      'Cuenta creada. Continúa el inicio de sesión para configurar la autenticación.',
+    );
+    void this.router.navigate(['/login'], {
+      queryParams: { email: this.form.controls.email.value },
+    });
+  }
+
+  private procesarRespuestaLogin(respuesta: LoginResponse): void {
     this.enviando.set(false);
     if (respuesta.mfaStatus === 'SUCCESS') {
       this.mensajeExito.set('Cuenta creada e inicio de sesión completado.');
-      void this.router.navigateByUrl('/products');
+      void this.router.navigate(['/products']);
       return;
     }
 
