@@ -100,7 +100,7 @@ public class UserService {
 
     // GETTER
     public List<UsuarioResponseDTO> getAllUsers() {
-        List<Usuario> usuarios = usuarioRepository.findAllByEliminadoFalse();
+        List<Usuario> usuarios = usuarioRepository.findAll();
 
         List<UsuarioResponseDTO> usuariosDto = new ArrayList<>();
 
