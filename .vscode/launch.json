@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "EsiBuyApplication",
+            "request": "launch",
+            "mainClass": "esi.grupo5.esiBuy.EsiBuyApplication",
+            "projectName": "esiBuy"
+        },
+        {
+            "type": "java",
             "name": "Current File",
             "request": "launch",
             "mainClass": "${file}"

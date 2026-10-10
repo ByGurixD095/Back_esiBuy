@@ -115,7 +115,7 @@
 						<id>prepare-agent</id>
 						<configuration>
 							<propertyName>surefireArgLine</propertyName>
-							<destFile>${project.build.directory}/jacoco.execx</destFile>
+							<destFile>${project.build.directory}/jacoco.exec</destFile>
 						</configuration>
 						<goals>
 							<goal>prepare-agent</goal>
