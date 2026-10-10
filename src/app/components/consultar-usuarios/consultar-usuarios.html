@@ -67,7 +67,17 @@
         <tbody>
           @for (usuario of usuariosFiltrados(); track usuario.id) {
           <tr [class.fila-eliminada]="usuario.eliminado">
-            <td>{{ usuario.id }}</td>
+            <td>
+              <button
+                type="button"
+                class="usuario-id"
+                [disabled]="cargandoDetalle()"
+                (click)="verDetalleUsuario(usuario)"
+                [attr.aria-label]="'Ver detalles de ' + usuario.name + ' ' + usuario.apellidos"
+              >
+                {{ usuario.id }}
+              </button>
+            </td>
             <td>{{ usuario.name }} {{ usuario.apellidos }}</td>
             <td>{{ usuario.email }}</td>
             <td>{{ usuario.rol }}</td>
@@ -165,6 +175,70 @@
           }
         </tbody>
       </table>
+    </div>
+    }
+
+    @if (usuarioSeleccionado(); as seleccionado) {
+    <div class="confirmacion-fondo">
+      <dialog
+        open
+        class="confirmacion-dialogo detalle-dialogo"
+        aria-modal="true"
+        aria-labelledby="detalle-titulo"
+        (keydown.escape)="cerrarDetalleUsuario()"
+      >
+        <div class="detalle-encabezado">
+          <div>
+            <p class="esi-eyebrow">Ficha de usuario</p>
+            <h2 id="detalle-titulo">{{ seleccionado.name }} {{ seleccionado.apellidos }}</h2>
+          </div>
+          <button
+            type="button"
+            class="detalle-cerrar"
+            aria-label="Cerrar ficha de usuario"
+            (click)="cerrarDetalleUsuario()"
+          >×</button>
+        </div>
+        @if (cargandoDetalle()) {
+        <output class="estado" aria-live="polite">Cargando datos del usuario...</output>
+        } @else if (errorDetalle()) {
+        <div class="estado-error">
+          <p class="esi-alerta esi-alerta--error" role="alert">{{ errorDetalle() }}</p>
+          <button type="button" class="esi-boton" (click)="reintentarDetalleUsuario()">Reintentar</button>
+        </div>
+        } @else if (usuarioDetalle(); as detalle) {
+        @if (detalle.imagenPerfil) {
+        <img class="detalle-imagen" [src]="detalle.imagenPerfil" alt="Imagen de perfil del usuario" />
+        }
+        <dl class="detalle-lista">
+          <div><dt>ID</dt><dd>{{ detalle.id }}</dd></div>
+          <div><dt>Nombre completo</dt><dd>{{ detalle.name }} {{ detalle.apellidos }}</dd></div>
+          <div><dt>Correo electrónico</dt><dd>{{ detalle.email }}</dd></div>
+          <div><dt>Rol</dt><dd>{{ detalle.rol }}</dd></div>
+          <div><dt>Teléfono</dt><dd>{{ detalle.telefono || 'No indicado' }}</dd></div>
+          <div><dt>Estado</dt><dd>{{ detalle.eliminado ? 'Eliminado' : detalle.activo ? 'Activo' : 'Inactivo' }}</dd></div>
+          <div><dt>Bloqueado</dt><dd>{{ detalle.bloqueado ? 'Sí' : 'No' }}</dd></div>
+          <div><dt>Fecha de alta</dt><dd>{{ detalle.fechaAlta ? (detalle.fechaAlta | date: 'dd/MM/yyyy HH:mm') : 'No disponible' }}</dd></div>
+          <div><dt>Última modificación</dt><dd>{{ detalle.fechaModificacion ? (detalle.fechaModificacion | date: 'dd/MM/yyyy HH:mm') : 'No disponible' }}</dd></div>
+          <div><dt>Último cambio de contraseña</dt><dd>{{ detalle.fechaCambioContrasena ? (detalle.fechaCambioContrasena | date: 'dd/MM/yyyy HH:mm') : 'No disponible' }}</dd></div>
+          <div><dt>Autenticación multifactor configurada</dt><dd>{{ detalle.mfaConfigurado ? 'Sí' : 'No' }}</dd></div>
+          @if (detalle.rol === 'CLIENTE') {
+          <div><dt>DNI</dt><dd>{{ detalle.dni || 'No indicado' }}</dd></div>
+          <div><dt>Fecha de nacimiento</dt><dd>{{ detalle.fechaNacimiento ? (detalle.fechaNacimiento | date: 'dd/MM/yyyy') : 'No indicada' }}</dd></div>
+          <div><dt>Tipo de cliente</dt><dd>{{ detalle.tipoCliente || 'No indicado' }}</dd></div>
+          <div><dt>Segundo factor</dt><dd>{{ detalle.dosFactorActivoCliente ? 'Activo' : 'Inactivo' }}</dd></div>
+          <div><dt>Tercer factor</dt><dd>{{ detalle.tresFactorActivoCliente ? 'Activo' : 'Inactivo' }}</dd></div>
+          } @else if (detalle.rol === 'VENDEDOR') {
+          <div><dt>Nombre comercial</dt><dd>{{ detalle.nombreComercial || 'No indicado' }}</dd></div>
+          <div><dt>CIF/NIF</dt><dd>{{ detalle.cifNif || 'No indicado' }}</dd></div>
+          <div><dt>Categoría principal</dt><dd>{{ detalle.categoriaPrincipalId || 'No indicada' }}</dd></div>
+          } @else if (detalle.rol === 'ADMINISTRADOR') {
+          <div><dt>Sede</dt><dd>{{ detalle.sede || 'No indicada' }}</dd></div>
+          <div><dt>Fecha de incorporación</dt><dd>{{ detalle.fechaIncorporacion ? (detalle.fechaIncorporacion | date: 'dd/MM/yyyy') : 'No disponible' }}</dd></div>
+          }
+        </dl>
+        }
+      </dialog>
     </div>
     }
 
