@@ -15,12 +15,51 @@ export interface Usuario {
   eliminado: boolean;
 }
 
+export interface UsuarioDetalle extends Usuario {
+  telefono?: string | null;
+  imagenPerfil?: string | null;
+  dni?: string | null;
+  fechaNacimiento?: string | null;
+  tipoCliente?: 'NORMAL' | 'PREMIUM' | null;
+  nombreComercial?: string | null;
+  cifNif?: string | null;
+  categoriaPrincipalId?: string | null;
+  sede?: string | null;
+  fechaIncorporacion?: string | null;
+}
+
+export interface ModificarUsuarioRequest {
+  nombre: string;
+  apellidos: string;
+  telefono?: string;
+  imagenPerfil: string;
+  dni?: string;
+  fechaNacimiento?: string;
+  tipoCliente?: 'NORMAL' | 'PREMIUM';
+  nombreComercial?: string;
+  cifNif?: string;
+  categoriaPrincipalId?: string;
+  sede?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class Usuarios {
   private readonly http = inject(HttpClient);
 
   consultar(): Observable<Usuario[]> {
     return this.http.get<Usuario[]>(`${environment.apiUrl}/admin/users`, {
+      withCredentials: true,
+    });
+  }
+
+  consultarPorId(id: string): Observable<UsuarioDetalle> {
+    return this.http.get<UsuarioDetalle>(`${environment.apiUrl}/admin/${encodeURIComponent(id)}`, {
+      withCredentials: true,
+    });
+  }
+
+  modificar(id: string, datos: ModificarUsuarioRequest): Observable<void> {
+    return this.http.patch<void>(`${environment.apiUrl}/admin/${encodeURIComponent(id)}`, datos, {
       withCredentials: true,
     });
   }

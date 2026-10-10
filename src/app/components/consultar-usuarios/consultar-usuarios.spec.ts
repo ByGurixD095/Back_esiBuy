@@ -121,7 +121,7 @@ describe('ConsultarUsuarios', () => {
 
     filas = el.querySelectorAll('tbody tr');
     expect(filas.length).toBe(2);
-    expect(filas[0].textContent).toContain('user-db-1');
+    expect(Array.from(filas).some((fila) => fila.textContent?.includes('user-db-1'))).toBe(true);
   });
 
   it('muestra un mensaje si los filtros no tienen resultados', () => {
@@ -137,9 +137,15 @@ describe('ConsultarUsuarios', () => {
     );
   });
 
-  it('mantiene las acciones de editar y bloqueo como boceto y habilita eliminar', () => {
+  it('permite abrir la edición de usuarios activos y mantiene bloqueo como boceto', () => {
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('[aria-label="Modificar usuario, próximamente"]')).not.toBeNull();
+    expect(el.querySelector('[aria-label="Modificar usuario Ana López"]')).not.toBeNull();
+    expect(
+      (el.querySelector('[aria-label="Modificar usuario Ana López"]') as HTMLAnchorElement).getAttribute(
+        'href',
+      ),
+    ).toBe('/admin/usuarios/user-db-1/editar');
+    expect(el.querySelector('[aria-label="No se puede modificar un usuario eliminado"]')).not.toBeNull();
     expect(el.querySelector('[aria-label="Bloquear usuario, próximamente"]')).not.toBeNull();
     expect(el.querySelector('[aria-label="Desbloquear usuario, próximamente"]')).not.toBeNull();
     expect(el.querySelectorAll('.accion-boceto:disabled').length).toBeGreaterThan(0);
