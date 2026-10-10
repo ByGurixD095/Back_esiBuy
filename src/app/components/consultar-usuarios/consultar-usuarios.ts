@@ -9,6 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { Usuarios, type Usuario } from '../../services/consultar-usuarios-service/usuarios';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
@@ -17,7 +18,7 @@ type FiltroEliminados = 'todos' | 'eliminados' | 'no-eliminados';
 
 @Component({
   selector: 'app-consultar-usuarios',
-  imports: [MarcoPagina],
+  imports: [MarcoPagina, RouterLink],
   templateUrl: './consultar-usuarios.html',
   styleUrl: './consultar-usuarios.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

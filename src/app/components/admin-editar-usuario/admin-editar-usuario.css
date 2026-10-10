@@ -1,0 +1,135 @@
+.editar-usuario {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.editar-usuario .esi-titulo {
+  margin-bottom: 24px;
+}
+
+.formulario-cabecera {
+  margin-bottom: 28px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--esi-line);
+}
+
+.formulario-cabecera h2 {
+  margin: 0 0 6px;
+  font-family: var(--esi-font-title);
+  font-size: clamp(23px, 4vw, 28px);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+}
+
+.formulario-cabecera p,
+.estado-proceso {
+  margin: 0;
+  color: var(--esi-soft-ink);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.grupo-formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 28px 0;
+}
+
+.grupo-formulario h3 {
+  margin: 0;
+  color: var(--esi-ink);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.campos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px;
+}
+
+.esi-campo {
+  min-width: 0;
+}
+
+.esi-campo label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.esi-campo input,
+.esi-campo select {
+  width: 100%;
+  border-color: #cbc9c0;
+  border-radius: 8px;
+}
+
+.esi-campo input[readonly],
+.esi-campo input:disabled,
+.esi-campo select:disabled {
+  color: var(--esi-soft-ink);
+  background: #f1f0eb;
+}
+
+.esi-campo input:focus-visible,
+.esi-campo select:focus-visible {
+  border-color: var(--esi-orange-text);
+  outline-color: var(--esi-orange-text);
+  box-shadow: 0 0 0 3px rgb(184 74 36 / 12%);
+}
+
+.opcional {
+  color: var(--esi-soft-ink);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.campo-completo {
+  grid-column: 1 / -1;
+}
+
+.acciones-formulario {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.boton-secundario {
+  color: var(--esi-ink);
+  background: var(--esi-card);
+  border-color: var(--esi-field-border);
+  text-decoration: none;
+}
+
+.boton-secundario:hover {
+  color: var(--esi-ink);
+  background: var(--esi-line);
+}
+
+.editar-usuario form > .esi-alerta {
+  margin-top: 16px;
+}
+
+@media (max-width: 600px) {
+  .campos {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .campo-completo {
+    grid-column: auto;
+  }
+
+  .acciones-formulario {
+    flex-direction: column-reverse;
+  }
+
+  .acciones-formulario .esi-boton {
+    width: 100%;
+    min-height: 48px;
+  }
+}

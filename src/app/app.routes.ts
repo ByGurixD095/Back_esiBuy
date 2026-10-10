@@ -13,6 +13,7 @@ import { Inicio } from './components/inicio/inicio';
 import { Cuenta } from './components/cuenta/cuenta';
 import { Gestionar } from './components/gestionar/gestionar';
 import { ConsultarUsuarios } from './components/consultar-usuarios/consultar-usuarios';
+import { AdminEditarUsuario } from './components/admin-editar-usuario/admin-editar-usuario';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', component: Inicio },
@@ -37,6 +38,11 @@ export const routes: Routes = [
   {
     path: 'admin/usuarios',
     component: ConsultarUsuarios,
+    canActivate: [roleGuard(['ADMINISTRADOR'])],
+  },
+  {
+    path: 'admin/usuarios/:id/editar',
+    component: AdminEditarUsuario,
     canActivate: [roleGuard(['ADMINISTRADOR'])],
   },
   { path: 'login', component: InicioSesion },

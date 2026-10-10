@@ -98,13 +98,22 @@
             </td>
             <td>
               <div class="acciones" aria-label="Acciones de usuario">
+                @if (usuario.eliminado) {
                 <button
                   type="button"
                   class="accion-boceto"
                   disabled
-                  aria-label="Modificar usuario, próximamente"
-                  title="Modificar usuario (boceto)"
+                  aria-label="No se puede modificar un usuario eliminado"
+                  title="No se puede modificar un usuario eliminado"
                 >✏️</button>
+                } @else {
+                <a
+                  class="accion-editar"
+                  [routerLink]="['/admin/usuarios', usuario.id, 'editar']"
+                  [attr.aria-label]="'Modificar usuario ' + usuario.name + ' ' + usuario.apellidos"
+                  title="Modificar usuario"
+                >✏️</a>
+                }
                 @if (usuario.bloqueado) {
                 <button
                   type="button"

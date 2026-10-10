@@ -130,6 +130,7 @@ tbody tr:last-child td {
 }
 
 .accion-boceto,
+.accion-editar,
 .accion-eliminar {
   display: inline-grid;
   width: 30px;
@@ -143,6 +144,17 @@ tbody tr:last-child td {
   cursor: not-allowed;
   font-family: inherit;
   font-size: 15px;
+}
+
+.accion-editar {
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.accion-editar:hover {
+  background: var(--esi-orange-soft);
+  border-color: var(--esi-orange-text);
 }
 
 .accion-boceto {
