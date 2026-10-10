@@ -1,0 +1,163 @@
+.pagina {
+  position: relative;
+  left: 50%;
+  width: min(1600px, calc(100vw - 48px));
+  margin: 0;
+  transform: translateX(-50%);
+}
+
+.pagina .esi-eyebrow {
+  margin-bottom: 4px;
+}
+
+.pagina .esi-titulo {
+  margin-bottom: 8px;
+}
+
+.descripcion,
+.estado {
+  color: var(--esi-soft-ink);
+}
+
+.aviso-boceto {
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  color: #604b16;
+  background: #fff4cf;
+  border: 1px solid #ead99a;
+  border-radius: var(--esi-radius);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.busqueda {
+  width: min(360px, 100%);
+}
+
+.filtro-eliminados {
+  width: min(220px, 100%);
+}
+
+.tabla-contenedor {
+  margin-top: 12px;
+  overflow-x: hidden;
+}
+
+table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+caption {
+  margin-bottom: 8px;
+  color: var(--esi-soft-ink);
+  font-size: 14px;
+  text-align: left;
+}
+
+th,
+td {
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--esi-line);
+  overflow-wrap: anywhere;
+}
+
+th:last-child,
+td:last-child {
+  width: 144px;
+}
+
+th {
+  color: var(--esi-ink);
+  font-size: 12px;
+}
+
+td {
+  color: var(--esi-soft-ink);
+  font-size: 12px;
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.estado {
+  margin-top: 28px;
+}
+
+.estado-error {
+  display: grid;
+  justify-items: start;
+  gap: 16px;
+}
+
+.estado-cuenta {
+  display: inline-block;
+  padding: 3px 6px;
+  border-radius: var(--esi-radius);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.activo {
+  color: var(--esi-ok-text);
+  background: var(--esi-ok-bg);
+}
+
+.bloqueado,
+.eliminado,
+.inactivo {
+  color: var(--esi-error-text);
+  background: var(--esi-error-bg);
+}
+
+.fila-eliminada td {
+  opacity: 0.68;
+}
+
+.acciones {
+  display: flex;
+  gap: 4px;
+}
+
+.accion-boceto {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  padding: 0;
+  color: inherit;
+  background: var(--esi-card);
+  border: 1px dashed var(--esi-field-border);
+  border-radius: var(--esi-radius);
+  cursor: not-allowed;
+  font-family: inherit;
+  font-size: 15px;
+  opacity: 0.8;
+}
+
+@media (max-width: 700px) {
+  .pagina {
+    left: auto;
+    width: 100%;
+    transform: none;
+  }
+
+  .tabla-contenedor {
+    overflow-x: auto;
+  }
+
+  table {
+    min-width: 950px;
+  }
+}

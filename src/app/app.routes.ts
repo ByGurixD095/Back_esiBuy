@@ -11,6 +11,7 @@ import { roleGuard } from './guards/role.guard';
 import { Inicio } from './components/inicio/inicio';
 import { Cuenta } from './components/cuenta/cuenta';
 import { Gestionar } from './components/gestionar/gestionar';
+import { ConsultarUsuarios } from './components/consultar-usuarios/consultar-usuarios';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', component: Inicio },
@@ -29,6 +30,11 @@ export const routes: Routes = [
   {
     path: 'administradores/nuevo',
     component: AdministradorRegistro,
+    canActivate: [roleGuard(['ADMINISTRADOR'])],
+  },
+  {
+    path: 'admin/usuarios',
+    component: ConsultarUsuarios,
     canActivate: [roleGuard(['ADMINISTRADOR'])],
   },
   { path: 'login', component: InicioSesion },

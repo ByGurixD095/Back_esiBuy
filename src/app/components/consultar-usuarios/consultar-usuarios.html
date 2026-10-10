@@ -1,0 +1,139 @@
+<app-marco-pagina panel="Panel de administración" [volver]="true">
+  <section class="pagina" aria-labelledby="usuarios-titulo" [attr.aria-busy]="cargando()">
+    <p class="esi-eyebrow">Administradores</p>
+    <h1 id="usuarios-titulo" class="esi-titulo">gestionar <em>usuarios.</em></h1>
+    <p class="descripcion">Usuarios registrados y estado actual de sus cuentas.</p>
+    <p class="aviso-boceto" role="note">
+      🧪 Las acciones son solo un boceto visual y todavía no realizan cambios.
+    </p>
+
+    <div class="filtros">
+      <div class="busqueda esi-campo">
+        <label for="buscar-id">🔎 Buscar por ID</label>
+        <input
+          id="buscar-id"
+          type="search"
+          [value]="busquedaId()"
+          (input)="actualizarBusquedaId($event)"
+          placeholder="Introduce el ID del usuario"
+          autocomplete="off"
+        />
+      </div>
+      <div class="filtro-eliminados esi-campo">
+        <label for="filtro-eliminados">Filtrar por eliminación</label>
+        <select
+          id="filtro-eliminados"
+          [value]="filtroEliminados()"
+          (change)="actualizarFiltroEliminados($event)"
+        >
+          <option value="todos">Todos</option>
+          <option value="no-eliminados">No eliminados</option>
+          <option value="eliminados">Solo eliminados</option>
+        </select>
+      </div>
+    </div>
+
+    @if (cargando()) {
+    <output class="estado" aria-live="polite">Cargando usuarios...</output>
+    } @else if (mensajeError()) {
+    <div class="estado-error">
+      <p class="esi-alerta esi-alerta--error" role="alert">{{ mensajeError() }}</p>
+      <button type="button" class="esi-boton" (click)="consultarUsuarios()">Reintentar</button>
+    </div>
+    } @else if (usuarios().length === 0) {
+    <output class="estado esi-tarjeta" aria-live="polite">Todavía no hay usuarios registrados.</output>
+    } @else if (usuariosFiltrados().length === 0) {
+    <output class="estado esi-tarjeta" aria-live="polite">
+      No hay usuarios que coincidan con los filtros seleccionados.
+    </output>
+    } @else {
+    <div class="tabla-contenedor esi-tarjeta">
+      <table>
+        <caption>Usuarios registrados · acciones de ejemplo</caption>
+        <thead>
+          <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Nombre</th>
+            <th scope="col">Correo electrónico</th>
+            <th scope="col">Rol</th>
+            <th scope="col">Actividad</th>
+            <th scope="col">Bloqueado</th>
+            <th scope="col">Eliminado</th>
+            <th scope="col">Acciones (boceto)</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (usuario of usuariosFiltrados(); track usuario.id) {
+          <tr [class.fila-eliminada]="usuario.eliminado">
+            <td>{{ usuario.id }}</td>
+            <td>{{ usuario.name }} {{ usuario.apellidos }}</td>
+            <td>{{ usuario.email }}</td>
+            <td>{{ usuario.rol }}</td>
+            <td>
+              @if (usuario.activo) {
+              <span class="estado-cuenta activo">Activo</span>
+              } @else {
+              <span class="estado-cuenta inactivo">Inactivo</span>
+              }
+            </td>
+            <td>
+              <span
+                class="estado-cuenta"
+                [class.bloqueado]="usuario.bloqueado"
+                [class.activo]="!usuario.bloqueado"
+              >
+                {{ usuario.bloqueado ? 'Sí' : 'No' }}
+              </span>
+            </td>
+            <td>
+              <span
+                class="estado-cuenta"
+                [class.eliminado]="usuario.eliminado"
+                [class.activo]="!usuario.eliminado"
+              >
+                {{ usuario.eliminado ? 'Sí' : 'No' }}
+              </span>
+            </td>
+            <td>
+              <div class="acciones" aria-label="Acciones futuras, no disponibles">
+                <button
+                  type="button"
+                  class="accion-boceto"
+                  disabled
+                  aria-label="Modificar usuario, próximamente"
+                  title="Modificar usuario (boceto)"
+                >✏️</button>
+                @if (usuario.bloqueado) {
+                <button
+                  type="button"
+                  class="accion-boceto"
+                  disabled
+                  aria-label="Desbloquear usuario, próximamente"
+                  title="Desbloquear usuario (boceto)"
+                >🔓</button>
+                } @else {
+                <button
+                  type="button"
+                  class="accion-boceto"
+                  disabled
+                  aria-label="Bloquear usuario, próximamente"
+                  title="Bloquear usuario (boceto)"
+                >🔒</button>
+                }
+                <button
+                  type="button"
+                  class="accion-boceto"
+                  disabled
+                  aria-label="Eliminar usuario, próximamente"
+                  title="Eliminar usuario (boceto)"
+                >🗑️</button>
+              </div>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+  </section>
+</app-marco-pagina>
