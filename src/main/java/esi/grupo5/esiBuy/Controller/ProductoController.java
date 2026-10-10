@@ -25,8 +25,7 @@ public class ProductoController {
         this.productoService = productoService;
     }
 
-    // --------- POST ------------ 
-    @PostMapping("/createProduct")
+    @PostMapping({"", "/createProduct"})
     public ResponseEntity<Producto> crearProducto(
             @Valid @RequestBody ProductoDTO dto) {
 
