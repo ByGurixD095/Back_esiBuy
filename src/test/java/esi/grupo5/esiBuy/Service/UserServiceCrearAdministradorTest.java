@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 import esi.grupo5.esiBuy.Exception.BusinessException;
 import esi.grupo5.esiBuy.Exception.ConflictException;
 import esi.grupo5.esiBuy.Exception.ValidationException;
+import static org.mockito.ArgumentMatchers.eq;
 
 @ExtendWith(MockitoExtension.class)
 class AdminServiceCrearAdministradorTest {
@@ -38,6 +39,8 @@ class AdminServiceCrearAdministradorTest {
     private UsuarioRepository usuarioRepository;
     @Mock
     private PasswordValidatorService passwordValidatorService;
+    @Mock
+    private UserService userService;
 
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
     private AdminService adminService;
@@ -47,20 +50,23 @@ class AdminServiceCrearAdministradorTest {
 
     @BeforeEach
     void setUp() {
-        adminService = new AdminService(usuarioRepository, encoder, passwordValidatorService, List.of());
+            adminService = new AdminService(usuarioRepository, encoder, passwordValidatorService, List.of(), userService);
     }
 
     @Test
     void crearAdministrador_guardaAdminConRolYContrasenaHasheada() {
+        AdministradorResponseDTO dtoRespuesta = AdministradorResponseDTO.builder()
+                .email("ana@esibuy.com").rol(Rol.ADMINISTRADOR)
+                .mensaje("Administrador creado correctamente").build();
         when(usuarioRepository.findByEmail("ana@esibuy.com")).thenReturn(Optional.empty());
         when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(userService.toAdministradorResponseDto(any(Administrador.class), eq("Administrador creado correctamente")))
+                .thenReturn(dtoRespuesta);
 
         ResponseEntity<AdministradorResponseDTO> respuesta = adminService.crearAdministrador(dto);
 
         assertEquals(201, respuesta.getStatusCode().value());
-        assertEquals("ana@esibuy.com", respuesta.getBody().email());
-        assertEquals("ADMINISTRADOR", respuesta.getBody().rol());
-        assertEquals("Administrador creado correctamente", respuesta.getBody().mensaje());
+        assertSame(dtoRespuesta, respuesta.getBody());
 
         ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
         verify(usuarioRepository).save(captor.capture());

@@ -43,6 +43,8 @@ class AuthServiceLoginNuevoAdministradorTest {
     private EmailService emailService;
     @Mock
     private AuthFactorService authFactorService;
+    @Mock
+    private UserService userService;
 
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
     private AuthService authService;
@@ -52,8 +54,8 @@ class AuthServiceLoginNuevoAdministradorTest {
 
     @BeforeEach
     void crearAdministradorYDejarloGuardado() {
-        AdminService adminService = new AdminService(usuarioRepository, encoder, passwordValidatorService, List.of());
-        authService = new AuthService(usuarioRepository, jwtService, refreshTokenRepository,
+        AdminService adminService = new AdminService(usuarioRepository, encoder, passwordValidatorService, List.of(), userService);
+                authService = new AuthService(usuarioRepository, jwtService, refreshTokenRepository,
                 passwordValidatorService, loginAttemptService, emailService, encoder, authFactorService);
 
         when(usuarioRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
