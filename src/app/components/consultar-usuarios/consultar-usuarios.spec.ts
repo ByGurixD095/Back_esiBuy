@@ -3,8 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
-import { Usuario } from '../../models/usuario.model';
-import { Usuarios } from '../../services/consultar-usuarios-service/usuarios';
+import { Usuarios, type Usuario } from '../../services/consultar-usuarios-service/usuarios';
 import { ConsultarUsuarios } from './consultar-usuarios';
 
 describe('ConsultarUsuarios', () => {

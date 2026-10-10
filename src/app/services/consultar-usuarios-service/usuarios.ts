@@ -2,7 +2,18 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Usuario } from '../../models/usuario.model';
+import type { Rol } from '../auth.service';
+
+export interface Usuario {
+  id: string;
+  name: string;
+  apellidos: string;
+  email: string;
+  rol: Rol;
+  activo: boolean;
+  bloqueado: boolean;
+  eliminado: boolean;
+}
 
 @Injectable({ providedIn: 'root' })
 export class Usuarios {

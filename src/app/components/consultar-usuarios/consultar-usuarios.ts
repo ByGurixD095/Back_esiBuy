@@ -7,8 +7,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { Usuario } from '../../models/usuario.model';
-import { Usuarios } from '../../services/consultar-usuarios-service/usuarios';
+import { Usuarios, type Usuario } from '../../services/consultar-usuarios-service/usuarios';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
 
 type FiltroEliminados = 'todos' | 'eliminados' | 'no-eliminados';
