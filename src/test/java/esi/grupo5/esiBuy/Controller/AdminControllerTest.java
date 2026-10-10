@@ -36,9 +36,15 @@ class AdminControllerTest {
 
     @Test
     void crearAdministrador_datosValidosDevuelve201YRespuestaPublica() throws Exception {
-        AdministradorResponseDTO response = new AdministradorResponseDTO(
-                "admin-1", "Ana", "Pérez", "ana@esibuy.com",
-                "Madrid", "ADMINISTRADOR", "Administrador creado correctamente");
+        AdministradorResponseDTO response = AdministradorResponseDTO.builder()
+                .id("admin-1")
+                .name("Ana")
+                .apellidos("Pérez")
+                .email("ana@esibuy.com")
+                .sede("Madrid")
+                .rol(esi.grupo5.esiBuy.Model.enums.Rol.ADMINISTRADOR)
+                .mensaje("Administrador creado correctamente")
+                .build();
         when(adminService.crearAdministrador(any(AdministradorRegistroDTO.class)))
                 .thenReturn(ResponseEntity.status(HttpStatus.CREATED).body(response));
 
@@ -48,6 +54,7 @@ class AdminControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.email").value("ana@esibuy.com"))
                 .andExpect(jsonPath("$.rol").value("ADMINISTRADOR"))
+                .andExpect(jsonPath("$.sede").value("Madrid"))
                 .andExpect(jsonPath("$.mensaje").value("Administrador creado correctamente"))
                 .andExpect(jsonPath("$.contrasena").doesNotExist());
 

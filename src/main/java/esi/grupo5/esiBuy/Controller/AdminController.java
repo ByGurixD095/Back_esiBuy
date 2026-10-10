@@ -2,8 +2,8 @@ package esi.grupo5.esiBuy.Controller;
 
 import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
-import esi.grupo5.esiBuy.Dto.UserDto;
 import esi.grupo5.esiBuy.Dto.UserPatchDTO;
+import esi.grupo5.esiBuy.Dto.UsuarioResponseDTO;
 import esi.grupo5.esiBuy.Service.UserService;
 import esi.grupo5.esiBuy.Service.AdminService;
 import jakarta.validation.Valid;
@@ -28,12 +28,12 @@ public class AdminController {
 
     // --------- GET ------------ 
     @GetMapping("/users")
-    public ResponseEntity<List<UserDto>> getAllUsers() {
+    public ResponseEntity<List<UsuarioResponseDTO>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserDto> getUserById(@PathVariable String id) {
+    public ResponseEntity<UsuarioResponseDTO> getUserById(@PathVariable String id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
@@ -53,12 +53,12 @@ public class AdminController {
     }
 
     @PatchMapping("/bloquear/{id}")
-    public ResponseEntity<UserDto> bloquearUsuario(@PathVariable String id) {
+    public ResponseEntity<UsuarioResponseDTO> bloquearUsuario(@PathVariable String id) {
         return ResponseEntity.ok(adminService.bloquearUsuario(id));
     }
 
     @PatchMapping("/desbloquear/{id}")
-    public ResponseEntity<UserDto> desbloquearUsuario(@PathVariable String id) {
+    public ResponseEntity<UsuarioResponseDTO> desbloquearUsuario(@PathVariable String id) {
         return ResponseEntity.ok(adminService.desbloquearUsuario(id));
     }
 

@@ -13,8 +13,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
-import esi.grupo5.esiBuy.Dto.UserDto;
 import esi.grupo5.esiBuy.Dto.UserPatchDTO;
+import esi.grupo5.esiBuy.Dto.UsuarioResponseDTO;
 import esi.grupo5.esiBuy.Exception.*;
 import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Model.Usuario;
@@ -79,24 +79,24 @@ public class AdminService {
 
     // --------- BLOQUEAR/DESBLOQUEAR USUARIOS ---------
 
-    public UserDto bloquearUsuario(String id) {
+    public UsuarioResponseDTO bloquearUsuario(String id) {
         Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
             .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
             
         usuario.setBloqueado(true);
         usuarioRepository.save(usuario);
 
-        return userService.toDto(usuario);
+        return userService.toResponseDto(usuario);
     }
 
-    public UserDto desbloquearUsuario(String id) {
+    public UsuarioResponseDTO desbloquearUsuario(String id) {
         Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
             .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
 
         usuario.setBloqueado(false);
         usuarioRepository.save(usuario);
 
-        return userService.toDto(usuario);
+        return userService.toResponseDto(usuario);
     }
 
     public ResponseEntity<AdministradorResponseDTO> crearAdministrador(AdministradorRegistroDTO dto) {
@@ -123,14 +123,8 @@ public class AdminService {
 
         Administrador guardado = usuarioRepository.save(admin);
 
-        AdministradorResponseDTO respuesta = new AdministradorResponseDTO(
-                guardado.getId(),
-                guardado.getNombre(),
-                guardado.getApellidos(),
-                guardado.getEmail(),
-                guardado.getSede(),
-                guardado.getRol().toString(),
-                "Administrador creado correctamente");
+        AdministradorResponseDTO respuesta = userService.toAdministradorResponseDto(
+                guardado, "Administrador creado correctamente");
 
         return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
     }
