@@ -12,6 +12,7 @@ describe('ConsultarUsuarios', () => {
   let fixture: ComponentFixture<ConsultarUsuarios>;
   const servicioFalso = {
     consultar: vi.fn(),
+    consultarPorId: vi.fn(),
     eliminar: vi.fn(),
     bloquear: vi.fn(),
     desbloquear: vi.fn(),
@@ -53,6 +54,16 @@ describe('ConsultarUsuarios', () => {
   beforeEach(async () => {
     servicioFalso.consultar.mockReset();
     servicioFalso.consultar.mockReturnValue(of(usuarios));
+    servicioFalso.consultarPorId.mockReset();
+    servicioFalso.consultarPorId.mockReturnValue(
+      of({
+        ...usuarios[1],
+        telefono: '600123456',
+        dni: '12345678A',
+        fechaNacimiento: '1990-01-01',
+        tipoCliente: 'PREMIUM',
+      }),
+    );
     servicioFalso.eliminar.mockReset();
     servicioFalso.eliminar.mockReturnValue(of(undefined));
     servicioFalso.bloquear.mockReset();
@@ -146,6 +157,27 @@ describe('ConsultarUsuarios', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).toContain(
       'No hay usuarios que coincidan con los filtros seleccionados.',
     );
+  });
+
+  it('abre la ficha del usuario al pulsar su ID y carga sus datos completos', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    const botonId = el.querySelector(
+      '[aria-label="Ver detalles de Ana López"]',
+    ) as HTMLButtonElement;
+
+    botonId.click();
+    fixture.detectChanges();
+
+    expect(servicioFalso.consultarPorId).toHaveBeenCalledWith('user-db-1');
+    expect(el.querySelector('dialog.detalle-dialogo[open]')).not.toBeNull();
+    expect(el.textContent).toContain('Ficha de usuario');
+    expect(el.textContent).toContain('12345678A');
+    expect(el.textContent).toContain('PREMIUM');
+    expect(el.textContent).toContain('600123456');
+
+    (el.querySelector('[aria-label="Cerrar ficha de usuario"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(el.querySelector('dialog.detalle-dialogo[open]')).toBeNull();
   });
 
   it('permite abrir la edición y ofrece bloquear o desbloquear según el estado', () => {

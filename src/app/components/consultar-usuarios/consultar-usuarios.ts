@@ -8,11 +8,16 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { map, type Observable } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
-import { Usuarios, type Usuario } from '../../services/consultar-usuarios-service/usuarios';
+import {
+  Usuarios,
+  type Usuario,
+  type UsuarioDetalle,
+} from '../../services/consultar-usuarios-service/usuarios';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
 
 type FiltroEliminados = 'todos' | 'eliminados' | 'no-eliminados';
@@ -20,7 +25,7 @@ type AccionUsuario = 'eliminar' | 'bloquear' | 'desbloquear';
 
 @Component({
   selector: 'app-consultar-usuarios',
-  imports: [MarcoPagina, RouterLink],
+  imports: [DatePipe, MarcoPagina, RouterLink],
   templateUrl: './consultar-usuarios.html',
   styleUrl: './consultar-usuarios.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -42,6 +47,10 @@ export class ConsultarUsuarios implements OnInit {
   readonly mensajeError = signal('');
   readonly mensajeErrorAccion = signal('');
   readonly mensajeAccion = signal('');
+  readonly usuarioSeleccionado = signal<Usuario | null>(null);
+  readonly usuarioDetalle = signal<UsuarioDetalle | null>(null);
+  readonly cargandoDetalle = signal(false);
+  readonly errorDetalle = signal('');
   readonly eliminandoId = signal<string | null>(null);
   readonly accionandoId = signal<string | null>(null);
   readonly accionPendiente = signal<{ usuario: Usuario; accion: AccionUsuario } | null>(null);
@@ -81,6 +90,27 @@ export class ConsultarUsuarios implements OnInit {
 
   actualizarFiltroEliminados(event: Event): void {
     this.filtroEliminados.set((event.target as HTMLSelectElement).value as FiltroEliminados);
+  }
+
+  verDetalleUsuario(usuario: Usuario): void {
+    this.usuarioSeleccionado.set(usuario);
+    this.usuarioDetalle.set(null);
+    this.errorDetalle.set('');
+    this.cargarDetalleUsuario(usuario);
+  }
+
+  reintentarDetalleUsuario(): void {
+    const usuario = this.usuarioSeleccionado();
+    if (usuario) {
+      this.cargarDetalleUsuario(usuario);
+    }
+  }
+
+  cerrarDetalleUsuario(): void {
+    this.usuarioSeleccionado.set(null);
+    this.usuarioDetalle.set(null);
+    this.errorDetalle.set('');
+    this.cargandoDetalle.set(false);
   }
 
   eliminarUsuario(usuario: Usuario): void {
@@ -177,6 +207,28 @@ export class ConsultarUsuarios implements OnInit {
       return 'No se ha podido conectar con el servidor.';
     }
     return 'No se han podido cargar los usuarios. Inténtalo de nuevo.';
+  }
+
+  private cargarDetalleUsuario(usuario: Usuario): void {
+    this.cargandoDetalle.set(true);
+    this.errorDetalle.set('');
+    this.usuariosService
+      .consultarPorId(usuario.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (detalle) => {
+          this.usuarioDetalle.set(detalle);
+          this.cargandoDetalle.set(false);
+        },
+        error: (error: HttpErrorResponse) => {
+          this.errorDetalle.set(
+            error.status === 404
+              ? 'No se han podido encontrar los datos de este usuario.'
+              : this.textoDeError(error),
+          );
+          this.cargandoDetalle.set(false);
+        },
+      });
   }
 
   private textoErrorEliminacion(error: HttpErrorResponse): string {

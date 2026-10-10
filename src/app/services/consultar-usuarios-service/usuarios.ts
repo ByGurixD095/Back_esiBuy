@@ -28,6 +28,25 @@ export interface UsuarioDetalle extends Usuario {
   fechaIncorporacion?: string | null;
 }
 
+export interface UsuarioDetalle extends Usuario {
+  telefono?: string | null;
+  imagenPerfil?: string | null;
+  fechaAlta?: string | null;
+  fechaModificacion?: string | null;
+  fechaCambioContrasena?: string | null;
+  mfaConfigurado?: boolean;
+  dosFactorActivoCliente?: boolean;
+  tresFactorActivoCliente?: boolean;
+  dni?: string | null;
+  fechaNacimiento?: string | null;
+  tipoCliente?: 'NORMAL' | 'PREMIUM' | null;
+  nombreComercial?: string | null;
+  cifNif?: string | null;
+  categoriaPrincipalId?: string | null;
+  sede?: string | null;
+  fechaIncorporacion?: string | null;
+}
+
 export interface ModificarUsuarioRequest {
   nombre: string;
   apellidos: string;
