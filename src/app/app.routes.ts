@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { AdministradorRegistro } from './components/administrador-registro/administrador-registro';
 import { Catalogo } from './components/catalogo/catalogo';
+import { CatalogoVendedor } from './components/catalogo-vendedor/catalogo-vendedor';
 import { InicioSesion } from './components/inicio-sesion/inicio-sesion';
 import { RecoverPasswordComponent } from './components/recover-password-component/recover-password-component';
 import { ResetPasswordComponent } from './components/reset-password-component/reset-password-component';
@@ -11,6 +12,7 @@ import { RegistroInicio } from './components/registro/registro-inicio';
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'products' },
   { path: 'products', component: Catalogo },
+  { path: 'products/catalogo', component: CatalogoVendedor },
   { path: 'products/new', component: ProductoForm },
   { path: 'register', component: RegistroInicio },
   { path: 'register/clientes', component: RegistroComponent, data: { tipoRegistro: 'cliente' } },
