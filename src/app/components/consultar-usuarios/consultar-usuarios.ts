@@ -10,11 +10,13 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
+import { map, type Observable } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { Usuarios, type Usuario } from '../../services/consultar-usuarios-service/usuarios';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
 
 type FiltroEliminados = 'todos' | 'eliminados' | 'no-eliminados';
+type AccionUsuario = 'eliminar' | 'bloquear' | 'desbloquear';
 
 @Component({
   selector: 'app-consultar-usuarios',
@@ -41,7 +43,8 @@ export class ConsultarUsuarios implements OnInit {
   readonly mensajeErrorAccion = signal('');
   readonly mensajeAccion = signal('');
   readonly eliminandoId = signal<string | null>(null);
-  readonly usuarioPendienteDeEliminar = signal<Usuario | null>(null);
+  readonly accionandoId = signal<string | null>(null);
+  readonly accionPendiente = signal<{ usuario: Usuario; accion: AccionUsuario } | null>(null);
   readonly usuariosFiltrados = computed(() => {
     const idBuscado = this.busquedaId().trim().toLocaleLowerCase();
     return this.usuarios().filter((usuario) => {
@@ -81,54 +84,78 @@ export class ConsultarUsuarios implements OnInit {
   }
 
   eliminarUsuario(usuario: Usuario): void {
-    if (usuario.eliminado || this.esUsuarioActual(usuario) || this.eliminandoId() !== null) {
+    if (usuario.eliminado || this.esUsuarioActual(usuario) || this.hayAccionEnCurso()) {
       return;
     }
 
-    this.usuarioPendienteDeEliminar.set(usuario);
+    this.accionPendiente.set({ usuario, accion: 'eliminar' });
+  }
+
+  cambiarBloqueoUsuario(usuario: Usuario): void {
+    if (usuario.eliminado || this.hayAccionEnCurso()) {
+      return;
+    }
+
+    this.accionPendiente.set({
+      usuario,
+      accion: usuario.bloqueado ? 'desbloquear' : 'bloquear',
+    });
   }
 
   cancelarEliminacion(): void {
-    this.usuarioPendienteDeEliminar.set(null);
+    this.accionPendiente.set(null);
   }
 
   confirmarEliminacion(): void {
-    const usuario = this.usuarioPendienteDeEliminar();
-    if (!usuario || this.eliminandoId() !== null) {
+    const pendiente = this.accionPendiente();
+    if (!pendiente || this.hayAccionEnCurso()) {
       return;
     }
-    if (this.esUsuarioActual(usuario)) {
-      this.usuarioPendienteDeEliminar.set(null);
+
+    const { usuario, accion } = pendiente;
+    if (accion === 'eliminar' && this.esUsuarioActual(usuario)) {
+      this.accionPendiente.set(null);
       this.mensajeErrorAccion.set('No puedes eliminar tu propia cuenta.');
       return;
     }
 
-    this.usuarioPendienteDeEliminar.set(null);
-    this.eliminandoId.set(usuario.id);
+    this.accionPendiente.set(null);
     this.mensajeAccion.set('');
     this.mensajeErrorAccion.set('');
-    this.usuariosService
-      .eliminar(usuario.id)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: () => {
-          this.usuarios.update((usuarios) =>
-            usuarios.map((actual) =>
-              actual.id === usuario.id ? { ...actual, eliminado: true } : actual,
-            ),
-          );
-          this.mensajeAccion.set(
-            `Se ha marcado como eliminado a ${usuario.name} ${usuario.apellidos}.`,
-          );
-          this.limpiarTemporizadorMensaje();
-          this.temporizadorMensaje = setTimeout(() => this.mensajeAccion.set(''), 5000);
-          this.eliminandoId.set(null);
-        },
-        error: (error: HttpErrorResponse) => {
-          this.mensajeErrorAccion.set(this.textoErrorEliminacion(error));
-          this.eliminandoId.set(null);
-        },
-      });
+    this.accionandoId.set(usuario.id);
+    if (accion === 'eliminar') {
+      this.eliminandoId.set(usuario.id);
+    }
+    const peticion: Observable<void> =
+      accion === 'bloquear'
+        ? this.usuariosService.bloquear(usuario.id).pipe(map(() => undefined))
+        : accion === 'desbloquear'
+          ? this.usuariosService.desbloquear(usuario.id).pipe(map(() => undefined))
+          : this.usuariosService.eliminar(usuario.id);
+
+    peticion.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.usuarios.update((usuarios) =>
+          usuarios.map((actual) =>
+            actual.id === usuario.id
+              ? accion === 'eliminar'
+                ? { ...actual, eliminado: true }
+                : { ...actual, bloqueado: accion === 'bloquear' }
+              : actual,
+          ),
+        );
+        this.mensajeAccion.set(this.textoAccionExitosa(usuario, accion));
+        this.limpiarTemporizadorMensaje();
+        this.temporizadorMensaje = setTimeout(() => this.mensajeAccion.set(''), 5000);
+        this.eliminandoId.set(null);
+        this.accionandoId.set(null);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.mensajeErrorAccion.set(this.textoErrorAccion(error, accion));
+        this.eliminandoId.set(null);
+        this.accionandoId.set(null);
+      },
+    });
   }
 
   esUsuarioActual(usuario: Usuario): boolean {
@@ -166,6 +193,44 @@ export class ConsultarUsuarios implements OnInit {
       return 'No se ha podido conectar con el servidor.';
     }
     return this.mensajeApi(error, 'No se ha podido eliminar el usuario. Inténtalo de nuevo.');
+  }
+
+  private textoErrorAccion(error: HttpErrorResponse, accion: AccionUsuario): string {
+    if (accion === 'eliminar') {
+      return this.textoErrorEliminacion(error);
+    }
+    if (error.status === 401) {
+      return 'Tu sesión ha caducado. Inicia sesión de nuevo.';
+    }
+    if (error.status === 403) {
+      return this.mensajeApi(error, 'No tienes permiso para cambiar el estado de este usuario.');
+    }
+    if (error.status === 404) {
+      return 'El usuario ya no está disponible para cambiar su estado.';
+    }
+    if (error.status === 0) {
+      return 'No se ha podido conectar con el servidor.';
+    }
+    return this.mensajeApi(
+      error,
+      accion === 'bloquear'
+        ? 'No se ha podido bloquear el usuario. Inténtalo de nuevo.'
+        : 'No se ha podido desbloquear el usuario. Inténtalo de nuevo.',
+    );
+  }
+
+  private textoAccionExitosa(usuario: Usuario, accion: AccionUsuario): string {
+    const nombre = `${usuario.name} ${usuario.apellidos}`;
+    if (accion === 'eliminar') {
+      return `Se ha marcado como eliminado a ${nombre}.`;
+    }
+    return accion === 'bloquear'
+      ? `Se ha bloqueado a ${nombre}.`
+      : `Se ha desbloqueado a ${nombre}.`;
+  }
+
+  private hayAccionEnCurso(): boolean {
+    return this.accionandoId() !== null;
   }
 
   private mensajeApi(error: HttpErrorResponse, fallback: string): string {
