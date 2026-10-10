@@ -117,24 +117,30 @@
                 @if (usuario.bloqueado) {
                 <button
                   type="button"
-                  class="accion-boceto"
-                  disabled
-                  aria-label="Desbloquear usuario, próximamente"
-                  title="Desbloquear usuario (boceto)"
-                >🔓</button>
+                  class="accion-bloqueo"
+                  [disabled]="usuario.eliminado || accionandoId() !== null"
+                  [attr.aria-label]="'Desbloquear usuario ' + usuario.name + ' ' + usuario.apellidos"
+                  [title]="usuario.eliminado ? 'No se puede desbloquear un usuario eliminado' : 'Desbloquear usuario'"
+                  (click)="cambiarBloqueoUsuario(usuario)"
+                >
+                  {{ accionandoId() === usuario.id ? '⏳' : '🔓' }}
+                </button>
                 } @else {
                 <button
                   type="button"
-                  class="accion-boceto"
-                  disabled
-                  aria-label="Bloquear usuario, próximamente"
-                  title="Bloquear usuario (boceto)"
-                >🔒</button>
+                  class="accion-bloqueo"
+                  [disabled]="usuario.eliminado || accionandoId() !== null"
+                  [attr.aria-label]="'Bloquear usuario ' + usuario.name + ' ' + usuario.apellidos"
+                  [title]="usuario.eliminado ? 'No se puede bloquear un usuario eliminado' : 'Bloquear usuario'"
+                  (click)="cambiarBloqueoUsuario(usuario)"
+                >
+                  {{ accionandoId() === usuario.id ? '⏳' : '🔒' }}
+                </button>
                 }
                 <button
                   type="button"
                   class="accion-eliminar"
-                  [disabled]="usuario.eliminado || esUsuarioActual(usuario) || eliminandoId() !== null"
+                  [disabled]="usuario.eliminado || esUsuarioActual(usuario) || accionandoId() !== null"
                   [attr.aria-label]="
                     usuario.eliminado
                       ? 'Usuario ya eliminado'
@@ -162,7 +168,7 @@
     </div>
     }
 
-    @if (usuarioPendienteDeEliminar(); as usuario) {
+    @if (accionPendiente(); as pendiente) {
     <div class="confirmacion-fondo">
       <dialog
         open
@@ -172,17 +178,45 @@
         aria-describedby="confirmacion-descripcion"
         (keydown.escape)="cancelarEliminacion()"
       >
+        @if (pendiente.accion === 'eliminar') {
         <h2 id="confirmacion-titulo">¿Eliminar usuario?</h2>
         <p id="confirmacion-descripcion">
-          ¿Estás segura de que quieres eliminar a <strong>{{ usuario.name }} {{ usuario.apellidos }}</strong>?
+          ¿Estás segura de que quieres eliminar a
+          <strong>{{ pendiente.usuario.name }} {{ pendiente.usuario.apellidos }}</strong>?
           Su cuenta se marcará como eliminada, pero no se borrará físicamente.
         </p>
+        } @else if (pendiente.accion === 'bloquear') {
+        <h2 id="confirmacion-titulo">¿Bloquear usuario?</h2>
+        <p id="confirmacion-descripcion">
+          ¿Quieres bloquear a
+          <strong>{{ pendiente.usuario.name }} {{ pendiente.usuario.apellidos }}</strong>?
+          El usuario no podrá acceder a su cuenta hasta que se desbloquee.
+        </p>
+        } @else {
+        <h2 id="confirmacion-titulo">¿Desbloquear usuario?</h2>
+        <p id="confirmacion-descripcion">
+          ¿Quieres permitir de nuevo el acceso a
+          <strong>{{ pendiente.usuario.name }} {{ pendiente.usuario.apellidos }}</strong>?
+        </p>
+        }
         <div class="confirmacion-acciones">
           <button type="button" class="esi-boton confirmacion-cancelar" autofocus (click)="cancelarEliminacion()">
             Cancelar
           </button>
-          <button type="button" class="esi-boton confirmacion-eliminar" (click)="confirmarEliminacion()">
+          <button
+            type="button"
+            class="esi-boton confirmacion-eliminar"
+            [class.confirmacion-desbloquear]="pendiente.accion === 'desbloquear'"
+            [disabled]="accionandoId() !== null"
+            (click)="confirmarEliminacion()"
+          >
+            @if (pendiente.accion === 'eliminar') {
             Sí, eliminar
+            } @else if (pendiente.accion === 'bloquear') {
+            Sí, bloquear
+            } @else {
+            Sí, desbloquear
+            }
           </button>
         </div>
       </dialog>

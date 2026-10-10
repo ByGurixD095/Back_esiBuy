@@ -1,8 +1,5 @@
 import { provideHttpClient } from '@angular/common/http';
-import {
-  HttpTestingController,
-  provideHttpClientTesting,
-} from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { Usuarios } from './usuarios';
 
@@ -85,6 +82,24 @@ describe('Usuarios', () => {
       tipoCliente: 'PREMIUM',
     });
     peticion.flush(null);
+  });
+
+  it('bloquea al usuario con PATCH y credenciales', () => {
+    servicio.bloquear('user-db-1').subscribe();
+
+    const peticion = http.expectOne('http://localhost:8080/admin/bloquear/user-db-1');
+    expect(peticion.request.method).toBe('PATCH');
+    expect(peticion.request.withCredentials).toBe(true);
+    peticion.flush({ bloqueado: true });
+  });
+
+  it('desbloquea al usuario con PATCH y credenciales', () => {
+    servicio.desbloquear('user-db-1').subscribe();
+
+    const peticion = http.expectOne('http://localhost:8080/admin/desbloquear/user-db-1');
+    expect(peticion.request.method).toBe('PATCH');
+    expect(peticion.request.withCredentials).toBe(true);
+    peticion.flush({ bloqueado: false });
   });
 
   it('solicita la eliminación lógica del usuario con credenciales', () => {

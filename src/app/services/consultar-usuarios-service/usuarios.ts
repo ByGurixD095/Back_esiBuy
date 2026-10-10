@@ -64,6 +64,22 @@ export class Usuarios {
     });
   }
 
+  bloquear(id: string): Observable<Usuario> {
+    return this.http.patch<Usuario>(
+      `${environment.apiUrl}/admin/bloquear/${encodeURIComponent(id)}`,
+      {},
+      { withCredentials: true },
+    );
+  }
+
+  desbloquear(id: string): Observable<Usuario> {
+    return this.http.patch<Usuario>(
+      `${environment.apiUrl}/admin/desbloquear/${encodeURIComponent(id)}`,
+      {},
+      { withCredentials: true },
+    );
+  }
+
   eliminar(id: string): Observable<void> {
     return this.http.delete<void>(`${environment.apiUrl}/admin/${encodeURIComponent(id)}`, {
       withCredentials: true,
