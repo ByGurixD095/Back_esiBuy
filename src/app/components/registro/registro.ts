@@ -196,11 +196,13 @@ export class RegistroComponent {
     if (respuesta.mfaStatus === 'SUCCESS') {
       this.authService.applyAuthenticationResponse(respuesta);
       this.mensajeExito.set('Cuenta creada e inicio de sesión completado.');
-      void this.router.navigate(['/']);
+      void this.router.navigate(['/products']);
       return;
     }
 
-    this.mensajeExito.set('Cuenta creada. Continúa el inicio de sesión para configurar la autenticación.');
+    this.mensajeExito.set(
+      'Cuenta creada. Continúa el inicio de sesión para configurar la autenticación.',
+    );
     void this.router.navigate(['/login'], {
       queryParams: { email: this.form.controls.email.value },
     });
@@ -210,7 +212,7 @@ export class RegistroComponent {
     this.enviando.set(false);
     if (respuesta.mfaStatus === 'SUCCESS') {
       this.mensajeExito.set('Cuenta creada e inicio de sesión completado.');
-      void this.router.navigate(['/']);
+      void this.router.navigate(['/products']);
       return;
     }
 

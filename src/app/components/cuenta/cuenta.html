@@ -1,11 +1,184 @@
 <app-marco-pagina panel="Mi cuenta" [volver]="true">
-  <section class="seccion-vacia esi-tarjeta" aria-labelledby="cuenta-titulo">
+  <section class="cuenta esi-tarjeta" aria-labelledby="cuenta-titulo">
     <p class="esi-eyebrow">Área personal</p>
     <h1 id="cuenta-titulo" class="esi-titulo">mi cuenta.</h1>
-    <p>
-      Aquí se integrarán próximamente las opciones para consultar y modificar tus datos personales,
-      preferencias y seguridad.
-    </p>
+
+    @if (!esPerfilEditable()) {
+      <p class="nota-admin" role="status">
+        La modificación del perfil de administrador se gestiona desde su área correspondiente.
+      </p>
+    } @else if (cargando()) {
+      <p class="estado-proceso" role="status">Cargando los datos de tu perfil…</p>
+    } @else if (perfil()) {
+      <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+        <header class="formulario-cabecera">
+          <h2>Datos personales</h2>
+          <p>Actualiza aquí la información de tu cuenta.</p>
+        </header>
+
+        <section class="grupo-formulario" aria-labelledby="titulo-datos-personales">
+          <h3 id="titulo-datos-personales">Información personal</h3>
+          <div class="campos">
+            <div class="esi-campo">
+              <label for="nombre">Nombre</label>
+              <input
+                id="nombre"
+                type="text"
+                formControlName="nombre"
+                autocomplete="given-name"
+                required
+              />
+              @if (esInvalido('nombre')) {
+                <small class="esi-ayuda esi-error" id="nombre-error"
+                  >El nombre es obligatorio.</small
+                >
+              }
+            </div>
+
+            <div class="esi-campo">
+              <label for="apellidos">Apellidos</label>
+              <input
+                id="apellidos"
+                type="text"
+                formControlName="apellidos"
+                autocomplete="family-name"
+                required
+              />
+              @if (esInvalido('apellidos')) {
+                <small class="esi-ayuda esi-error" id="apellidos-error"
+                  >Los apellidos son obligatorios.</small
+                >
+              }
+            </div>
+
+            <div class="esi-campo">
+              <label for="email">Correo electrónico</label>
+              <input
+                id="email"
+                type="email"
+                [value]="perfil()?.email ?? ''"
+                autocomplete="email"
+                readonly
+              />
+              <small class="esi-ayuda"
+                >El correo electrónico no se puede modificar desde aquí.</small
+              >
+            </div>
+
+            <div class="esi-campo">
+              <label for="telefono">Teléfono <span class="opcional">Opcional</span></label>
+              <input id="telefono" type="tel" formControlName="telefono" autocomplete="tel" />
+              @if (esInvalido('telefono')) {
+                <small class="esi-ayuda esi-error" id="telefono-error">
+                  El teléfono debe tener exactamente 9 dígitos.
+                </small>
+              } @else {
+                <small class="esi-ayuda">Déjalo vacío para conservar el valor actual.</small>
+              }
+            </div>
+
+            <div class="esi-campo campo-completo">
+              <label for="imagenPerfil"
+                >Imagen de perfil <span class="opcional">Opcional</span></label
+              >
+              <input
+                id="imagenPerfil"
+                type="url"
+                formControlName="imagenPerfil"
+                placeholder="https://"
+                autocomplete="url"
+              />
+              <small class="esi-ayuda">Déjalo vacío para conservar la imagen actual.</small>
+            </div>
+          </div>
+        </section>
+
+        @if (rol() === 'CLIENTE') {
+          <section class="grupo-formulario" aria-labelledby="titulo-datos-cliente">
+            <h3 id="titulo-datos-cliente">Preferencias de cliente</h3>
+            <div class="campos">
+              <div class="esi-campo">
+                <label for="tipoCliente">Tipo de cliente</label>
+                <select id="tipoCliente" formControlName="tipoCliente">
+                  <option value="NORMAL">Normal</option>
+                  <option value="PREMIUM">Premium</option>
+                </select>
+              </div>
+              <div class="esi-campo">
+                <label for="dni">DNI</label>
+                <input id="dni" type="text" [value]="perfil()?.dni ?? ''" readonly />
+              </div>
+              <div class="esi-campo">
+                <label for="fechaNacimiento">Fecha de nacimiento</label>
+                <input
+                  id="fechaNacimiento"
+                  type="date"
+                  [value]="perfil()?.fechaNacimiento ?? ''"
+                  readonly
+                />
+              </div>
+            </div>
+          </section>
+        } @else {
+          <section class="grupo-formulario" aria-labelledby="titulo-datos-vendedor">
+            <h3 id="titulo-datos-vendedor">Información comercial</h3>
+            <div class="campos">
+              <div class="esi-campo">
+                <label for="nombreComercial">Nombre comercial</label>
+                <input
+                  id="nombreComercial"
+                  type="text"
+                  formControlName="nombreComercial"
+                  required
+                />
+                @if (esInvalido('nombreComercial')) {
+                  <small class="esi-ayuda esi-error" id="nombre-comercial-error">
+                    El nombre comercial es obligatorio.
+                  </small>
+                }
+              </div>
+              <div class="esi-campo">
+                <label for="cifNif">CIF/NIF</label>
+                <input id="cifNif" type="text" [value]="perfil()?.cifNif ?? ''" readonly />
+              </div>
+              <div class="esi-campo campo-completo">
+                <label for="categoriaPrincipalId">ID de la categoría principal</label>
+                <input
+                  id="categoriaPrincipalId"
+                  type="text"
+                  formControlName="categoriaPrincipalId"
+                  required
+                />
+                @if (esInvalido('categoriaPrincipalId')) {
+                  <small class="esi-ayuda esi-error" id="categoria-error">
+                    La categoría principal es obligatoria.
+                  </small>
+                }
+              </div>
+            </div>
+          </section>
+        }
+
+        @if (mensajeExito()) {
+          <p class="esi-alerta esi-alerta--ok" role="status">{{ mensajeExito() }}</p>
+        }
+        @if (mensajeError()) {
+          <p class="esi-alerta esi-alerta--error" role="alert">{{ mensajeError() }}</p>
+        }
+
+        <button type="submit" class="esi-boton" [disabled]="form.invalid || guardando()">
+          {{ guardando() ? 'Guardando cambios…' : 'Guardar cambios' }}
+        </button>
+      </form>
+    } @else {
+      @if (mensajeError()) {
+        <p class="esi-alerta esi-alerta--error" role="alert">{{ mensajeError() }}</p>
+      }
+      <button type="button" class="esi-boton reintentar" (click)="cargarPerfil()">
+        Reintentar
+      </button>
+    }
+
     <button type="button" class="esi-boton cerrar-sesion" (click)="cerrarSesion()">
       Cerrar sesión
     </button>

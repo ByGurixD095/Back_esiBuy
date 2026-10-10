@@ -69,7 +69,10 @@ export class InicioSesion {
       error: (error: HttpErrorResponse) => {
         this.cargando.set(false);
         this.mensajeError.set(
-          this.authService.errorMessage(error, 'No se ha podido iniciar sesión. Revisa tus credenciales.'),
+          this.authService.errorMessage(
+            error,
+            'No se ha podido iniciar sesión. Revisa tus credenciales.',
+          ),
         );
       },
     });
@@ -92,7 +95,9 @@ export class InicioSesion {
         },
         error: (error: HttpErrorResponse) => {
           this.cargando.set(false);
-          this.mensajeError.set(this.authService.errorMessage(error, 'No se ha podido confirmar el código TOTP.'));
+          this.mensajeError.set(
+            this.authService.errorMessage(error, 'No se ha podido confirmar el código TOTP.'),
+          );
         },
       });
   }
@@ -107,7 +112,9 @@ export class InicioSesion {
       },
       error: (error: HttpErrorResponse) => {
         this.cargando.set(false);
-        this.mensajeError.set(this.authService.errorMessage(error, 'No se han podido validar los códigos.'));
+        this.mensajeError.set(
+          this.authService.errorMessage(error, 'No se han podido validar los códigos.'),
+        );
       },
     });
   }
@@ -123,7 +130,9 @@ export class InicioSesion {
         this.manualSecretKey.set(respuesta.manualSecretKey);
       },
       error: (error: HttpErrorResponse) => {
-        this.mensajeError.set(this.authService.errorMessage(error, 'No se ha podido preparar la configuración MFA.'));
+        this.mensajeError.set(
+          this.authService.errorMessage(error, 'No se ha podido preparar la configuración MFA.'),
+        );
       },
     });
   }
@@ -136,6 +145,6 @@ export class InicioSesion {
   }
 
   private navegarTrasLogin(rol: Rol): void {
-    void this.router.navigate(['/']);
+    void this.router.navigate(rol === 'ADMINISTRADOR' ? ['/'] : ['/products']);
   }
 }
