@@ -10,6 +10,10 @@
         <strong>Administradores</strong>
         <span>Crear y gestionar administradores.</span>
       </a>
+      <a class="opcion esi-tarjeta" routerLink="/admin/usuarios">
+        <strong>Gestionar usuarios</strong>
+        <span>Consultar cuentas y ver una propuesta de acciones.</span>
+      </a>
       }
       @if (auth.hasRole(['VENDEDOR'])) {
       <a class="opcion esi-tarjeta" routerLink="/products/new">
