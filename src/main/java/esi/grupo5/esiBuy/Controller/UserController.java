@@ -10,6 +10,7 @@ import esi.grupo5.esiBuy.Dto.LoginRequestDTO;
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
 import esi.grupo5.esiBuy.Dto.PasswordResetConfirmDTO;
 import esi.grupo5.esiBuy.Dto.PasswordResetRequestDTO;
+import esi.grupo5.esiBuy.Dto.UsuarioResponseDTO;
 import esi.grupo5.esiBuy.Dto.UserSelfUpdateDTO;
 import esi.grupo5.esiBuy.Dto.VendedorRegisterRequest;
 import esi.grupo5.esiBuy.Exception.*;
@@ -32,6 +33,14 @@ public class UserController {
         this.userService = userService;
         this.authService = authService;
         this.cookieUtil = cookieUtil;
+    }
+
+    // --------- GET ------------
+    @GetMapping("/me")
+    public ResponseEntity<UsuarioResponseDTO> getUserById(Authentication authentication) {
+        String idAutenticado = (String) authentication.getPrincipal();
+        UsuarioResponseDTO userDto = userService.getUserById(idAutenticado);
+        return ResponseEntity.ok(userDto);
     }
 
 

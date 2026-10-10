@@ -1,9 +1,15 @@
 package esi.grupo5.esiBuy.Service;
 
-import esi.grupo5.esiBuy.Dto.UserDto;
+import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
+import esi.grupo5.esiBuy.Dto.ClienteResponseDTO;
+import esi.grupo5.esiBuy.Dto.UsuarioResponseDTO;
+import esi.grupo5.esiBuy.Dto.VendedorResponseDTO;
 import esi.grupo5.esiBuy.Exception.NotFoundException;
+import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Model.Cliente;
+import esi.grupo5.esiBuy.Model.Vendedor;
 import esi.grupo5.esiBuy.Model.enums.Rol;
+import esi.grupo5.esiBuy.Model.enums.TipoCliente;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +20,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -43,9 +50,13 @@ class UserServiceConsultarUsuariosLecturaTest {
         Cliente cliente = cliente("cliente-1", "Ana", "ana@test.com");
         cliente.setActivo(true);
         cliente.setBloqueado(false);
+        cliente.setFechaAlta(LocalDateTime.of(2025, 1, 2, 3, 4));
+        cliente.setMfaConfigurado(true);
+        cliente.setIs2faActivoCliente(true);
+        cliente.setIs3faActivoCliente(true);
         when(usuarioRepository.findAllByEliminadoFalse()).thenReturn(List.of(cliente));
 
-        List<UserDto> resultado = service.getAllUsers();
+        List<UsuarioResponseDTO> resultado = service.getAllUsers();
 
         assertEquals(1, resultado.size());
         assertEquals("cliente-1", resultado.get(0).getId());
@@ -55,14 +66,62 @@ class UserServiceConsultarUsuariosLecturaTest {
         assertEquals(Rol.CLIENTE, resultado.get(0).getRol());
         assertEquals(true, resultado.get(0).isActivo());
         assertEquals(false, resultado.get(0).isBloqueado());
+        assertEquals("12345678A", ((ClienteResponseDTO) resultado.get(0)).getDni());
+        assertEquals(cliente.getFechaAlta(), resultado.get(0).getFechaAlta());
+        assertEquals(cliente.getFechaCambioContrasena(), resultado.get(0).getFechaCambioContrasena());
+        assertEquals(true, resultado.get(0).isMfaConfigurado());
+        assertEquals(true, resultado.get(0).isDosFactorActivoCliente());
+        assertEquals(true, resultado.get(0).isTresFactorActivoCliente());
         verify(usuarioRepository).findAllByEliminadoFalse();
+    }
+
+    @Test
+    void consultarUsuarios_vendedorIncluyeSusDatosEspecificos() {
+        Vendedor vendedor = new Vendedor();
+        vendedor.setId("vendedor-1");
+        vendedor.setNombre("Luis");
+        vendedor.setNombreComercial("Tienda Luis");
+        vendedor.setCifNif("B12345678");
+        vendedor.setCategoriaPrincipalId("electronica");
+        when(usuarioRepository.findAllByEliminadoFalse()).thenReturn(List.of(vendedor));
+
+        List<UsuarioResponseDTO> resultado = service.getAllUsers();
+
+        VendedorResponseDTO dto = (VendedorResponseDTO) resultado.get(0);
+        assertEquals("Tienda Luis", dto.getNombreComercial());
+        assertEquals("B12345678", dto.getCifNif());
+        assertEquals("electronica", dto.getCategoriaPrincipalId());
+    }
+
+    @Test
+    void consultarUsuarios_administradorIncluyeDatosComunesYEspecificos() {
+        Administrador administrador = Administrador.builder()
+                .nombre("Marta")
+                .apellidos("García")
+                .email("marta@test.com")
+                .contrasena("no-debe-exponerse")
+                .sede("Madrid")
+                .build();
+        administrador.setId("admin-1");
+        administrador.setMfaConfigurado(true);
+        when(usuarioRepository.findAllByEliminadoFalse()).thenReturn(List.of(administrador));
+
+        AdministradorResponseDTO resultado =
+                (AdministradorResponseDTO) service.getAllUsers().get(0);
+
+        assertEquals("admin-1", resultado.getId());
+        assertEquals(Rol.ADMINISTRADOR, resultado.getRol());
+        assertEquals("Madrid", resultado.getSede());
+        assertEquals(administrador.getFechaIncorporacion(), resultado.getFechaIncorporacion());
+        assertEquals(true, resultado.isMfaConfigurado());
+        assertEquals(true, resultado.isActivo());
     }
 
     @Test
     void consultarUsuarios_sinUsuariosDevuelveListaVacia() {
         when(usuarioRepository.findAllByEliminadoFalse()).thenReturn(List.of());
 
-        List<UserDto> resultado = service.getAllUsers();
+        List<UsuarioResponseDTO> resultado = service.getAllUsers();
 
         assertEquals(List.of(), resultado);
         verify(usuarioRepository).findAllByEliminadoFalse();
@@ -75,13 +134,14 @@ class UserServiceConsultarUsuariosLecturaTest {
         when(usuarioRepository.findByIdAndEliminadoFalse("cliente-1"))
                 .thenReturn(Optional.of(cliente));
 
-        UserDto resultado = service.getUserById("cliente-1");
+        UsuarioResponseDTO resultado = service.getUserById("cliente-1");
 
         assertEquals("cliente-1", resultado.getId());
         assertEquals("Ana", resultado.getName());
         assertEquals("ana@test.com", resultado.getEmail());
         assertEquals(Rol.CLIENTE, resultado.getRol());
         assertEquals(true, resultado.isActivo());
+        assertEquals(TipoCliente.NORMAL, ((ClienteResponseDTO) resultado).getTipoCliente());
         verify(usuarioRepository).findByIdAndEliminadoFalse("cliente-1");
     }
 
@@ -102,6 +162,7 @@ class UserServiceConsultarUsuariosLecturaTest {
         cliente.setApellidos("López");
         cliente.setEmail(email);
         cliente.setRol(Rol.CLIENTE);
+        cliente.setDni("12345678A");
         return cliente;
     }
 }

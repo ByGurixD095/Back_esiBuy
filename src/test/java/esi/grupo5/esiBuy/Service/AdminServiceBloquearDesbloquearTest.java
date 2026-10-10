@@ -1,7 +1,7 @@
 package esi.grupo5.esiBuy.Service;
 
 import esi.grupo5.esiBuy.Model.Vendedor;
-import esi.grupo5.esiBuy.Dto.UserDto;
+import esi.grupo5.esiBuy.Dto.UsuarioResponseDTO;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Service.strategy.UsuarioUpdateStrategy;
 import esi.grupo5.esiBuy.Exception.NotFoundException;
@@ -41,17 +41,17 @@ class AdminServiceBloquearDesbloquearTest {
         Vendedor usuario = new Vendedor();
         usuario.setBloqueado(false);
 
-        UserDto dto = mock(UserDto.class);
+        UsuarioResponseDTO dto = mock(UsuarioResponseDTO.class);
         when(usuarioRepository.findByIdAndEliminadoFalse(id)).thenReturn(Optional.of(usuario));
-        when(userService.toDto(usuario)).thenReturn(dto);
+        when(userService.toResponseDto(usuario)).thenReturn(dto);
 
-        UserDto result = adminService.bloquearUsuario(id);
+        UsuarioResponseDTO result = adminService.bloquearUsuario(id);
 
         assertTrue(usuario.isBloqueado());
         assertSame(dto, result);
 
         verify(usuarioRepository).save(usuario);
-        verify(userService).toDto(usuario);
+        verify(userService).toResponseDto(usuario);
     }
 
     @Test
@@ -59,17 +59,17 @@ class AdminServiceBloquearDesbloquearTest {
         Vendedor usuario = new Vendedor();
         usuario.setBloqueado(true);
 
-        UserDto dto = mock(UserDto.class);
+        UsuarioResponseDTO dto = mock(UsuarioResponseDTO.class);
         when(usuarioRepository.findByIdAndEliminadoFalse(id)).thenReturn(Optional.of(usuario));
-        when(userService.toDto(usuario)).thenReturn(dto);
+        when(userService.toResponseDto(usuario)).thenReturn(dto);
 
-        UserDto result = adminService.desbloquearUsuario(id);
+        UsuarioResponseDTO result = adminService.desbloquearUsuario(id);
 
         assertFalse(usuario.isBloqueado());
         assertSame(dto, result);
 
         verify(usuarioRepository).save(usuario);
-        verify(userService).toDto(usuario);
+        verify(userService).toResponseDto(usuario);
     }
 
     @Test
