@@ -48,6 +48,15 @@ class AdminControllerConsultaUsuariosEndpointTest {
                         .fechaNacimiento(java.time.LocalDate.of(1990, 1, 1))
                         .tipoCliente(esi.grupo5.esiBuy.Model.enums.TipoCliente.NORMAL)
                         .build(),
+                ClienteResponseDTO.builder()
+                        .id("cliente-eliminado")
+                        .name("Luis")
+                        .apellidos("Pérez")
+                        .email("luis@test.com")
+                        .rol(Rol.CLIENTE)
+                        .bloqueado(true)
+                        .eliminado(true)
+                        .build(),
                 AdministradorResponseDTO.builder()
                         .id("admin-1")
                         .name("Marta")
@@ -69,10 +78,14 @@ class AdminControllerConsultaUsuariosEndpointTest {
                 .andExpect(jsonPath("$[0].tipoCliente").value("NORMAL"))
                 .andExpect(jsonPath("$[0].rol").value("CLIENTE"))
                 .andExpect(jsonPath("$[0].activo").value(true))
+                .andExpect(jsonPath("$[0].eliminado").value(false))
                 .andExpect(jsonPath("$[0].bloqueado").value(false))
-                .andExpect(jsonPath("$[1].rol").value("ADMINISTRADOR"))
-                .andExpect(jsonPath("$[1].sede").value("Madrid"))
-                .andExpect(jsonPath("$[1].fechaIncorporacion").value("2024-02-01"));
+                .andExpect(jsonPath("$[1].id").value("cliente-eliminado"))
+                .andExpect(jsonPath("$[1].bloqueado").value(true))
+                .andExpect(jsonPath("$[1].eliminado").value(true))
+                .andExpect(jsonPath("$[2].rol").value("ADMINISTRADOR"))
+                .andExpect(jsonPath("$[2].sede").value("Madrid"))
+                .andExpect(jsonPath("$[2].fechaIncorporacion").value("2024-02-01"));
 
         verify(userService).getAllUsers();
     }
