@@ -13,6 +13,7 @@ import jakarta.validation.constraints.Size;
  * @param email dirección de correo que identificará la cuenta
  * @param contrasena contraseña inicial de la cuenta
  * @param sede sede asignada al administrador
+ * @param imagenPerfil URL o referencia de la imagen de perfil
  */
 public record AdministradorRegistroDTO(
         @NotBlank String nombre,
@@ -22,5 +23,6 @@ public record AdministradorRegistroDTO(
         @Size(min = 8, max = 64)
         @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^\\w\\s]).+$")
         String contrasena,
-        String sede
+        String sede,
+        String imagenPerfil
 ) {}

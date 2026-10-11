@@ -64,7 +64,7 @@ class AdminControllerTest {
     @Test
     void crearAdministrador_emailInvalidoSeRechazaAntesDelServicio() throws Exception {
         AdministradorRegistroDTO dto = new AdministradorRegistroDTO(
-                "Ana", "Pérez", "email-invalido", "Clave#2026x", "Madrid");
+                "Ana", "Pérez", "email-invalido", "Clave#2026x", "Madrid", null);
 
         mockMvc.perform(post("/admin")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -77,7 +77,7 @@ class AdminControllerTest {
     @Test
     void crearAdministrador_contrasenaDebilSeRechazaAntesDelServicio() throws Exception {
         AdministradorRegistroDTO dto = new AdministradorRegistroDTO(
-                "Ana", "Pérez", "ana@esibuy.com", "weak", "Madrid");
+                "Ana", "Pérez", "ana@esibuy.com", "weak", "Madrid", null);
 
         mockMvc.perform(post("/admin")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -89,6 +89,6 @@ class AdminControllerTest {
 
     private AdministradorRegistroDTO administradorDTO() {
         return new AdministradorRegistroDTO(
-                "Ana", "Pérez", "ana@esibuy.com", "Clave#2026x", "Madrid");
+                "Ana", "Pérez", "ana@esibuy.com", "Clave#2026x", "Madrid", null);
     }
 }
