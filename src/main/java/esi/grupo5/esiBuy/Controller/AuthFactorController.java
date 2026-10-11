@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import esi.grupo5.esiBuy.Dto.*;
-import esi.grupo5.esiBuy.Exception.*;
+import esi.grupo5.esiBuy.Exception.ValidationException;
 import esi.grupo5.esiBuy.Service.AuthFactorService;
 import esi.grupo5.esiBuy.Service.AuthService;
 import esi.grupo5.esiBuy.Util.CookieUtil;
@@ -29,13 +29,9 @@ public class AuthFactorController {
 
     @PostMapping("/verify-mfa")
     public ResponseEntity<LoginResponseDTO> verifyMFA(@Valid @RequestBody MfaVerifyRequestDTO dto, HttpServletResponse response) {
-        try {
-            LoginResponseDTO loginResponse = authService.verifyMFA(dto);
-            cookieUtil.setTokenCookiesIfPresent(response, loginResponse);
-            return ResponseEntity.ok(loginResponse);
-        } catch (BusinessException e) {
-            throw new BusinessException(e.getMessage(), e.getHttpStatusCode(), e.getErrorCode());
-        }
+        LoginResponseDTO loginResponse = authService.verifyMFA(dto);
+        cookieUtil.setTokenCookiesIfPresent(response, loginResponse);
+        return ResponseEntity.ok(loginResponse);
     }
 
     @PostMapping("/setup-init")
