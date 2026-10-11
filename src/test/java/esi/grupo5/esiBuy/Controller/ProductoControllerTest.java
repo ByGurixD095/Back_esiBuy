@@ -14,12 +14,14 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -56,9 +58,10 @@ class ProductoControllerTest {
         productoCreado.setPrecioCent(dto.precioCent());
         productoCreado.setActivo(true);
 
-        when(productoService.crearProducto(any(ProductoDTO.class))).thenReturn(productoCreado);
+        when(productoService.crearProducto(any(ProductoDTO.class), any(String.class))).thenReturn(productoCreado);
 
         mockMvc.perform(post("/products")
+                .principal(new UsernamePasswordAuthenticationToken("vendedor-1", null))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
@@ -75,9 +78,10 @@ class ProductoControllerTest {
         Producto productoCreado = new Producto();
         productoCreado.setId("mongo-id-123");
 
-        when(productoService.crearProducto(any(ProductoDTO.class))).thenReturn(productoCreado);
+        when(productoService.crearProducto(any(ProductoDTO.class), any(String.class))).thenReturn(productoCreado);
 
         mockMvc.perform(post("/products/createProduct")
+            .principal(new UsernamePasswordAuthenticationToken("vendedor-1", null))
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(dto)))
             .andExpect(status().isCreated())
@@ -172,7 +176,7 @@ class ProductoControllerTest {
                 void crearProducto_SinStock_InicializaStockA0() throws Exception {
                 Producto productoCreado = new Producto();
                 productoCreado.setId("mongo-id-123");
-                when(productoService.crearProducto(any(ProductoDTO.class))).thenReturn(productoCreado);
+                when(productoService.crearProducto(any(ProductoDTO.class), any(String.class))).thenReturn(productoCreado);
 
                 String dtoSinStock = """
                     {
@@ -188,18 +192,19 @@ class ProductoControllerTest {
                     """;
 
                 mockMvc.perform(post("/products")
+                    .principal(new UsernamePasswordAuthenticationToken("vendedor-1", null))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(dtoSinStock))
                     .andExpect(status().isCreated());
 
-                verify(productoService).crearProducto(argThat(dto -> dto.numStock() == null));
+                verify(productoService).crearProducto(argThat(dto -> dto.numStock() == null), eq("vendedor-1"));
                 }
 
             @Test
             void crearProducto_SinDescripcionNiImagen_EsAceptado() throws Exception {
             Producto productoCreado = new Producto();
             productoCreado.setId("mongo-id-123");
-            when(productoService.crearProducto(any(ProductoDTO.class))).thenReturn(productoCreado);
+            when(productoService.crearProducto(any(ProductoDTO.class), any(String.class))).thenReturn(productoCreado);
 
             String dtoSinCamposOpcionales = """
                 {
@@ -214,6 +219,7 @@ class ProductoControllerTest {
                 """;
 
             mockMvc.perform(post("/products")
+                .principal(new UsernamePasswordAuthenticationToken("vendedor-1", null))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(dtoSinCamposOpcionales))
                 .andExpect(status().isCreated());
@@ -269,4 +275,3 @@ class ProductoControllerTest {
                 any(FiltroCatalogoDTO.class), any(org.springframework.data.domain.Pageable.class));
     }
 }
-

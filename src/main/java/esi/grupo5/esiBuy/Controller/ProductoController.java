@@ -27,9 +27,11 @@ public class ProductoController {
 
     @PostMapping({"", "/createProduct"})
     public ResponseEntity<Producto> crearProducto(
+            Authentication authentication,
             @Valid @RequestBody ProductoDTO dto) {
+        String idVendedor = (String) authentication.getPrincipal();
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(productoService.crearProducto(dto));
+        return ResponseEntity.status(HttpStatus.CREATED).body(productoService.crearProducto(dto, idVendedor));
     }
 
     @GetMapping("/disponibles")

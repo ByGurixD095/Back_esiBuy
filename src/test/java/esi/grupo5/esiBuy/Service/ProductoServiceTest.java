@@ -47,7 +47,7 @@ class ProductoServiceTest {
         when(productoRepository.save(any(Producto.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Producto resultado = productoService.crearProducto(dto);
+        Producto resultado = productoService.crearProducto(dto, "vendedor-1");
 
         assertEquals("Camiseta ESI", resultado.getNombre());
         assertEquals("REF-092026a", resultado.getReferencia());
@@ -56,6 +56,7 @@ class ProductoServiceTest {
         assertEquals("Camiseta oficial", resultado.getDescripcion());
         assertEquals("Ropa", resultado.getCategoria());
         assertEquals("url_imagen.jpg", resultado.getUrlImagen());
+        assertEquals("vendedor-1", resultado.getIdVendedor());
         assertEquals(5, resultado.getDescuento());
         assertEquals(10, resultado.getDescuentoPremium());
         assertTrue(resultado.isActivo());
@@ -66,7 +67,7 @@ class ProductoServiceTest {
         when(productoRepository.save(any(Producto.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Producto resultado = productoService.crearProducto(productoDTO(null, 1999, 5, 10, null));
+        Producto resultado = productoService.crearProducto(productoDTO(null, 1999, 5, 10, null), "vendedor-1");
 
         assertEquals(0, resultado.getNumStock());
     }
@@ -76,7 +77,7 @@ class ProductoServiceTest {
         when(productoRepository.save(any(Producto.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Producto resultado = productoService.crearProducto(productoDTO(10, 1999, 5, 10, false));
+        Producto resultado = productoService.crearProducto(productoDTO(10, 1999, 5, 10, false), "vendedor-1");
 
         assertFalse(resultado.isActivo());
     }
@@ -87,7 +88,7 @@ class ProductoServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         Producto resultado = productoService.crearProducto(
-                productoDTO(Integer.MAX_VALUE, Integer.MAX_VALUE, 100, 100, true));
+                productoDTO(Integer.MAX_VALUE, Integer.MAX_VALUE, 100, 100, true), "vendedor-1");
 
         assertEquals(Integer.MAX_VALUE, resultado.getNumStock());
         assertEquals(Integer.MAX_VALUE, resultado.getPrecioCent());
@@ -102,7 +103,7 @@ class ProductoServiceTest {
         when(productoRepository.save(any(Producto.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Producto resultado = productoService.crearProducto(dto);
+        Producto resultado = productoService.crearProducto(dto, "vendedor-1");
 
         assertEquals(0, resultado.getNumStock());
         assertEquals(0, resultado.getPrecioCent());
@@ -119,7 +120,7 @@ class ProductoServiceTest {
         when(productoRepository.save(any(Producto.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Producto resultado = productoService.crearProducto(dto);
+        Producto resultado = productoService.crearProducto(dto, "vendedor-1");
 
         assertEquals(0, resultado.getDescuento());
         assertEquals(0, resultado.getDescuentoPremium());

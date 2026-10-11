@@ -32,7 +32,7 @@ public class ProductoService {
         this.mongoTemplate = mongoTemplate;
     }
 
-    public Producto crearProducto(ProductoDTO dto) {
+    public Producto crearProducto(ProductoDTO dto, String idVendedor) {
         Producto producto = new Producto(
                 dto.nombre(),
                 dto.referencia(),
@@ -46,6 +46,8 @@ public class ProductoService {
         );
 
         producto.setActivo(dto.activo() == null || dto.activo());
+        producto.setIdVendedor(idVendedor);
+        
         return productoRepository.save(producto);
     }
 
