@@ -29,7 +29,7 @@ export class Cuenta {
   readonly rol = this.auth.rol;
   readonly esPerfilEditable = computed(() => {
     const rol = this.rol();
-    return rol === 'CLIENTE' || rol === 'VENDEDOR';
+    return rol === 'ADMINISTRADOR' || rol === 'CLIENTE' || rol === 'VENDEDOR';
   });
   readonly perfil = signal<PerfilUsuario | null>(null);
   readonly cargando = signal(false);
@@ -78,9 +78,12 @@ export class Cuenta {
 
   constructor() {
     if (this.esPerfilEditable()) {
-      if (this.rol() === 'CLIENTE') {
+      if (this.rol() === 'CLIENTE' || this.rol() === 'ADMINISTRADOR') {
         this.form.controls.nombreComercial.disable();
         this.form.controls.categoriaPrincipalId.disable();
+      }
+      if (this.rol() === 'ADMINISTRADOR') {
+        this.form.controls.tipoCliente.disable();
       }
       this.cargarPerfil();
     }
@@ -127,22 +130,24 @@ export class Cuenta {
     }
 
     const rol = this.rol();
-    if (rol !== 'CLIENTE' && rol !== 'VENDEDOR') {
+    if (rol !== 'ADMINISTRADOR' && rol !== 'CLIENTE' && rol !== 'VENDEDOR') {
       return;
     }
 
     const valores = this.form.getRawValue();
+    const datosEspecificos: Partial<ActualizarPerfilRequest> = {};
+    if (rol === 'CLIENTE') {
+      datosEspecificos.tipoCliente = valores.tipoCliente;
+    } else if (rol === 'VENDEDOR') {
+      datosEspecificos.nombreComercial = valores.nombreComercial.trim();
+      datosEspecificos.categoriaPrincipalId = valores.categoriaPrincipalId.trim();
+    }
     const datos: ActualizarPerfilRequest = {
       nombre: valores.nombre.trim(),
       apellidos: valores.apellidos.trim(),
       ...(valores.telefono.trim() ? { telefono: valores.telefono.trim() } : {}),
       ...(valores.imagenPerfil.trim() ? { imagenPerfil: valores.imagenPerfil.trim() } : {}),
-      ...(rol === 'CLIENTE'
-        ? { tipoCliente: valores.tipoCliente }
-        : {
-            nombreComercial: valores.nombreComercial.trim(),
-            categoriaPrincipalId: valores.categoriaPrincipalId.trim(),
-          }),
+      ...datosEspecificos,
     };
 
     this.guardando.set(true);
@@ -252,6 +257,14 @@ export class Cuenta {
   }
 
   private aplicarCambiosLocales(datos: ActualizarPerfilRequest, rol: Rol): void {
+    const datosEspecificos: Partial<PerfilUsuario> = {};
+    if (rol === 'CLIENTE') {
+      datosEspecificos.tipoCliente = datos.tipoCliente;
+    } else if (rol === 'VENDEDOR') {
+      datosEspecificos.nombreComercial = datos.nombreComercial;
+      datosEspecificos.categoriaPrincipalId = datos.categoriaPrincipalId;
+    }
+
     this.perfil.update((perfil) => {
       if (!perfil) {
         return perfil;
@@ -263,12 +276,7 @@ export class Cuenta {
         apellidos: datos.apellidos || perfil.apellidos,
         telefono: datos.telefono || perfil.telefono,
         imagenPerfil: datos.imagenPerfil || perfil.imagenPerfil,
-        ...(rol === 'CLIENTE'
-          ? { tipoCliente: datos.tipoCliente }
-          : {
-              nombreComercial: datos.nombreComercial || perfil.nombreComercial,
-              categoriaPrincipalId: datos.categoriaPrincipalId || perfil.categoriaPrincipalId,
-            }),
+        ...datosEspecificos,
       };
     });
   }

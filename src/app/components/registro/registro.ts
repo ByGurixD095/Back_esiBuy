@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService, LoginResponse } from '../../services/auth.service';
 import { Registro as RegistroService } from '../../services/registro-service/registro';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
@@ -22,7 +22,7 @@ function fechaAnteriorAHoy(fecha: string): boolean {
 
 @Component({
   selector: 'app-registro',
-  imports: [ReactiveFormsModule, MarcoPagina],
+  imports: [ReactiveFormsModule, MarcoPagina, RouterLink],
   templateUrl: './registro.html',
   styleUrl: './registro.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -3,10 +3,8 @@
     <p class="esi-eyebrow">Área personal</p>
     <h1 id="cuenta-titulo" class="esi-titulo">Mi cuenta.</h1>
 
-    @if (!esPerfilEditable()) {
-      <p class="nota-admin" role="status">
-        La modificación del perfil de administrador se gestiona desde su área correspondiente.
-      </p>
+    @if (rol() === null) {
+      <p class="nota-admin" role="status">No se ha podido identificar el tipo de cuenta.</p>
     } @else if (cargando()) {
       <p class="estado-proceso" role="status">Cargando los datos de tu perfil…</p>
     } @else if (perfil()) {
@@ -119,7 +117,7 @@
               </div>
             </div>
           </section>
-        } @else {
+        } @else if (rol() === 'VENDEDOR') {
           <section class="grupo-formulario" aria-labelledby="titulo-datos-vendedor">
             <h3 id="titulo-datos-vendedor">Información comercial</h3>
             <div class="campos">
@@ -157,6 +155,30 @@
               </div>
             </div>
           </section>
+        } @else {
+          <section class="grupo-formulario" aria-labelledby="titulo-datos-administrador">
+            <h3 id="titulo-datos-administrador">Información de administrador</h3>
+            <div class="campos">
+              <div class="esi-campo">
+                <label for="sede">Sede</label>
+                <input
+                  id="sede"
+                  type="text"
+                  [value]="perfil()?.sede ?? 'No especificada'"
+                  readonly
+                />
+              </div>
+              <div class="esi-campo">
+                <label for="fechaIncorporacion">Fecha de incorporación</label>
+                <input
+                  id="fechaIncorporacion"
+                  type="date"
+                  [value]="perfil()?.fechaIncorporacion ?? ''"
+                  readonly
+                />
+              </div>
+            </div>
+          </section>
         }
 
         @if (rol() === 'CLIENTE') {
@@ -187,10 +209,23 @@
               @if (errorMfa()) {
                 <p class="esi-alerta esi-alerta--error" role="alert">{{ errorMfa() }}</p>
               }
-              <button type="button" class="esi-boton" [disabled]="configurandoMfa()" (click)="guardarConfiguracionMfa()">
+              <button
+                type="button"
+                class="esi-boton"
+                [disabled]="configurandoMfa()"
+                (click)="guardarConfiguracionMfa()"
+              >
                 {{ configurandoMfa() ? 'Guardando…' : 'Guardar factores' }}
               </button>
             </div>
+          </section>
+        } @else if (rol() === 'ADMINISTRADOR') {
+          <section class="grupo-formulario" aria-labelledby="titulo-seguridad-admin">
+            <h2 id="titulo-seguridad-admin">Seguridad de la cuenta</h2>
+            <p class="aviso-seguridad-admin">
+              Por seguridad, el acceso de administradores requiere un código de la aplicación
+              autenticadora y otro código enviado al correo electrónico.
+            </p>
           </section>
         }
 
