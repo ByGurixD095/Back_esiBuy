@@ -14,15 +14,16 @@ import { Cuenta } from './components/cuenta/cuenta';
 import { Gestionar } from './components/gestionar/gestionar';
 import { ConsultarUsuarios } from './components/consultar-usuarios/consultar-usuarios';
 import { AdminEditarUsuario } from './components/admin-editar-usuario/admin-editar-usuario';
+import { guestGuard } from './guards/guest.guard';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', component: Inicio },
   { path: 'products', component: Catalogo },
   { path: 'products/catalogo', component: CatalogoVendedor, canActivate: [roleGuard(['VENDEDOR'])] },
   { path: 'products/new', component: ProductoForm, canActivate: [roleGuard(['VENDEDOR'])] },
-  { path: 'register', component: RegistroInicio },
-  { path: 'register/clientes', component: RegistroComponent, data: { tipoRegistro: 'cliente' } },
-  { path: 'register/vendedor', component: RegistroComponent, data: { tipoRegistro: 'vendedor' } },
+  { path: 'register', component: RegistroInicio, canActivate: [guestGuard] },
+  { path: 'register/clientes', component: RegistroComponent, data: { tipoRegistro: 'cliente' }, canActivate: [guestGuard] },
+  { path: 'register/vendedor', component: RegistroComponent, data: { tipoRegistro: 'vendedor' }, canActivate: [guestGuard] },
   { path: 'cart', children: [] },
   { path: 'account', component: Cuenta, canActivate: [roleGuard(['ADMINISTRADOR', 'VENDEDOR', 'CLIENTE'])] },
   {
@@ -45,7 +46,7 @@ export const routes: Routes = [
     component: AdminEditarUsuario,
     canActivate: [roleGuard(['ADMINISTRADOR'])],
   },
-  { path: 'login', component: InicioSesion },
-  { path: 'recover-password', component: RecoverPasswordComponent },
-  { path: 'reset-password', component: ResetPasswordComponent },
+  { path: 'login', component: InicioSesion, canActivate: [guestGuard] },
+  { path: 'recover-password', component: RecoverPasswordComponent, canActivate: [guestGuard] },
+  { path: 'reset-password', component: ResetPasswordComponent, canActivate: [guestGuard] },
 ];

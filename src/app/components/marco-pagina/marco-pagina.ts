@@ -1,6 +1,6 @@
 import { Component, inject, input } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { AuthService, Rol } from '../../services/auth.service';
+import { RouterLink } from '@angular/router';
 
 /** Marco común de las pantallas: cabecera con logo, contenido proyectado y pie. */
 @Component({
