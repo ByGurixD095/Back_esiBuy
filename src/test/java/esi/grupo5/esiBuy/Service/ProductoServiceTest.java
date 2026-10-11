@@ -6,6 +6,7 @@ import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -124,6 +125,43 @@ class ProductoServiceTest {
 
         assertEquals(0, resultado.getDescuento());
         assertEquals(0, resultado.getDescuentoPremium());
+    }
+
+    @Test
+    void obtenerProducto_soloDevuelveProductoDelVendedor() {
+        Producto producto = new Producto();
+        producto.setId("producto-1");
+        producto.setIdVendedor("vendedor-1");
+        when(productoRepository.findByIdAndIdVendedor("producto-1", "vendedor-1"))
+                .thenReturn(Optional.of(producto));
+
+        assertEquals(producto, productoService.obtenerProducto("producto-1", "vendedor-1"));
+    }
+
+    @Test
+    void actualizarProducto_noPermiteEditarProductoDeOtroVendedor() {
+        when(productoRepository.findByIdAndIdVendedor("producto-1", "vendedor-2"))
+                .thenReturn(Optional.empty());
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                esi.grupo5.esiBuy.Exception.NotFoundException.class,
+                () -> productoService.actualizarProducto(
+                        "producto-1", productoDTO(10, 1999, 5, 10, true), "vendedor-2"));
+    }
+
+    @Test
+    void eliminarProducto_realizaBorradoLogico() {
+        Producto producto = new Producto();
+        producto.setId("producto-1");
+        producto.setIdVendedor("vendedor-1");
+        producto.setActivo(true);
+        when(productoRepository.findByIdAndIdVendedor("producto-1", "vendedor-1"))
+                .thenReturn(Optional.of(producto));
+
+        productoService.eliminarProducto("producto-1", "vendedor-1");
+
+        assertFalse(producto.isActivo());
+        verify(productoRepository).save(producto);
     }
 
     @Test

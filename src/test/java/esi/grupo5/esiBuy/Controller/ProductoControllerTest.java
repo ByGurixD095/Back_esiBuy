@@ -26,6 +26,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -273,5 +275,44 @@ class ProductoControllerTest {
 
             verify(productoService).obtenerProductosDisponibles(
                 any(FiltroCatalogoDTO.class), any(org.springframework.data.domain.Pageable.class));
+    }
+
+    @Test
+    void obtenerProducto_pasaElVendedorAutenticado() throws Exception {
+        Producto producto = new Producto();
+        producto.setId("producto-1");
+        when(productoService.obtenerProducto("producto-1", "vendedor-1")).thenReturn(producto);
+
+        mockMvc.perform(get("/products/producto-1")
+                .principal(new UsernamePasswordAuthenticationToken("vendedor-1", null)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("producto-1"));
+    }
+
+    @Test
+    void actualizarProducto_pasaElVendedorAutenticado() throws Exception {
+        ProductoDTO dto = new ProductoDTO(
+                "Producto actualizado", "REF-2", 1999, "Descripción",
+                "Ropa", null, 5, 0, 0, true);
+        Producto producto = new Producto();
+        producto.setId("producto-1");
+        when(productoService.actualizarProducto("producto-1", dto, "vendedor-1"))
+                .thenReturn(producto);
+
+        mockMvc.perform(put("/products/producto-1")
+                .principal(new UsernamePasswordAuthenticationToken("vendedor-1", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("producto-1"));
+    }
+
+    @Test
+    void eliminarProducto_devuelve204YpasaElVendedorAutenticado() throws Exception {
+        mockMvc.perform(delete("/products/producto-1")
+                .principal(new UsernamePasswordAuthenticationToken("vendedor-1", null)))
+                .andExpect(status().isNoContent());
+
+        verify(productoService).eliminarProducto("producto-1", "vendedor-1");
     }
 }

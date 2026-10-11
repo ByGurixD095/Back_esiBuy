@@ -55,4 +55,30 @@ public class ProductoController {
                 pageable.getPageSize()
         ));
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Producto> obtenerProducto(
+            @PathVariable String id,
+            Authentication authentication) {
+        String idVendedor = (String) authentication.getPrincipal();
+        return ResponseEntity.ok(productoService.obtenerProducto(id, idVendedor));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Producto> actualizarProducto(
+            @PathVariable String id,
+            Authentication authentication,
+            @Valid @RequestBody ProductoDTO dto) {
+        String idVendedor = (String) authentication.getPrincipal();
+        return ResponseEntity.ok(productoService.actualizarProducto(id, dto, idVendedor));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminarProducto(
+            @PathVariable String id,
+            Authentication authentication) {
+        String idVendedor = (String) authentication.getPrincipal();
+        productoService.eliminarProducto(id, idVendedor);
+        return ResponseEntity.noContent().build();
+    }
 }
