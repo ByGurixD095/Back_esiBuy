@@ -25,11 +25,17 @@ export class Catalogo implements OnInit {
   readonly cargando = signal(true);
   readonly error = signal<{ status: number; message: string } | null>(null);
   readonly busqueda = signal('');
+  readonly busquedaAplicada = signal('');
   readonly categoriaSeleccionada = signal('Todas');
+  readonly categoriaAplicada = signal('Todas');
   readonly orden = signal<OrdenCatalogo>('relevancia');
+  readonly ordenAplicada = signal<OrdenCatalogo>('relevancia');
   readonly precioMinimo = signal<number | null>(null);
   readonly precioMaximo = signal<number | null>(null);
+  readonly precioMinimoAplicado = signal<number | null>(null);
+  readonly precioMaximoAplicado = signal<number | null>(null);
   readonly soloConDescuento = signal(false);
+  readonly soloConDescuentoAplicado = signal(false);
   readonly categorias = computed(() => ['Todas', ...new Set(this.productos().map((producto) => producto.categoria))]);
   readonly precioEscalaMaxima = computed(() => {
     const maximo = this.productos().reduce((mayor, producto) => Math.max(mayor, producto.precioCent), 0);
@@ -61,44 +67,54 @@ export class Catalogo implements OnInit {
 
   actualizarBusqueda(event: Event): void {
     this.busqueda.set((event.target as HTMLInputElement).value);
-    this.recargarDesdePrimeraPagina();
   }
 
   actualizarCategoria(event: Event): void {
     this.categoriaSeleccionada.set((event.target as HTMLSelectElement).value);
-    this.recargarDesdePrimeraPagina();
   }
 
   actualizarOrden(event: Event): void {
     this.orden.set((event.target as HTMLSelectElement).value as OrdenCatalogo);
-    this.recargarDesdePrimeraPagina();
   }
 
   actualizarPrecioMinimo(event: Event): void {
-    this.precioMinimo.set(Number((event.target as HTMLInputElement).value));
-    this.recargarDesdePrimeraPagina();
+    this.precioMinimo.set(this.precioDesdeEntrada((event.target as HTMLInputElement).value));
   }
 
   actualizarPrecioMaximo(event: Event): void {
-    this.precioMaximo.set(Number((event.target as HTMLInputElement).value));
-    this.recargarDesdePrimeraPagina();
+    this.precioMaximo.set(this.precioDesdeEntrada((event.target as HTMLInputElement).value));
   }
 
   actualizarPrecioTexto(event: Event, limite: 'minimo' | 'maximo'): void {
     const valor = (event.target as HTMLInputElement).value;
-    const precioCent = valor === '' ? null : Number(valor) * 100;
-    const precioValido = precioCent === null || Number.isFinite(precioCent) ? precioCent : null;
+    const precioValido = this.precioDesdeEntrada(valor, true);
 
     if (limite === 'minimo') {
       this.precioMinimo.set(precioValido);
     } else {
       this.precioMaximo.set(precioValido);
     }
-    this.recargarDesdePrimeraPagina();
   }
 
   alternarDescuento(event: Event): void {
     this.soloConDescuento.set((event.target as HTMLInputElement).checked);
+  }
+
+  aplicarFiltros(): void {
+    const minimo = this.precioMinimo();
+    const maximo = this.precioMaximo();
+    const rangoInvertido = minimo !== null && maximo !== null && minimo > maximo;
+
+    this.busquedaAplicada.set(this.busqueda());
+    this.categoriaAplicada.set(this.categoriaSeleccionada());
+    this.ordenAplicada.set(this.orden());
+    this.precioMinimoAplicado.set(rangoInvertido ? maximo : minimo);
+    this.precioMaximoAplicado.set(rangoInvertido ? minimo : maximo);
+    this.soloConDescuentoAplicado.set(this.soloConDescuento());
+    if (rangoInvertido) {
+      this.precioMinimo.set(maximo);
+      this.precioMaximo.set(minimo);
+    }
     this.recargarDesdePrimeraPagina();
   }
 
@@ -116,11 +132,17 @@ export class Catalogo implements OnInit {
 
   limpiarFiltros(): void {
     this.busqueda.set('');
+    this.busquedaAplicada.set('');
     this.categoriaSeleccionada.set('Todas');
+    this.categoriaAplicada.set('Todas');
     this.orden.set('relevancia');
+    this.ordenAplicada.set('relevancia');
     this.precioMinimo.set(null);
     this.precioMaximo.set(null);
+    this.precioMinimoAplicado.set(null);
+    this.precioMaximoAplicado.set(null);
     this.soloConDescuento.set(false);
+    this.soloConDescuentoAplicado.set(false);
     this.recargarDesdePrimeraPagina();
   }
 
@@ -131,13 +153,20 @@ export class Catalogo implements OnInit {
 
   private filtrosActuales(): FiltrosProductos {
     return {
-      busqueda: this.busqueda(),
-      categoria: this.categoriaSeleccionada(),
-      precioMinCent: this.precioMinimo(),
-      precioMaxCent: this.precioMaximo(),
-      soloOfertas: this.soloConDescuento(),
-      orden: this.orden(),
+      busqueda: this.busquedaAplicada(),
+      categoria: this.categoriaAplicada(),
+      precioMinCent: this.precioMinimoAplicado(),
+      precioMaxCent: this.precioMaximoAplicado(),
+      soloOfertas: this.soloConDescuentoAplicado(),
+      orden: this.ordenAplicada(),
     };
+  }
+
+  private precioDesdeEntrada(valor: string, enEuros = false): number | null {
+    if (!valor.trim()) return null;
+    const numero = Number(valor);
+    if (!Number.isFinite(numero)) return null;
+    return Math.max(0, Math.round(enEuros ? numero * 100 : numero));
   }
 
   formatearPrecio(precioCent: number): string {

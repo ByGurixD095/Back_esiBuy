@@ -72,9 +72,12 @@
         </div>
       </fieldset>
       <label class="discount-filter"><input type="checkbox" [checked]="soloConDescuento()" (change)="alternarDescuento($event)" /> Solo ofertas</label>
-      @if (busqueda() || categoriaSeleccionada() !== 'Todas' || orden() !== 'relevancia' || precioMinimo() !== null || precioMaximo() !== null || soloConDescuento()) {
-        <button class="clear-filter" type="button" (click)="limpiarFiltros()"><span aria-hidden="true">↺</span> Limpiar</button>
-      }
+      <div class="filter-actions">
+        <button class="apply-filter" type="button" (click)="aplicarFiltros()">Aplicar filtros</button>
+        @if (busqueda() || categoriaSeleccionada() !== 'Todas' || orden() !== 'relevancia' || precioMinimo() !== null || precioMaximo() !== null || soloConDescuento()) {
+          <button class="clear-filter" type="button" (click)="limpiarFiltros()"><span aria-hidden="true">↺</span> Limpiar</button>
+        }
+      </div>
     </section>
 
     @if (cargando()) {
