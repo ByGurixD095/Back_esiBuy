@@ -4,6 +4,7 @@ import esi.grupo5.esiBuy.Dto.ClienteResponseDTO;
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 import esi.grupo5.esiBuy.Dto.VendedorResponseDTO;
 import esi.grupo5.esiBuy.Model.enums.Rol;
+import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Service.AdminService;
 import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Service.UserService;
@@ -31,6 +32,7 @@ class AdminControllerConsultaUsuariosEndpointTest {
     @MockitoBean private UserService userService;
     @MockitoBean private AdminService adminService;
     @MockitoBean private JwtService jwtService;
+    @MockitoBean private UsuarioRepository usuarioRepository;
 
     @Test
     void consultarUsuarios_devuelveListado() throws Exception {

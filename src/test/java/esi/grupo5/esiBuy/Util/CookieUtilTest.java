@@ -51,6 +51,16 @@ class CookieUtilTest {
     }
 
     @Test
+    void setTokenCookiesIfPresent_ignoraRespuestasSinAccessToken() {
+        LoginResponseDTO loginResponse = new LoginResponseDTO(
+                null, null, "VENDEDOR", null, "REQUIRES_MFA_SETUP", "seller@test.com");
+
+        new CookieUtil(jwtService).setTokenCookiesIfPresent(response, loginResponse);
+
+        org.mockito.Mockito.verifyNoInteractions(response, jwtService);
+    }
+
+    @Test
     void clearTokenCookies_expiresBothAuthenticationCookies() {
         new CookieUtil(jwtService).clearTokenCookies(response);
 

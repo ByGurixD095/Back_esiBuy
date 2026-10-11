@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import esi.grupo5.esiBuy.Dto.FiltroCatalogoDTO;
 import esi.grupo5.esiBuy.Dto.ProductoDTO;
 import esi.grupo5.esiBuy.Model.Producto;
+import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Service.ProductoService;
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,9 @@ class ProductoControllerTest {
 
     @MockitoBean
     private JwtService jwtService;
+
+    @MockitoBean
+    private UsuarioRepository usuarioRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 

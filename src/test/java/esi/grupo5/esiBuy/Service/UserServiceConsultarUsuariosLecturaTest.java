@@ -32,7 +32,6 @@ import java.time.LocalDate;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.doThrow;
@@ -198,7 +197,7 @@ class UserServiceConsultarUsuariosLecturaTest {
         LoginResponseDTO resultado = service.registrarCliente(dto);
 
         assertEquals(respuesta, resultado);
-        verify(passwordValidatorService).validatePassword(eq(dto.contrasena()), any());
+        verify(passwordValidatorService).validateRegistrationPassword(dto.contrasena());
         verify(usuarioRepository).save(any(Cliente.class));
         verify(authService).completarAutenticacion(any());
     }
@@ -212,7 +211,7 @@ class UserServiceConsultarUsuariosLecturaTest {
 
         assertThrows(ConflictException.class, () -> service.registrarVendedor(dto));
 
-        verify(passwordValidatorService).validatePassword(eq(dto.contrasena()), any());
+        verify(passwordValidatorService).validateRegistrationPassword(dto.contrasena());
         verify(usuarioRepository, never()).save(any());
         verify(authService, never()).completarAutenticacion(any());
     }
@@ -222,12 +221,13 @@ class UserServiceConsultarUsuariosLecturaTest {
         ClienteRegistroDTO dto = new ClienteRegistroDTO(
                 "Ana", "López", "ana@test.com", "Strong#2026", null, null,
                 "12345678A", LocalDate.of(2000, 1, 1), TipoCliente.NORMAL);
-        when(usuarioRepository.existsByEmail(dto.email())).thenThrow(new IllegalStateException("database unavailable"));
+        when(usuarioRepository.existsByEmail(dto.email())).thenThrow(
+                new org.springframework.dao.DataAccessResourceFailureException("database unavailable"));
 
         assertThrows(BusinessException.class, () -> service.registrarCliente(dto));
 
         doReturn(false).when(usuarioRepository).existsByEmail(dto.email());
-        doThrow(new IllegalStateException("database unavailable"))
+        doThrow(new org.springframework.dao.DataAccessResourceFailureException("database unavailable"))
                 .when(usuarioRepository).save(any(Cliente.class));
         assertThrows(BusinessException.class, () -> service.registrarCliente(dto));
     }
@@ -237,9 +237,8 @@ class UserServiceConsultarUsuariosLecturaTest {
         ClienteRegistroDTO dto = new ClienteRegistroDTO(
                 "Ana", "López", "ana@test.com", "weak", null, null,
                 "12345678A", LocalDate.of(2000, 1, 1), TipoCliente.NORMAL);
-        doThrow(new org.springframework.web.server.ResponseStatusException(
-                org.springframework.http.HttpStatus.BAD_REQUEST, "password policy"))
-                .when(passwordValidatorService).validatePassword(eq(dto.contrasena()), any());
+        doThrow(new esi.grupo5.esiBuy.Exception.ValidationException("password policy"))
+                .when(passwordValidatorService).validateRegistrationPassword(dto.contrasena());
 
         assertThrows(esi.grupo5.esiBuy.Exception.ValidationException.class,
                 () -> service.registrarCliente(dto));
@@ -266,7 +265,7 @@ class UserServiceConsultarUsuariosLecturaTest {
                 .when(usuarioRepository).save(cliente);
         assertThrows(ConflictException.class, () -> service.modificarMiPerfil(
                 "cliente-1", new UserSelfUpdateDTO(null, null, null, null, null, null, null)));
-        doThrow(new IllegalStateException("database unavailable"))
+        doThrow(new org.springframework.dao.DataAccessResourceFailureException("database unavailable"))
                 .when(usuarioRepository).save(cliente);
         assertThrows(BusinessException.class, () -> service.modificarMiPerfil(
                 "cliente-1", new UserSelfUpdateDTO(null, null, null, null, null, null, null)));
@@ -289,6 +288,25 @@ class UserServiceConsultarUsuariosLecturaTest {
         when(usuarioRepository.findByIdAndEliminadoFalse("missing")).thenReturn(Optional.empty());
         assertThrows(NotFoundException.class, () -> service.modificarMiPerfil(
                 "missing", new UserSelfUpdateDTO(null, null, null, null, null, null, null)));
+    }
+
+    @Test
+    void modificarPerfil_ignoraCamposComunesEnBlanco() {
+        Cliente cliente = cliente("cliente-1", "Ana", "ana@test.com");
+        cliente.setApellidos("López");
+        cliente.setTelefono("123456789");
+        cliente.setImagenPerfil("avatar.png");
+        when(usuarioRepository.findByIdAndEliminadoFalse("cliente-1"))
+                .thenReturn(Optional.of(cliente));
+
+        service.modificarMiPerfil("cliente-1", new UserSelfUpdateDTO(
+                " ", "", " ", " ", null, null, null));
+
+        assertEquals("Ana", cliente.getNombre());
+        assertEquals("López", cliente.getApellidos());
+        assertEquals("123456789", cliente.getTelefono());
+        assertEquals("avatar.png", cliente.getImagenPerfil());
+        verify(usuarioRepository).save(cliente);
     }
 
     private Cliente cliente(String id, String nombre, String email) {

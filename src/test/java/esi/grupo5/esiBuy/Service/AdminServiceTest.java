@@ -24,9 +24,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 import esi.grupo5.esiBuy.Dto.UserPatchDTO;
 import esi.grupo5.esiBuy.Exception.NotFoundException;
-import esi.grupo5.esiBuy.Service.strategy.AdministradorUpdateStrategy;
-import esi.grupo5.esiBuy.Service.strategy.ClienteUpdateStrategy;
-import esi.grupo5.esiBuy.Service.strategy.VendedorUpdateStrategy;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -84,10 +81,8 @@ class AdminServiceTest {
                             .build();
                 });
 
-        var response = service.crearAdministrador(dto);
+        AdministradorResponseDTO body = service.crearAdministrador(dto);
 
-        assertEquals(201, response.getStatusCode().value());
-        AdministradorResponseDTO body = response.getBody();
         assertEquals("ana@esibuy.com", body.getEmail());
         assertEquals(Rol.ADMINISTRADOR, body.getRol());
         assertEquals("Madrid", body.getSede());
@@ -115,9 +110,8 @@ class AdminServiceTest {
     void crearAdministrador_contrasenaQueNoCumplePoliticaNoGuarda() {
         AdministradorRegistroDTO dto = administradorDTO();
         when(usuarioRepository.findByEmail(dto.email())).thenReturn(Optional.empty());
-        doThrow(new ResponseStatusException(
-                org.springframework.http.HttpStatus.BAD_REQUEST, "Contraseña débil"))
-                .when(passwordValidatorService).validatePassword(dto.contrasena(), List.of());
+        doThrow(new ValidationException("Contraseña débil"))
+                .when(passwordValidatorService).validateRegistrationPassword(dto.contrasena());
 
         assertThrows(ValidationException.class, () -> service.crearAdministrador(dto));
 

@@ -2,6 +2,7 @@ package esi.grupo5.esiBuy.Controller;
 
 import esi.grupo5.esiBuy.Config.JwtAuthenticationFilter;
 import esi.grupo5.esiBuy.Config.SecurityConfig;
+import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Service.AuthService;
 import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Service.UserService;
@@ -33,6 +34,7 @@ class UserControllerEliminarCuentaTest {
     @MockitoBean private UserService userService;
     @MockitoBean private AuthService authService;
     @MockitoBean private CookieUtil cookieUtil;
+    @MockitoBean private UsuarioRepository usuarioRepository;
 
     @BeforeEach
     void clearSecurityContextBeforeTest() {
@@ -75,9 +77,25 @@ class UserControllerEliminarCuentaTest {
         verify(userService, never()).eliminarCuenta(any());
     }
 
+    @Test
+    void cuentaEliminadaNoPuedeReutilizarSuTokenDeAcceso() throws Exception {
+        when(jwtService.isTokenValid(any())).thenReturn(true);
+        when(jwtService.extractId(any())).thenReturn("cliente-eliminado");
+        when(usuarioRepository.existsByIdAndActivoTrueAndBloqueadoFalseAndEliminadoFalse("cliente-eliminado"))
+                .thenReturn(false);
+
+        mockMvc.perform(delete("/users/me")
+                        .cookie(new Cookie("accessToken", "token")))
+                .andExpect(status().isUnauthorized());
+
+        verify(userService, never()).eliminarCuenta(any());
+    }
+
     private void simularSesion(String role, String id) {
         when(jwtService.isTokenValid(any())).thenReturn(true);
         when(jwtService.extractId(any())).thenReturn(id);
         when(jwtService.extractRol(any())).thenReturn(role);
+        when(usuarioRepository.existsByIdAndActivoTrueAndBloqueadoFalseAndEliminadoFalse(id))
+                .thenReturn(true);
     }
 }
