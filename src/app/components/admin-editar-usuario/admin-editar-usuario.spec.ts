@@ -58,8 +58,11 @@ describe('AdminEditarUsuario', () => {
   it('envía los campos editables del usuario y confirma el guardado', () => {
     const el = fixture.nativeElement as HTMLElement;
     const nombre = el.querySelector('#nombre') as HTMLInputElement;
-    nombre.value = 'Ana María';
+    nombre.value = '123456789012345678901234567890EXTRA';
     nombre.dispatchEvent(new Event('input'));
+    const apellidos = el.querySelector('#apellidos') as HTMLInputElement;
+    apellidos.value = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ123456';
+    apellidos.dispatchEvent(new Event('input'));
     const tipoCliente = el.querySelector('#tipoCliente') as HTMLSelectElement;
     tipoCliente.value = 'PREMIUM';
     tipoCliente.dispatchEvent(new Event('change'));
@@ -69,14 +72,16 @@ describe('AdminEditarUsuario', () => {
     fixture.detectChanges();
 
     expect(servicioFalso.modificar).toHaveBeenCalledWith('user-1', {
-      nombre: 'Ana María',
-      apellidos: 'López',
+      nombre: '123456789012345678901234567890',
+      apellidos: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234',
       telefono: '612345678',
       imagenPerfil: 'https://example.com/ana.jpg',
       dni: '12345678A',
       fechaNacimiento: '1990-01-01',
       tipoCliente: 'PREMIUM',
     });
+    expect(nombre.maxLength).toBe(30);
+    expect(apellidos.maxLength).toBe(30);
     expect(el.textContent).toContain('Los datos del usuario se han actualizado correctamente.');
   });
 

@@ -47,6 +47,7 @@ function validarMayorDeEdad(control: AbstractControl): ValidationErrors | null {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminEditarUsuario implements OnInit {
+  private readonly longitudMaximaNombre = 30;
   private readonly route = inject(ActivatedRoute);
   private readonly usuariosService = inject(Usuarios);
   private readonly destroyRef = inject(DestroyRef);
@@ -123,6 +124,15 @@ export class AdminEditarUsuario implements OnInit {
       });
   }
 
+  truncarLongitud(event: Event, campo: 'nombre' | 'apellidos'): void {
+    const input = event.target as HTMLInputElement;
+    const valorTruncado = input.value.slice(0, this.longitudMaximaNombre);
+    if (valorTruncado !== input.value) {
+      input.value = valorTruncado;
+      this.form.controls[campo].setValue(valorTruncado);
+    }
+  }
+
   guardar(): void {
     if (this.cargando() || this.guardando() || this.form.invalid) {
       this.form.markAllAsTouched();
@@ -136,8 +146,8 @@ export class AdminEditarUsuario implements OnInit {
 
     const valores = this.form.getRawValue();
     const datos: ModificarUsuarioRequest = {
-      nombre: valores.nombre.trim(),
-      apellidos: valores.apellidos.trim(),
+      nombre: valores.nombre.trim().slice(0, this.longitudMaximaNombre),
+      apellidos: valores.apellidos.trim().slice(0, this.longitudMaximaNombre),
       ...(valores.telefono.trim() ? { telefono: valores.telefono.trim() } : {}),
       imagenPerfil: valores.imagenPerfil.trim(),
       ...(usuario.rol === 'CLIENTE'
