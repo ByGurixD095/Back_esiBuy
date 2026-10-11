@@ -24,6 +24,8 @@ import esi.grupo5.esiBuy.Service.strategy.UsuarioUpdateStrategy;
 
 @Service
 public class AdminService {
+    private static final int LONGITUD_MAXIMA_NOMBRE = 30;
+    private static final String USUARIO_NO_ENCONTRADO = "Usuario no encontrado";
     
     private final UsuarioRepository usuarioRepository;
     private final BCryptPasswordEncoder encoder;
@@ -44,7 +46,7 @@ public class AdminService {
 
     public void modificarUsuario(String id, UserPatchDTO dto) {
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+                .orElseThrow(() -> new NotFoundException(USUARIO_NO_ENCONTRADO));
 
         actualizarDatosComunes(usuario, dto);
 
@@ -57,8 +59,10 @@ public class AdminService {
     }
 
     private void actualizarDatosComunes(Usuario usuario, UserPatchDTO dto) {
-        actualizarTexto(dto.nombre(), usuario::setNombre, "El nombre no puede estar vacío");
-        actualizarTexto(dto.apellidos(), usuario::setApellidos, "Los apellidos no pueden estar vacíos");
+        actualizarTexto(
+                dto.nombre(), usuario::setNombre, "El nombre no puede estar vacío", LONGITUD_MAXIMA_NOMBRE);
+        actualizarTexto(
+                dto.apellidos(), usuario::setApellidos, "Los apellidos no pueden estar vacíos", LONGITUD_MAXIMA_NOMBRE);
 
         if (dto.telefono() != null) {
             usuario.setTelefono(dto.telefono());
@@ -68,12 +72,13 @@ public class AdminService {
         }
     }
 
-    private void actualizarTexto(String valor, Consumer<String> setter, String mensajeError) {
+    private void actualizarTexto(
+            String valor, Consumer<String> setter, String mensajeError, int longitudMaxima) {
         if (valor != null) {
             if (valor.isBlank()) {
                 throw new ValidationException(mensajeError);
             }
-            setter.accept(valor);
+            setter.accept(valor.substring(0, Math.min(valor.length(), longitudMaxima)));
         }
     }
 
@@ -81,7 +86,7 @@ public class AdminService {
 
     public UsuarioResponseDTO bloquearUsuario(String id) {
         Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
-            .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+            .orElseThrow(() -> new NotFoundException(USUARIO_NO_ENCONTRADO));
             
         usuario.setBloqueado(true);
         usuarioRepository.save(usuario);
@@ -91,7 +96,7 @@ public class AdminService {
 
     public UsuarioResponseDTO desbloquearUsuario(String id) {
         Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
-            .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+            .orElseThrow(() -> new NotFoundException(USUARIO_NO_ENCONTRADO));
 
         usuario.setBloqueado(false);
         usuarioRepository.save(usuario);
@@ -138,7 +143,7 @@ public class AdminService {
         Optional<Usuario> optionalUsuario = usuarioRepository.findByIdAndEliminadoFalse(id);
 
         if (optionalUsuario.isEmpty()) {
-            throw new NotFoundException("Usuario no encontrado");
+            throw new NotFoundException(USUARIO_NO_ENCONTRADO);
         }
 
         Usuario usuario = optionalUsuario.get();
