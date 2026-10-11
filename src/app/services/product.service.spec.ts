@@ -3,7 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { ProductApiError, ProductService } from './product.service';
-import { Producto } from '../models/producto.model';
+import { PaginaProducto } from '../models/producto.model';
 
 describe('ProductService', () => {
   let service: ProductService;
@@ -26,8 +26,9 @@ describe('ProductService', () => {
     httpTesting.verify();
   });
 
-  it('consulta el catálogo real con credenciales y devuelve solo productos disponibles', () => {
-    const respuesta: Producto[] = [
+  it('consulta el catálogo real con credenciales y devuelve la página recibida', () => {
+    const respuesta: PaginaProducto = {
+      content: [
       {
         id: 'disponible-1',
         nombre: 'Camiseta ESI',
@@ -67,17 +68,21 @@ describe('ProductService', () => {
         descuentoPremium: 0,
         activo: false,
       },
-    ];
+      ],
+      totalElements: 3,
+      totalPages: 1,
+      number: 0,
+    };
 
-    let resultado: Producto[] | undefined;
+    let resultado: PaginaProducto | undefined;
     service.obtenerDisponibles().subscribe((productos) => (resultado = productos));
 
-    const request = httpTesting.expectOne('http://localhost:8080/products/disponibles');
+    const request = httpTesting.expectOne((req) => req.urlWithParams === 'http://localhost:8080/products/disponibles?page=0&size=36');
     expect(request.request.method).toBe('GET');
     expect(request.request.withCredentials).toBe(true);
     request.flush(respuesta);
 
-    expect(resultado).toEqual([respuesta[0]]);
+    expect(resultado).toEqual(respuesta);
   });
 
   it('propaga un 403 como ProductApiError sin sustituirlo por datos falsos', () => {
@@ -86,7 +91,7 @@ describe('ProductService', () => {
       error: (error: ProductApiError) => (errorRecibido = error),
     });
 
-    const request = httpTesting.expectOne('http://localhost:8080/products/disponibles');
+    const request = httpTesting.expectOne((req) => req.urlWithParams === 'http://localhost:8080/products/disponibles?page=0&size=36');
     request.flush(null, new HttpErrorResponse({ status: 403, statusText: 'Forbidden' }));
 
     expect(errorRecibido).toBeInstanceOf(ProductApiError);

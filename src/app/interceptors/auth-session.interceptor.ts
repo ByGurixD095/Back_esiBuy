@@ -3,7 +3,6 @@ import {
   HttpInterceptorFn,
   HttpContextToken,
   HttpRequest,
-  HttpHandlerFn,
 } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { BehaviorSubject, catchError, filter, switchMap, take, throwError } from 'rxjs';
@@ -29,7 +28,7 @@ export const authSessionInterceptor: HttpInterceptorFn = (request, next) => {
   return next(requestWithCookies).pipe(
     catchError((error: HttpErrorResponse) => {
       const canRefresh =
-        (error.status === 401 || error.status === 403) &&
+        error.status === 401 &&
         isRefreshableRequest(request) &&
         !request.context.get(RETRIED_AFTER_REFRESH);
 
@@ -54,8 +53,9 @@ export const authSessionInterceptor: HttpInterceptorFn = (request, next) => {
         }),
         catchError((refreshError) => {
           refreshInProgress.next(false);
+          const redirectAfterRefreshFailure = auth.sessionChecked();
           auth.clearSession();
-          if (auth.sessionChecked()) {
+          if (redirectAfterRefreshFailure) {
             void router.navigate(['/login'], {
               queryParams: { returnUrl: router.url },
             });

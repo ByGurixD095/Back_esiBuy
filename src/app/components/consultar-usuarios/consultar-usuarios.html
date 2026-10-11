@@ -1,0 +1,300 @@
+<app-marco-pagina panel="Panel de administración" [volver]="true">
+  <section class="pagina" aria-labelledby="usuarios-titulo" [attr.aria-busy]="cargando()">
+    <p class="esi-eyebrow">Administradores</p>
+    <h1 id="usuarios-titulo" class="esi-titulo">Gestionar <em>usuarios.</em></h1>
+    <p class="descripcion">Usuarios registrados y estado actual de sus cuentas.</p>
+
+    <div class="filtros">
+      <div class="busqueda esi-campo">
+        <label for="buscar-id">🔎 Buscar por ID</label>
+        <input
+          id="buscar-id"
+          type="search"
+          [value]="busquedaId()"
+          (input)="actualizarBusquedaId($event)"
+          placeholder="Introduce el ID del usuario"
+          autocomplete="off"
+        />
+      </div>
+      <div class="filtro-eliminados esi-campo">
+        <label for="filtro-eliminados">Filtrar por eliminación</label>
+        <select
+          id="filtro-eliminados"
+          [value]="filtroEliminados()"
+          (change)="actualizarFiltroEliminados($event)"
+        >
+          <option value="todos">Todos</option>
+          <option value="no-eliminados">No eliminados</option>
+          <option value="eliminados">Solo eliminados</option>
+        </select>
+      </div>
+    </div>
+    @if (mensajeErrorAccion()) {
+    <p class="esi-alerta esi-alerta--error" role="alert">{{ mensajeErrorAccion() }}</p>
+    } @else if (mensajeAccion()) {
+    <output class="mensaje-accion esi-alerta esi-alerta--ok">{{ mensajeAccion() }}</output>
+    }
+
+    @if (cargando()) {
+    <output class="estado" aria-live="polite">Cargando usuarios...</output>
+    } @else if (mensajeError()) {
+    <div class="estado-error">
+      <p class="esi-alerta esi-alerta--error" role="alert">{{ mensajeError() }}</p>
+      <button type="button" class="esi-boton" (click)="consultarUsuarios()">Reintentar</button>
+    </div>
+    } @else if (usuarios().length === 0) {
+    <output class="estado esi-tarjeta" aria-live="polite">Todavía no hay usuarios registrados.</output>
+    } @else if (usuariosFiltrados().length === 0) {
+    <output class="estado esi-tarjeta" aria-live="polite">
+      No hay usuarios que coincidan con los filtros seleccionados.
+    </output>
+    } @else {
+    <div class="tabla-contenedor esi-tarjeta">
+      <table>
+        <caption>Usuarios registrados y opciones de gestión</caption>
+        <thead>
+          <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Nombre</th>
+            <th scope="col">Correo electrónico</th>
+            <th scope="col">Rol</th>
+            <th scope="col">Actividad</th>
+            <th scope="col">Bloqueado</th>
+            <th scope="col">Eliminado</th>
+            <th scope="col">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (usuario of usuariosFiltrados(); track usuario.id) {
+          <tr [class.fila-eliminada]="usuario.eliminado">
+            <td data-label="ID">
+              <button
+                type="button"
+                class="usuario-id"
+                [disabled]="cargandoDetalle()"
+                (click)="verDetalleUsuario(usuario)"
+                [attr.aria-label]="'Ver detalles de ' + usuario.name + ' ' + usuario.apellidos"
+              >
+                {{ usuario.id }}
+              </button>
+            </td>
+            <td data-label="Nombre">{{ usuario.name }} {{ usuario.apellidos }}</td>
+            <td data-label="Correo electrónico">{{ usuario.email }}</td>
+            <td data-label="Rol">{{ usuario.rol }}</td>
+            <td data-label="Actividad">
+              @if (usuario.activo) {
+              <span class="estado-cuenta activo">Activo</span>
+              } @else {
+              <span class="estado-cuenta inactivo">Inactivo</span>
+              }
+            </td>
+            <td data-label="Bloqueado">
+              <span
+                class="estado-cuenta"
+                [class.bloqueado]="usuario.bloqueado"
+                [class.activo]="!usuario.bloqueado"
+              >
+                {{ usuario.bloqueado ? 'Sí' : 'No' }}
+              </span>
+            </td>
+            <td data-label="Eliminado">
+              <span
+                class="estado-cuenta"
+                [class.eliminado]="usuario.eliminado"
+                [class.activo]="!usuario.eliminado"
+              >
+                {{ usuario.eliminado ? 'Sí' : 'No' }}
+              </span>
+            </td>
+            <td data-label="Acciones">
+              <div class="acciones" aria-label="Acciones de usuario">
+                @if (usuario.eliminado) {
+                <button
+                  type="button"
+                  class="accion-boceto"
+                  disabled
+                  aria-label="No se puede modificar un usuario eliminado"
+                  title="No se puede modificar un usuario eliminado"
+                >✏️</button>
+                } @else {
+                <a
+                  class="accion-editar"
+                  [routerLink]="['/admin/usuarios', usuario.id, 'editar']"
+                  [attr.aria-label]="'Modificar usuario ' + usuario.name + ' ' + usuario.apellidos"
+                  title="Modificar usuario"
+                >✏️</a>
+                }
+                @if (usuario.bloqueado) {
+                <button
+                  type="button"
+                  class="accion-bloqueo"
+                  [disabled]="usuario.eliminado || accionandoId() !== null"
+                  [attr.aria-label]="'Desbloquear usuario ' + usuario.name + ' ' + usuario.apellidos"
+                  [title]="usuario.eliminado ? 'No se puede desbloquear un usuario eliminado' : 'Desbloquear usuario'"
+                  (click)="cambiarBloqueoUsuario(usuario)"
+                >
+                  {{ accionandoId() === usuario.id ? '⏳' : '🔓' }}
+                </button>
+                } @else {
+                <button
+                  type="button"
+                  class="accion-bloqueo"
+                  [disabled]="usuario.eliminado || accionandoId() !== null"
+                  [attr.aria-label]="'Bloquear usuario ' + usuario.name + ' ' + usuario.apellidos"
+                  [title]="usuario.eliminado ? 'No se puede bloquear un usuario eliminado' : 'Bloquear usuario'"
+                  (click)="cambiarBloqueoUsuario(usuario)"
+                >
+                  {{ accionandoId() === usuario.id ? '⏳' : '🔒' }}
+                </button>
+                }
+                <button
+                  type="button"
+                  class="accion-eliminar"
+                  [disabled]="usuario.eliminado || esUsuarioActual(usuario) || accionandoId() !== null"
+                  [attr.aria-label]="
+                    usuario.eliminado
+                      ? 'Usuario ya eliminado'
+                      : esUsuarioActual(usuario)
+                        ? 'No puedes eliminar tu propia cuenta'
+                        : 'Eliminar usuario'
+                  "
+                  [title]="
+                    usuario.eliminado
+                      ? 'El usuario ya está eliminado'
+                      : esUsuarioActual(usuario)
+                        ? 'No puedes eliminar tu propia cuenta'
+                        : 'Eliminar usuario'
+                  "
+                  (click)="eliminarUsuario(usuario)"
+                >
+                  {{ eliminandoId() === usuario.id ? '⏳' : '🗑️' }}
+                </button>
+              </div>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+
+    @if (usuarioSeleccionado(); as seleccionado) {
+    <div class="confirmacion-fondo detalle-fondo">
+      <dialog
+        open
+        class="confirmacion-dialogo detalle-dialogo"
+        aria-modal="true"
+        aria-labelledby="detalle-titulo"
+        (keydown.escape)="cerrarDetalleUsuario()"
+      >
+        <div class="detalle-encabezado">
+          <div>
+            <p class="esi-eyebrow">Ficha de usuario</p>
+            <h2 id="detalle-titulo">{{ seleccionado.name }} {{ seleccionado.apellidos }}</h2>
+          </div>
+          <button
+            type="button"
+            class="detalle-cerrar"
+            aria-label="Cerrar ficha de usuario"
+            (click)="cerrarDetalleUsuario()"
+          >×</button>
+        </div>
+        @if (cargandoDetalle()) {
+        <output class="estado" aria-live="polite">Cargando datos del usuario...</output>
+        } @else if (errorDetalle()) {
+        <div class="estado-error">
+          <p class="esi-alerta esi-alerta--error" role="alert">{{ errorDetalle() }}</p>
+          <button type="button" class="esi-boton" (click)="reintentarDetalleUsuario()">Reintentar</button>
+        </div>
+        } @else if (usuarioDetalle(); as detalle) {
+        @if (detalle.imagenPerfil) {
+        <img class="detalle-imagen" [src]="detalle.imagenPerfil" alt="Imagen de perfil del usuario" />
+        }
+        <dl class="detalle-lista">
+          <div><dt>ID</dt><dd>{{ detalle.id }}</dd></div>
+          <div><dt>Nombre completo</dt><dd>{{ detalle.name }} {{ detalle.apellidos }}</dd></div>
+          <div><dt>Correo electrónico</dt><dd>{{ detalle.email }}</dd></div>
+          <div><dt>Rol</dt><dd>{{ detalle.rol }}</dd></div>
+          <div><dt>Teléfono</dt><dd>{{ detalle.telefono || 'No indicado' }}</dd></div>
+          <div><dt>Estado</dt><dd>{{ detalle.eliminado ? 'Eliminado' : detalle.activo ? 'Activo' : 'Inactivo' }}</dd></div>
+          <div><dt>Bloqueado</dt><dd>{{ detalle.bloqueado ? 'Sí' : 'No' }}</dd></div>
+          <div><dt>Fecha de alta</dt><dd>{{ detalle.fechaAlta ? (detalle.fechaAlta | date: 'dd/MM/yyyy HH:mm') : 'No disponible' }}</dd></div>
+          <div><dt>Última modificación</dt><dd>{{ detalle.fechaModificacion ? (detalle.fechaModificacion | date: 'dd/MM/yyyy HH:mm') : 'No disponible' }}</dd></div>
+          <div><dt>Último cambio de contraseña</dt><dd>{{ detalle.fechaCambioContrasena ? (detalle.fechaCambioContrasena | date: 'dd/MM/yyyy HH:mm') : 'No disponible' }}</dd></div>
+          <div><dt>Autenticación multifactor configurada</dt><dd>{{ detalle.mfaConfigurado ? 'Sí' : 'No' }}</dd></div>
+          @if (detalle.rol === 'CLIENTE') {
+          <div><dt>DNI</dt><dd>{{ detalle.dni || 'No indicado' }}</dd></div>
+          <div><dt>Fecha de nacimiento</dt><dd>{{ detalle.fechaNacimiento ? (detalle.fechaNacimiento | date: 'dd/MM/yyyy') : 'No indicada' }}</dd></div>
+          <div><dt>Tipo de cliente</dt><dd>{{ detalle.tipoCliente || 'No indicado' }}</dd></div>
+          <div><dt>Segundo factor</dt><dd>{{ detalle.dosFactorActivoCliente ? 'Activo' : 'Inactivo' }}</dd></div>
+          <div><dt>Tercer factor</dt><dd>{{ detalle.tresFactorActivoCliente ? 'Activo' : 'Inactivo' }}</dd></div>
+          } @else if (detalle.rol === 'VENDEDOR') {
+          <div><dt>Nombre comercial</dt><dd>{{ detalle.nombreComercial || 'No indicado' }}</dd></div>
+          <div><dt>CIF/NIF</dt><dd>{{ detalle.cifNif || 'No indicado' }}</dd></div>
+          <div><dt>Categoría principal</dt><dd>{{ detalle.categoriaPrincipalId || 'No indicada' }}</dd></div>
+          } @else if (detalle.rol === 'ADMINISTRADOR') {
+          <div><dt>Sede</dt><dd>{{ detalle.sede || 'No indicada' }}</dd></div>
+          <div><dt>Fecha de incorporación</dt><dd>{{ detalle.fechaIncorporacion ? (detalle.fechaIncorporacion | date: 'dd/MM/yyyy') : 'No disponible' }}</dd></div>
+          }
+        </dl>
+        }
+      </dialog>
+    </div>
+    }
+
+    @if (accionPendiente(); as pendiente) {
+    <div class="confirmacion-fondo">
+      <dialog
+        open
+        class="confirmacion-dialogo"
+        aria-modal="true"
+        aria-labelledby="confirmacion-titulo"
+        aria-describedby="confirmacion-descripcion"
+        (keydown.escape)="cancelarEliminacion()"
+      >
+        @if (pendiente.accion === 'eliminar') {
+        <h2 id="confirmacion-titulo">¿Eliminar usuario?</h2>
+        <p id="confirmacion-descripcion">
+          ¿Estás segura de que quieres eliminar a
+          <strong>{{ pendiente.usuario.name }} {{ pendiente.usuario.apellidos }}</strong>?
+          Su cuenta se marcará como eliminada, pero no se borrará físicamente.
+        </p>
+        } @else if (pendiente.accion === 'bloquear') {
+        <h2 id="confirmacion-titulo">¿Bloquear usuario?</h2>
+        <p id="confirmacion-descripcion">
+          ¿Quieres bloquear a
+          <strong>{{ pendiente.usuario.name }} {{ pendiente.usuario.apellidos }}</strong>?
+          El usuario no podrá acceder a su cuenta hasta que se desbloquee.
+        </p>
+        } @else {
+        <h2 id="confirmacion-titulo">¿Desbloquear usuario?</h2>
+        <p id="confirmacion-descripcion">
+          ¿Quieres permitir de nuevo el acceso a
+          <strong>{{ pendiente.usuario.name }} {{ pendiente.usuario.apellidos }}</strong>?
+        </p>
+        }
+        <div class="confirmacion-acciones">
+          <button type="button" class="esi-boton confirmacion-cancelar" autofocus (click)="cancelarEliminacion()">
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="esi-boton confirmacion-eliminar"
+            [class.confirmacion-desbloquear]="pendiente.accion === 'desbloquear'"
+            [disabled]="accionandoId() !== null"
+            (click)="confirmarEliminacion()"
+          >
+            @if (pendiente.accion === 'eliminar') {
+            Sí, eliminar
+            } @else if (pendiente.accion === 'bloquear') {
+            Sí, bloquear
+            } @else {
+            Sí, desbloquear
+            }
+          </button>
+        </div>
+      </dialog>
+    </div>
+    }
+  </section>
+</app-marco-pagina>
