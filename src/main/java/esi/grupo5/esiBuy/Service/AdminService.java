@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -18,7 +17,6 @@ import esi.grupo5.esiBuy.Dto.UsuarioResponseDTO;
 import esi.grupo5.esiBuy.Exception.*;
 import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Model.Usuario;
-import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Service.strategy.UsuarioUpdateStrategy;
 
@@ -140,26 +138,7 @@ public class AdminService {
             throw new ForbiddenException("No puedes eliminar tu propia cuenta");
         }
 
-        Optional<Usuario> optionalUsuario = usuarioRepository.findByIdAndEliminadoFalse(id);
-
-        if (optionalUsuario.isEmpty()) {
-            throw new NotFoundException(USUARIO_NO_ENCONTRADO);
-        }
-
-        Usuario usuario = optionalUsuario.get();
-
-        if (usuario.getRol() == Rol.ADMINISTRADOR) {
-
-        long administradores = usuarioRepository
-                .countByRolAndEliminadoFalse(Rol.ADMINISTRADOR);
-
-        if (administradores <= 1) {
-            throw new ForbiddenException("No se puede eliminar el último administrador");
-        }
-    }
-
-        usuario.setEliminado(true);
-        usuarioRepository.save(usuario);
+        userService.eliminarCuenta(id);
     }
 
 }
