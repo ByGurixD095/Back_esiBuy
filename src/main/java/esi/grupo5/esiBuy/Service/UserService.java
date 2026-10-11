@@ -5,13 +5,11 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import jakarta.validation.Valid;
-
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 import esi.grupo5.esiBuy.Dto.ClienteRegistroDTO;
@@ -24,7 +22,6 @@ import esi.grupo5.esiBuy.Dto.VendedorResponseDTO;
 import esi.grupo5.esiBuy.Exception.BusinessException;
 import esi.grupo5.esiBuy.Exception.ConflictException;
 import esi.grupo5.esiBuy.Exception.NotFoundException;
-import esi.grupo5.esiBuy.Exception.ValidationException;
 import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.Usuario;
@@ -38,28 +35,28 @@ public class UserService {
     private static final String USER_NOT_FOUND_MESSAGE = "Usuario no encontrado";
 
     private final UsuarioRepository usuarioRepository;
-    private final BCryptPasswordEncoder encoder;
+    private final PasswordEncoder passwordEncoder;
     private final PasswordValidatorService passwordValidatorService;
     private final AuthService authService;
 
-    public UserService(UsuarioRepository usuarioRepository, BCryptPasswordEncoder encoder,
+    public UserService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder,
                        PasswordValidatorService passwordValidatorService, AuthService authService) {
         this.usuarioRepository = usuarioRepository;
-        this.encoder = encoder;
+        this.passwordEncoder = passwordEncoder;
         this.passwordValidatorService = passwordValidatorService;
         this.authService = authService;
     }
 
     // REGISTER
     @Transactional
-    public LoginResponseDTO registrarCliente(@Valid ClienteRegistroDTO dto) {
-        validarContrasenaRegistro(dto.contrasena());
+    public LoginResponseDTO registrarCliente(ClienteRegistroDTO dto) {
+        passwordValidatorService.validateRegistrationPassword(dto.contrasena());
         
         Cliente cliente = Cliente.builder()
                 .nombre(dto.nombre())
                 .apellidos(dto.apellidos())
                 .email(dto.email())
-                .contrasena(encoder.encode(dto.contrasena()))
+                .contrasena(passwordEncoder.encode(dto.contrasena()))
                 .telefono(dto.telefono())
                 .imagenPerfil(dto.imagenPerfil())
                 .dni(dto.dni())
@@ -72,14 +69,14 @@ public class UserService {
     }
 
     @Transactional
-    public LoginResponseDTO registrarVendedor(@Valid VendedorRegisterRequest dto) {
-        validarContrasenaRegistro(dto.contrasena());
+    public LoginResponseDTO registrarVendedor(VendedorRegisterRequest dto) {
+        passwordValidatorService.validateRegistrationPassword(dto.contrasena());
 
         Vendedor vendedor = Vendedor.builder()
                 .nombre(dto.nombre())
                 .apellidos(dto.apellidos())
                 .email(dto.email())
-                .contrasena(encoder.encode(dto.contrasena()))
+                .contrasena(passwordEncoder.encode(dto.contrasena()))
                 .telefono(dto.telefono())
                 .imagenPerfil(dto.imagenPerfil())
                 .nombreComercial(dto.nombreComercial())
@@ -143,33 +140,25 @@ public class UserService {
             usuarioRepository.save(usuario);
         } catch (DuplicateKeyException e) {
             throw new ConflictException("El campo único nombre comercial ya existe");
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             throw new BusinessException("Error interno al actualizar el perfil", 500, "SERVER_ERROR", e);
         }
     }
 
     // AUXILIAR METHODS
-    private void validarContrasenaRegistro(String contrasena) {
-        try {
-            passwordValidatorService.validatePassword(contrasena, new ArrayList<>());
-        } catch (ResponseStatusException e) {
-            throw new ValidationException("La contraseña no cumple con los requisitos de seguridad: " + e.getReason());
-        }
-    }
-
     private void inicializarHistorialContrasenas(Usuario usuario) {
         usuario.setHistorialContrasenas(new ArrayList<>(List.of(usuario.getContrasena())));
     }
 
     private LoginResponseDTO procesarRegistroUsuario(Usuario usuario) {
+        boolean emailRegistrado;
         try {
-            if (usuarioRepository.existsByEmail(usuario.getEmail())) {
-                throw new ConflictException("El email ya está registrado");
-            }
-        } catch (ConflictException e) {
-            throw e;
-        } catch (Exception e) {
+            emailRegistrado = usuarioRepository.existsByEmail(usuario.getEmail());
+        } catch (DataAccessException e) {
             throw new BusinessException("Error interno al verificar el usuario", 500, "INTERNAL_ERROR", e);
+        }
+        if (emailRegistrado) {
+            throw new ConflictException("El email ya está registrado");
         }
 
         usuario.setActivo(true);
@@ -177,7 +166,7 @@ public class UserService {
 
         try {
             usuarioGuardado = usuarioRepository.save(usuario);
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             throw new BusinessException("Error interno al registrar el usuario", 500, "INTERNAL_ERROR", e);
         }
 

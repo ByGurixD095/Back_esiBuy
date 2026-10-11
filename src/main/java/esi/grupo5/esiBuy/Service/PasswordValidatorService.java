@@ -5,7 +5,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
+
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class PasswordValidatorService {
@@ -38,6 +41,15 @@ public class PasswordValidatorService {
         validateSpecialCharacter(password);
         validateBlacklist(password);
         validatePasswordHistory(password, historialHashes);
+    }
+
+    public void validateRegistrationPassword(String password) {
+        try {
+            validatePassword(password, List.of());
+        } catch (ResponseStatusException e) {
+            throw new ValidationException(
+                    "La contraseña no cumple con los requisitos de seguridad: " + e.getReason());
+        }
     }
 
     private void validateNotNull(String password) {
@@ -106,7 +118,7 @@ public class PasswordValidatorService {
     public String hashPassword(String rawPassword) {
         try {
             return passwordEncoder.encode(rawPassword);
-        } catch (Exception e) {
+        } catch (IllegalArgumentException | IllegalStateException e) {
             throw new BusinessException("Error al encriptar la contraseña", 500, "INTERNAL_ERROR", e);
         }
     }
@@ -114,7 +126,7 @@ public class PasswordValidatorService {
     public boolean verifyPassword(String rawPassword, String hashedPassword) {
         try {
             return passwordEncoder.matches(rawPassword, hashedPassword);
-        } catch (Exception e) {
+        } catch (IllegalArgumentException | IllegalStateException e) {
             throw new BusinessException("Error verificando la contraseña", 500, "INTERNAL_ERROR", e);
         }
     }
@@ -157,7 +169,7 @@ public class PasswordValidatorService {
     public boolean verifyPasswordResetToken(String token, String hashedToken) {
         try {
             return passwordEncoder.matches(token, hashedToken);
-        } catch (Exception e) {
+        } catch (IllegalArgumentException | IllegalStateException e) {
             throw new BusinessException("Error verificando el token de recuperación", 500, "INTERNAL_ERROR", e);
         }
     }

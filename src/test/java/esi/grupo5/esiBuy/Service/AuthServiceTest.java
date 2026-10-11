@@ -228,7 +228,7 @@ class AuthServiceTest {
         when(jwtService.generateToken(usuario)).thenReturn("access");
         when(jwtService.generateRefreshToken(usuario)).thenReturn("refresh");
         when(jwtService.getRefreshTokenExpirationSeconds()).thenReturn(3600);
-        doThrow(new IllegalStateException("database unavailable"))
+        doThrow(new org.springframework.dao.DataAccessResourceFailureException("database unavailable"))
                 .when(refreshTokenRepository).save(any());
 
         BusinessException error = assertThrows(BusinessException.class,

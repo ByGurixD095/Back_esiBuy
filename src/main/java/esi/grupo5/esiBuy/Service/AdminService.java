@@ -1,14 +1,10 @@
 package esi.grupo5.esiBuy.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
@@ -27,17 +23,17 @@ public class AdminService {
     private static final String USER_NOT_FOUND = "Usuario no encontrado";
     
     private final UsuarioRepository usuarioRepository;
-    private final BCryptPasswordEncoder encoder;
+    private final PasswordEncoder passwordEncoder;
     private final PasswordValidatorService passwordValidatorService;
     private final List<UsuarioUpdateStrategy> updateStrategies;
     private final UserService userService;
 
     public AdminService(UsuarioRepository usuarioRepository, 
-                        BCryptPasswordEncoder encoder, 
+                        PasswordEncoder passwordEncoder,
                         PasswordValidatorService passwordValidatorService,
                         List<UsuarioUpdateStrategy> updateStrategies, UserService userService) {
         this.usuarioRepository = usuarioRepository;
-        this.encoder = encoder;
+        this.passwordEncoder = passwordEncoder;
         this.passwordValidatorService = passwordValidatorService;
         this.updateStrategies = updateStrategies;
         this.userService = userService;
@@ -100,34 +96,24 @@ public class AdminService {
         return userService.toResponseDto(usuario);
     }
 
-    public ResponseEntity<AdministradorResponseDTO> crearAdministrador(AdministradorRegistroDTO dto) {
+    public AdministradorResponseDTO crearAdministrador(AdministradorRegistroDTO dto) {
         if (usuarioRepository.findByEmail(dto.email()).isPresent()) {
             throw new ConflictException("El email ya está registrado");
         }
 
-        try {
-            passwordValidatorService.validatePassword(
-                dto.contrasena(),
-                new ArrayList<>()
-            );
-        } catch (ResponseStatusException e) {
-            throw new ValidationException("La contraseña no cumple con los requisitos de seguridad: " + e.getReason());
-        }
+        passwordValidatorService.validateRegistrationPassword(dto.contrasena());
 
         Administrador admin = Administrador.builder()
                 .nombre(dto.nombre())
                 .apellidos(dto.apellidos())
                 .email(dto.email())
-                .contrasena(encoder.encode(dto.contrasena()))
+                .contrasena(passwordEncoder.encode(dto.contrasena()))
                 .sede(dto.sede())
                 .build();
 
         Administrador guardado = usuarioRepository.save(admin);
 
-        AdministradorResponseDTO respuesta = userService.toAdministradorResponseDto(
-                guardado, "Administrador creado correctamente");
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
+        return userService.toAdministradorResponseDto(guardado, "Administrador creado correctamente");
     }
 
     public void eliminarUsuario(String id, String usuarioActualId) {

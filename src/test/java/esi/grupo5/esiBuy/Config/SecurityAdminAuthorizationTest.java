@@ -12,9 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -55,9 +53,7 @@ class SecurityAdminAuthorizationTest {
     @Test
     void administradorPuedeCrearAdministradores() throws Exception {
         stubAuthenticatedRole("ADMINISTRADOR");
-        when(adminService.crearAdministrador(any())).thenReturn(ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(AdministradorResponseDTO.builder()
+        when(adminService.crearAdministrador(any())).thenReturn(AdministradorResponseDTO.builder()
                         .id("1")
                         .name("Ana")
                         .apellidos("Lopez")
@@ -65,7 +61,7 @@ class SecurityAdminAuthorizationTest {
                         .sede("Ciudad Real")
                         .rol(esi.grupo5.esiBuy.Model.enums.Rol.ADMINISTRADOR)
                         .mensaje("Administrador creado correctamente")
-                        .build()));
+                        .build());
 
         mockMvc.perform(post("/admin")
                         .cookie(new Cookie("accessToken", "token"))

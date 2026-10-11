@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import esi.grupo5.esiBuy.Model.Usuario;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
@@ -78,7 +79,7 @@ public class JwtService {
         try {
             // Si pasamos la validación de firma y la fecha de expiración es posterior a hoy, es válido
             return !extractAllClaims(token).getExpiration().before(new Date());
-        } catch (Exception e) {
+        } catch (JwtException | IllegalArgumentException e) {
             // Si el token fue manipulado, caducó, o tiene un formato incorrecto, JJWT lanzará una excepción.
             // La capturamos y devolvemos false para denegar el acceso.
             return false; 

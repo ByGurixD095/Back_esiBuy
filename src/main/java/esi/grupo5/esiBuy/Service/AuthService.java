@@ -2,6 +2,7 @@ package esi.grupo5.esiBuy.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.HexFormat;
 import java.util.Optional;
@@ -10,7 +11,8 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.dao.DataAccessException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import esi.grupo5.esiBuy.Dto.*;
@@ -39,7 +41,7 @@ public class AuthService {
     private final PasswordValidatorService passwordValidatorService;
     private final LoginAttemptService loginAttempService;
     private final EmailService emailService;
-    private final BCryptPasswordEncoder encoder;
+    private final PasswordEncoder passwordEncoder;
     private final AuthFactorService authFactorService;
 
     @Value("${app.password-reset-url}")
@@ -47,7 +49,7 @@ public class AuthService {
 
     public AuthService(UsuarioRepository usuarioRepository, JwtService jwtService,
                        RefreshTokenRepository refreshTokenRepository, PasswordValidatorService passwordValidatorService,
-                       LoginAttemptService loginAttempService, EmailService emailService, BCryptPasswordEncoder encoder,
+                       LoginAttemptService loginAttempService, EmailService emailService, PasswordEncoder passwordEncoder,
                        AuthFactorService authFactorService) {
         this.usuarioRepository = usuarioRepository;
         this.jwtService = jwtService;
@@ -55,7 +57,7 @@ public class AuthService {
         this.passwordValidatorService = passwordValidatorService;
         this.loginAttempService = loginAttempService;
         this.emailService = emailService;
-        this.encoder = encoder;
+        this.passwordEncoder = passwordEncoder;
         this.authFactorService = authFactorService;
     }
 
@@ -67,7 +69,7 @@ public class AuthService {
                     throw new AuthException("Credenciales inválidas");
                 });
 
-        if (!encoder.matches(loginRequest.password(), usuario.getContrasena())) {
+        if (!passwordEncoder.matches(loginRequest.password(), usuario.getContrasena())) {
             loginAttempService.registerFailedLogin(ipAddress);
             throw new AuthException("Credenciales inválidas");
         }
@@ -119,9 +121,9 @@ public class AuthService {
         
         try {
             refreshTokenRepository.save(refreshToken);
-        } catch (Exception e) { 
-            log.error("Error al guardar el refresh token del usuario {}: {}", usuario.getEmail(), e.getMessage());
-            throw new BusinessException("Ocurrió un error interno", 500, SERVER_ERROR_MESSAGE);
+        } catch (DataAccessException e) {
+            log.error("Error al guardar el refresh token", e);
+            throw new BusinessException("Ocurrió un error interno", 500, SERVER_ERROR_MESSAGE, e);
         }
         return crearRespuestaAutenticacion(usuario, token, refreshTokenString);
     }
@@ -191,7 +193,7 @@ public class AuthService {
         }
         
         passwordValidatorService.validatePassword(request.pwd1(), usuario.getHistorialContrasenas());
-        usuario.setContrasena(encoder.encode(request.pwd1()));
+        usuario.setContrasena(passwordEncoder.encode(request.pwd1()));
         usuario.setFechaCambioContrasena(LocalDateTime.now().plusDays(PASSWORD_VALIDITY_DAYS));
         usuario.getHistorialContrasenas().add(0, usuario.getContrasena());
         if (usuario.getHistorialContrasenas().size() > PASSWORD_HISTORY_LIMIT) {
@@ -221,7 +223,7 @@ public class AuthService {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             return HexFormat.of().formatHex(digest.digest(token.getBytes(StandardCharsets.UTF_8))); 
-        } catch (Exception e) { 
+        } catch (NoSuchAlgorithmException e) {
             throw new BusinessException("Error al generar el hash del token", 500, SERVER_ERROR_MESSAGE, e);
         }
     }

@@ -8,6 +8,7 @@ import esi.grupo5.esiBuy.Service.UserService;
 import esi.grupo5.esiBuy.Service.AdminService;
 import jakarta.validation.Valid;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -42,7 +43,7 @@ public class AdminController {
     @PostMapping
     public ResponseEntity<AdministradorResponseDTO> crearAdministrador(
             @Valid @RequestBody AdministradorRegistroDTO dto) {
-        return adminService.crearAdministrador(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(adminService.crearAdministrador(dto));
     }
 
     // --------- PATCH ------------ 

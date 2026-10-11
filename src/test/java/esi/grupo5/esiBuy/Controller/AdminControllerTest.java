@@ -10,9 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -46,7 +44,7 @@ class AdminControllerTest {
                 .mensaje("Administrador creado correctamente")
                 .build();
         when(adminService.crearAdministrador(any(AdministradorRegistroDTO.class)))
-                .thenReturn(ResponseEntity.status(HttpStatus.CREATED).body(response));
+                .thenReturn(response);
 
         mockMvc.perform(post("/admin")
                         .contentType(MediaType.APPLICATION_JSON)

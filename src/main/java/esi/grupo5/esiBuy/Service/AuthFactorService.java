@@ -2,6 +2,7 @@ package esi.grupo5.esiBuy.Service;
 
 import dev.samstevens.totp.code.DefaultCodeGenerator;
 import dev.samstevens.totp.code.DefaultCodeVerifier;
+import dev.samstevens.totp.exceptions.QrGenerationException;
 import dev.samstevens.totp.qr.QrData;
 import dev.samstevens.totp.qr.ZxingPngQrGenerator;
 import dev.samstevens.totp.secret.DefaultSecretGenerator;
@@ -21,7 +22,9 @@ import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
@@ -37,7 +40,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -54,16 +57,16 @@ public class AuthFactorService {
     @Value("${mfa.encryption.key:1234567890123456}")
     private String encryptionKey;
 
-    private final BCryptPasswordEncoder encoder;
+    private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final UsuarioRepository usuarioRepository;
 
     private static final String MSG_USUARIO_NO_ENCONTRADO = "Usuario no encontrado";
 
-    public AuthFactorService(EmailService emailService, BCryptPasswordEncoder encoder,
+    public AuthFactorService(EmailService emailService, PasswordEncoder passwordEncoder,
                              UsuarioRepository usuarioRepository) {
         this.emailService = emailService;
-        this.encoder = encoder;
+        this.passwordEncoder = passwordEncoder;
         this.usuarioRepository = usuarioRepository;
     }
 
@@ -170,7 +173,7 @@ public class AuthFactorService {
                     .label(email).secret(secretoPlano).issuer("esiBuy").digits(6).period(30).build();
             byte[] imageData = new ZxingPngQrGenerator().generate(data);
             return "data:image/png;base64," + Base64.getEncoder().encodeToString(imageData);
-        } catch (Exception e) {
+        } catch (QrGenerationException e) {
             throw new BusinessException("Error generando QR", 500, "INTERNAL_ERROR", e);
         }
     }
@@ -186,7 +189,7 @@ public class AuthFactorService {
         Iterator<String> hashes = usuario.getCodigosRespaldoHasheados().iterator();
         while (hashes.hasNext()) {
             String hash = hashes.next();
-            if (encoder.matches(codigoUsuario, hash)) {
+            if (passwordEncoder.matches(codigoUsuario, hash)) {
                 hashes.remove();
                 return true;
             }
@@ -199,13 +202,13 @@ public class AuthFactorService {
         List<String> codigosPlanos = IntStream.range(0, BACKUP_CODE_COUNT)
                 .mapToObj(i -> String.format("%08d", random.nextInt(BACKUP_CODE_BOUND)))
                 .toList();
-        usuario.setCodigosRespaldoHasheados(codigosPlanos.stream().map(encoder::encode).toList());
+        usuario.setCodigosRespaldoHasheados(codigosPlanos.stream().map(passwordEncoder::encode).toList());
         return codigosPlanos;
     }
 
     public void generarYEnviarEmailOtp(Usuario usuario) {
         String otp = String.format("%06d", new SecureRandom().nextInt(EMAIL_OTP_BOUND));
-        usuario.setEmailOtpHash(encoder.encode(otp));
+        usuario.setEmailOtpHash(passwordEncoder.encode(otp));
         usuario.setEmailOtpExpiracion(LocalDateTime.now().plusMinutes(EMAIL_OTP_VALIDITY_MINUTES));
         
         String html = "<h2>Código de Verificación</h2><p>Tu código es: <strong>" + otp + "</strong></p><p>Caduca en 10 minutos.</p>";
@@ -220,7 +223,7 @@ public class AuthFactorService {
         if (usuario.getEmailOtpExpiracion() == null || usuario.getEmailOtpExpiracion().isBefore(LocalDateTime.now())) {
             return false;
         }
-        return encoder.matches(codigoUsuario, usuario.getEmailOtpHash());
+        return passwordEncoder.matches(codigoUsuario, usuario.getEmailOtpHash());
     }
 
     public String cifrar(String textoPlano) {
@@ -239,7 +242,7 @@ public class AuthFactorService {
             System.arraycopy(cifrado, 0, ivYCifrado, GCM_IV_LENGTH_BYTES, cifrado.length);
             
             return Base64.getEncoder().encodeToString(ivYCifrado);
-        } catch (Exception e) {
+        } catch (GeneralSecurityException | IllegalArgumentException | NegativeArraySizeException e) {
             throw new BusinessException("Error cifrando", 500, "INTERNAL_ERROR", e);
         }
     }
@@ -259,7 +262,7 @@ public class AuthFactorService {
             cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(encryptionKey.getBytes(), "AES"), parameterSpec);
             
             return new String(cipher.doFinal(cifrado));
-        } catch (Exception e) {
+        } catch (GeneralSecurityException | IllegalArgumentException | NegativeArraySizeException e) {
             throw new BusinessException("Error descifrando", 500, "INTERNAL_ERROR", e);
         }
     }
@@ -269,7 +272,7 @@ public class AuthFactorService {
             return HexFormat.of().formatHex(
                     MessageDigest.getInstance("SHA-256")
                             .digest(value.getBytes(StandardCharsets.UTF_8)));
-        } catch (Exception exception) {
+        } catch (NoSuchAlgorithmException exception) {
             throw new BusinessException("No se pudo generar el hash del desafío MFA", 500, "INTERNAL_ERROR", exception);
         }
     }
