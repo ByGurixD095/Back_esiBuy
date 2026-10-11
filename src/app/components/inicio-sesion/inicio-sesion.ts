@@ -8,7 +8,7 @@ import { MarcoPagina } from '../marco-pagina/marco-pagina';
 
 @Component({
   selector: 'app-inicio-sesion',
-  imports: [ReactiveFormsModule, RouterLink, MfaAuth, MarcoPagina],
+  imports: [ReactiveFormsModule, MfaAuth, MarcoPagina, RouterLink],
   templateUrl: './inicio-sesion.html',
   styleUrl: './inicio-sesion.css',
 })

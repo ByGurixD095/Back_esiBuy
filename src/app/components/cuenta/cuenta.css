@@ -44,6 +44,47 @@
   font-weight: 700;
 }
 
+.grupo-formulario h2 {
+  margin: 0;
+  color: var(--esi-ink);
+  font-size: 17px;
+}
+
+.grupo-formulario > p {
+  margin: -8px 0 0;
+  color: var(--esi-soft-ink);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.factor-opcion {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--esi-line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.factor-opcion input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--esi-orange-text);
+}
+
+.factor-opcion span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.factor-opcion small {
+  color: var(--esi-soft-ink);
+  font-size: 13px;
+}
+
 .campos {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

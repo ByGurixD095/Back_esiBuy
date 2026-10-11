@@ -42,6 +42,14 @@ export class Cuenta {
   readonly eliminandoCuenta = signal(false);
   readonly errorEliminacion = signal('');
   readonly puedeEliminarCuenta = computed(() => this.rol() !== null);
+  readonly configurandoMfa = signal(false);
+  readonly mensajeMfa = signal('');
+  readonly errorMfa = signal('');
+
+  readonly mfaForm = new FormGroup({
+    enable2fa: new FormControl(false, { nonNullable: true }),
+    enable3fa: new FormControl(false, { nonNullable: true }),
+  });
 
   readonly form = new FormGroup({
     nombre: new FormControl('', {
@@ -96,6 +104,10 @@ export class Cuenta {
           tipoCliente: perfil.tipoCliente ?? 'NORMAL',
           nombreComercial: perfil.nombreComercial ?? '',
           categoriaPrincipalId: perfil.categoriaPrincipalId ?? '',
+        });
+        this.mfaForm.patchValue({
+          enable2fa: perfil.dosFactorActivoCliente ?? false,
+          enable3fa: perfil.tresFactorActivoCliente ?? false,
         });
         this.cargando.set(false);
       },
@@ -154,6 +166,28 @@ export class Cuenta {
   esInvalido(campo: keyof typeof this.form.controls): boolean {
     const control = this.form.controls[campo];
     return control.invalid && (control.touched || control.dirty);
+  }
+
+  guardarConfiguracionMfa(): void {
+    if (this.configurandoMfa()) {
+      return;
+    }
+
+    this.configurandoMfa.set(true);
+    this.mensajeMfa.set('');
+    this.errorMfa.set('');
+    this.auth.configureMfa(this.mfaForm.getRawValue()).subscribe({
+      next: () => {
+        this.configurandoMfa.set(false);
+        this.mensajeMfa.set('La configuración de factores se ha actualizado.');
+      },
+      error: (error: HttpErrorResponse) => {
+        this.configurandoMfa.set(false);
+        this.errorMfa.set(
+          this.auth.errorMessage(error, 'No se ha podido actualizar la configuración de factores.'),
+        );
+      },
+    });
   }
 
   cerrarSesion(): void {

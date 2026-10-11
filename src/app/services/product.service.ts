@@ -46,7 +46,20 @@ export class ProductService {
     );
   }
 
-  // TODO: añadir aquí paginación cuando el backend exponga sus parámetros.
+  obtenerCatalogoVendedor(pagina = 0, tamanoPagina = 36): Observable<PaginaProducto> {
+    const params = new HttpParams()
+      .set('page', pagina)
+      .set('size', tamanoPagina);
+
+    return this.http.get<PaginaProducto>(`${this.apiUrl}/catalogo`, {
+      params,
+      withCredentials: true,
+    }).pipe(
+      catchError((error: HttpErrorResponse) => {
+        return throwError(() => new ProductApiError(error.status, mensajeParaCatalogoVendedor(error)));
+      }),
+    );
+  }
 }
 
 function mensajeParaStatus(error: HttpErrorResponse): string {
@@ -61,5 +74,20 @@ function mensajeParaStatus(error: HttpErrorResponse): string {
       return 'No se puede conectar con el backend en http://localhost:8080.';
     default:
       return `No se ha podido cargar el catálogo (HTTP ${error.status}).`;
+  }
+}
+
+function mensajeParaCatalogoVendedor(error: HttpErrorResponse): string {
+  switch (error.status) {
+    case 401:
+      return 'Tu sesión no está autenticada o ha caducado. Inicia sesión de nuevo.';
+    case 403:
+      return 'No tienes permisos para consultar tus productos.';
+    case 500:
+      return 'El servidor no ha podido cargar tus productos. Inténtalo de nuevo más tarde.';
+    case 0:
+      return 'No se puede conectar con el backend en http://localhost:8080.';
+    default:
+      return `No se han podido cargar tus productos (HTTP ${error.status}).`;
   }
 }

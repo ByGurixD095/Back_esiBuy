@@ -20,6 +20,8 @@ export interface PerfilUsuario {
   nombreComercial?: string | null;
   cifNif?: string | null;
   categoriaPrincipalId?: string | null;
+  dosFactorActivoCliente?: boolean;
+  tresFactorActivoCliente?: boolean;
 }
 
 export interface ActualizarPerfilRequest {

@@ -10,7 +10,13 @@ import { ConsultarUsuarios } from './consultar-usuarios';
 
 describe('ConsultarUsuarios', () => {
   let fixture: ComponentFixture<ConsultarUsuarios>;
-  const servicioFalso = { consultar: vi.fn(), eliminar: vi.fn() };
+  const servicioFalso = {
+    consultar: vi.fn(),
+    consultarPorId: vi.fn(),
+    eliminar: vi.fn(),
+    bloquear: vi.fn(),
+    desbloquear: vi.fn(),
+  };
   const authServiceFalso = { email: signal<string | null>('admin@test.com') };
   const usuarios: Usuario[] = [
     {
@@ -48,8 +54,22 @@ describe('ConsultarUsuarios', () => {
   beforeEach(async () => {
     servicioFalso.consultar.mockReset();
     servicioFalso.consultar.mockReturnValue(of(usuarios));
+    servicioFalso.consultarPorId.mockReset();
+    servicioFalso.consultarPorId.mockReturnValue(
+      of({
+        ...usuarios[1],
+        telefono: '600123456',
+        dni: '12345678A',
+        fechaNacimiento: '1990-01-01',
+        tipoCliente: 'PREMIUM',
+      }),
+    );
     servicioFalso.eliminar.mockReset();
     servicioFalso.eliminar.mockReturnValue(of(undefined));
+    servicioFalso.bloquear.mockReset();
+    servicioFalso.bloquear.mockReturnValue(of({ bloqueado: true }));
+    servicioFalso.desbloquear.mockReset();
+    servicioFalso.desbloquear.mockReturnValue(of({ bloqueado: false }));
     authServiceFalso.email.set('admin@test.com');
     await TestBed.configureTestingModule({
       imports: [ConsultarUsuarios],
@@ -74,7 +94,7 @@ describe('ConsultarUsuarios', () => {
   it('carga desde el servicio los usuarios y sus tres estados', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(servicioFalso.consultar).toHaveBeenCalledOnce();
-    expect(el.textContent).toContain('gestionar usuarios.');
+    expect(el.textContent).toContain('Gestionar usuarios.');
     expect(el.textContent).toContain('user-db-1');
     expect(el.textContent).toContain('Ana López');
     expect(el.textContent).toContain('user-db-2');
@@ -111,7 +131,9 @@ describe('ConsultarUsuarios', () => {
     campoBusqueda.value = 'db-1';
     campoBusqueda.dispatchEvent(new Event('input'));
     fixture.detectChanges();
-    expect(el.textContent).toContain('No hay usuarios que coincidan con los filtros seleccionados.');
+    expect(el.textContent).toContain(
+      'No hay usuarios que coincidan con los filtros seleccionados.',
+    );
 
     campoBusqueda.value = '';
     campoBusqueda.dispatchEvent(new Event('input'));
@@ -121,7 +143,7 @@ describe('ConsultarUsuarios', () => {
 
     filas = el.querySelectorAll('tbody tr');
     expect(filas.length).toBe(2);
-    expect(filas[0].textContent).toContain('user-db-1');
+    expect(Array.from(filas).some((fila) => fila.textContent?.includes('user-db-1'))).toBe(true);
   });
 
   it('muestra un mensaje si los filtros no tienen resultados', () => {
@@ -137,19 +159,89 @@ describe('ConsultarUsuarios', () => {
     );
   });
 
-  it('mantiene las acciones de editar y bloqueo como boceto y habilita eliminar', () => {
+  it('abre la ficha del usuario al seleccionar su fila y carga sus datos completos', () => {
     const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('[aria-label="Modificar usuario, próximamente"]')).not.toBeNull();
-    expect(el.querySelector('[aria-label="Bloquear usuario, próximamente"]')).not.toBeNull();
-    expect(el.querySelector('[aria-label="Desbloquear usuario, próximamente"]')).not.toBeNull();
-    expect(el.querySelectorAll('.accion-boceto:disabled').length).toBeGreaterThan(0);
+    const filaUsuario = Array.from(el.querySelectorAll('tbody tr')).find((fila) =>
+      fila.textContent?.includes('Ana López'),
+    ) as HTMLTableRowElement;
+
+    filaUsuario.click();
+    fixture.detectChanges();
+
+    expect(servicioFalso.consultarPorId).toHaveBeenCalledWith('user-db-1');
+    expect(el.querySelector('dialog.detalle-dialogo[open]')).not.toBeNull();
+    expect(el.textContent).toContain('Ficha de usuario');
+    expect(el.textContent).toContain('12345678A');
+    expect(el.textContent).toContain('PREMIUM');
+    expect(el.textContent).toContain('600123456');
+
+    (el.querySelector('[aria-label="Cerrar ficha de usuario"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(el.querySelector('dialog.detalle-dialogo[open]')).toBeNull();
+  });
+
+  it('permite abrir la edición y ofrece bloquear o desbloquear según el estado', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[aria-label="Modificar usuario Ana López"]')).not.toBeNull();
+    expect(
+      (
+        el.querySelector('[aria-label="Modificar usuario Ana López"]') as HTMLAnchorElement
+      ).getAttribute('href'),
+    ).toBe('/admin/usuarios/user-db-1/editar');
+    expect(
+      el.querySelector('[aria-label="No se puede modificar un usuario eliminado"]'),
+    ).not.toBeNull();
+    expect(el.querySelector('[aria-label="Bloquear usuario Ana López"]')).not.toBeNull();
+    expect(el.querySelector('[aria-label="Desbloquear usuario Luis Pérez"]')).not.toBeNull();
+    expect(el.querySelectorAll('.accion-bloqueo:disabled').length).toBe(1);
     expect(el.querySelector('[aria-label="Eliminar usuario"]:disabled')).toBeNull();
     expect(el.querySelector('.aviso-boceto')).toBeNull();
 
     expect(el.querySelectorAll('.bloqueado').length).toBe(1);
     expect(el.querySelectorAll('.eliminado').length).toBe(1);
-    expect(el.querySelector('[aria-label="No puedes eliminar tu propia cuenta"]:disabled')).not.toBeNull();
+    expect(
+      el.querySelector('[aria-label="No puedes eliminar tu propia cuenta"]:disabled'),
+    ).not.toBeNull();
     expect(servicioFalso.consultar).toHaveBeenCalledOnce();
+  });
+
+  it('confirma el bloqueo y actualiza el estado del usuario', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    (el.querySelector('[aria-label="Bloquear usuario Ana López"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(el.querySelector('dialog[open]')).not.toBeNull();
+    expect(el.textContent).toContain('¿Quieres bloquear a Ana López?');
+    expect(servicioFalso.bloquear).not.toHaveBeenCalled();
+
+    (el.querySelector('.confirmacion-eliminar') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(servicioFalso.bloquear).toHaveBeenCalledWith('user-db-1');
+    expect(el.textContent).toContain('Se ha bloqueado a Ana López.');
+    expect(el.querySelector('[aria-label="Desbloquear usuario Ana López"]')).not.toBeNull();
+  });
+
+  it('confirma el desbloqueo y actualiza el estado del usuario', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    fixture.componentInstance.usuarios.update((lista) =>
+      lista.map((usuario) =>
+        usuario.id === 'user-db-2' ? { ...usuario, eliminado: false } : usuario,
+      ),
+    );
+    fixture.detectChanges();
+    (
+      el.querySelector('[aria-label="Desbloquear usuario Luis Pérez"]') as HTMLButtonElement
+    ).click();
+    fixture.detectChanges();
+
+    expect(el.textContent).toContain('¿Quieres permitir de nuevo el acceso a Luis Pérez?');
+    (el.querySelector('.confirmacion-eliminar') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(servicioFalso.desbloquear).toHaveBeenCalledWith('user-db-2');
+    expect(el.textContent).toContain('Se ha desbloqueado a Luis Pérez.');
+    expect(el.querySelector('[aria-label="Bloquear usuario Luis Pérez"]')).not.toBeNull();
   });
 
   it('no abre confirmación ni envía la petición para la cuenta de la sesión', () => {
@@ -217,7 +309,13 @@ describe('ConsultarUsuarios', () => {
 
   it('muestra el error devuelto si la eliminación falla', () => {
     servicioFalso.eliminar.mockReturnValueOnce(
-      throwError(() => new HttpErrorResponse({ status: 403, error: { message: 'No puedes eliminar tu propia cuenta' } })),
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 403,
+            error: { message: 'No puedes eliminar tu propia cuenta' },
+          }),
+      ),
     );
     const el = fixture.nativeElement as HTMLElement;
     (el.querySelector('[aria-label="Eliminar usuario"]') as HTMLButtonElement).click();

@@ -1,7 +1,7 @@
 <app-marco-pagina panel="Mi cuenta" [volver]="true">
   <section class="cuenta esi-tarjeta" aria-labelledby="cuenta-titulo">
     <p class="esi-eyebrow">Área personal</p>
-    <h1 id="cuenta-titulo" class="esi-titulo">mi cuenta.</h1>
+    <h1 id="cuenta-titulo" class="esi-titulo">Mi cuenta.</h1>
 
     @if (!esPerfilEditable()) {
       <p class="nota-admin" role="status">
@@ -155,6 +155,41 @@
                   </small>
                 }
               </div>
+            </div>
+          </section>
+        }
+
+        @if (rol() === 'CLIENTE') {
+          <section class="grupo-formulario" aria-labelledby="titulo-factores">
+            <h2 id="titulo-factores">Factores de autenticación</h2>
+            <p>
+              Elige qué factores quieres utilizar al iniciar sesión. El autenticador TOTP es
+              necesario para utilizar el código de correo electrónico.
+            </p>
+            <div [formGroup]="mfaForm">
+              <label class="factor-opcion">
+                <input type="checkbox" formControlName="enable2fa" />
+                <span>
+                  <strong>Autenticación TOTP (2FA)</strong>
+                  <small>Usa un código de tu aplicación autenticadora.</small>
+                </span>
+              </label>
+              <label class="factor-opcion">
+                <input type="checkbox" formControlName="enable3fa" />
+                <span>
+                  <strong>Código por correo (3FA)</strong>
+                  <small>Recibe un código adicional en tu correo electrónico.</small>
+                </span>
+              </label>
+              @if (mensajeMfa()) {
+                <p class="esi-alerta esi-alerta--ok" role="status">{{ mensajeMfa() }}</p>
+              }
+              @if (errorMfa()) {
+                <p class="esi-alerta esi-alerta--error" role="alert">{{ errorMfa() }}</p>
+              }
+              <button type="button" class="esi-boton" [disabled]="configurandoMfa()" (click)="guardarConfiguracionMfa()">
+                {{ configurandoMfa() ? 'Guardando…' : 'Guardar factores' }}
+              </button>
             </div>
           </section>
         }
