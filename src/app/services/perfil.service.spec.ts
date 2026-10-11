@@ -62,4 +62,17 @@ describe('PerfilService', () => {
 
     expect(completado).toBe(true);
   });
+
+  it('elimina la cuenta autenticada con DELETE /users/me', () => {
+    let completado = false;
+
+    service.eliminarMiCuenta().subscribe(() => (completado = true));
+
+    const request = http.expectOne('http://localhost:8080/users/me');
+    expect(request.request.method).toBe('DELETE');
+    expect(request.request.withCredentials).toBe(true);
+    request.flush(null, { status: 204, statusText: 'No Content' });
+
+    expect(completado).toBe(true);
+  });
 });

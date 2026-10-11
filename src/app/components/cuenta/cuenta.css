@@ -153,6 +153,100 @@
   margin-top: 16px;
 }
 
+.zona-peligro {
+  margin-top: 36px;
+  padding-top: 24px;
+  border-top: 1px solid var(--esi-line);
+}
+
+.zona-peligro h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.zona-peligro p {
+  margin: 0 0 16px;
+  color: var(--esi-soft-ink);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.zona-peligro > .esi-boton {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.boton-eliminar {
+  background: #a83224;
+}
+
+.boton-eliminar:hover:not(:disabled) {
+  background: #85271d;
+}
+
+.modal-fondo {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(24 28 31 / 55%);
+}
+
+.modal-confirmacion {
+  box-sizing: border-box;
+  width: min(100%, 400px);
+  padding: 30px;
+  border: 1px solid rgb(23 33 38 / 10%);
+  border-radius: 12px;
+  box-shadow: 0 18px 50px rgb(15 22 26 / 24%);
+  text-align: left;
+}
+
+.modal-confirmacion h2 {
+  margin: 0 0 12px;
+  color: var(--esi-ink);
+  font-family: var(--esi-font-title);
+  font-size: clamp(21px, 4vw, 26px);
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.modal-confirmacion .texto-confirmacion {
+  margin: 0;
+  color: var(--esi-soft-ink);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.acciones-modal {
+  display: flex;
+  justify-content: stretch;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.acciones-modal .esi-boton {
+  flex: 1;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 7px;
+}
+
+.boton-secundario {
+  color: var(--esi-ink);
+  background: transparent;
+  border: 1px solid var(--esi-line);
+}
+
+.boton-secundario:hover:not(:disabled) {
+  background: #f1f0eb;
+}
+
 @media (max-width: 600px) {
   .campos {
     grid-template-columns: minmax(0, 1fr);
@@ -161,6 +255,18 @@
 
   .campo-completo {
     grid-column: auto;
+  }
+
+  .acciones-modal {
+    flex-direction: column-reverse;
+  }
+
+  .acciones-modal .esi-boton {
+    width: 100%;
+  }
+
+  .modal-confirmacion {
+    padding: 24px;
   }
 }
 

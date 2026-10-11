@@ -217,5 +217,92 @@
     <button type="button" class="esi-boton cerrar-sesion" (click)="cerrarSesion()">
       Cerrar sesión
     </button>
+
+    @if (puedeEliminarCuenta()) {
+      <section class="zona-peligro" aria-labelledby="eliminar-cuenta-titulo">
+        <h2 id="eliminar-cuenta-titulo">Eliminar cuenta</h2>
+        <p>Esta acción cerrará tu cuenta y no podrás volver a iniciar sesión con ella.</p>
+        @if (errorEliminacion()) {
+          <p class="esi-alerta esi-alerta--error" role="alert">{{ errorEliminacion() }}</p>
+        }
+        <button
+          type="button"
+          class="esi-boton boton-eliminar"
+          (click)="solicitarEliminacionCuenta()"
+          [disabled]="eliminandoCuenta()"
+        >
+          Eliminar mi cuenta
+        </button>
+      </section>
+    }
   </section>
 </app-marco-pagina>
+
+@if (confirmandoCierreSesion()) {
+  <div class="modal-fondo">
+    <section
+      class="modal-confirmacion esi-tarjeta"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirmar-cierre-titulo"
+    >
+      <h2 id="confirmar-cierre-titulo">¿Seguro que quiere cerrar sesión?</h2>
+      <div class="acciones-modal">
+        <button
+          type="button"
+          class="esi-boton boton-secundario"
+          (click)="cancelarCierreSesion()"
+          [disabled]="cerrandoSesion()"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="esi-boton"
+          (click)="confirmarCierreSesion()"
+          [disabled]="cerrandoSesion()"
+        >
+          {{ cerrandoSesion() ? 'Cerrando sesión…' : 'Cerrar sesión' }}
+        </button>
+      </div>
+    </section>
+  </div>
+}
+
+@if (confirmandoEliminacion()) {
+  <div class="modal-fondo">
+    <section
+      class="modal-confirmacion esi-tarjeta"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirmar-eliminacion-titulo"
+    >
+      <h2 id="confirmar-eliminacion-titulo">¿Seguro que quiere borrar su cuenta?</h2>
+      <p class="texto-confirmacion">
+        Su cuenta se desactivará y no podrá volver a iniciar sesión con ella. Esta acción no se
+        puede deshacer.
+      </p>
+      @if (errorEliminacion()) {
+        <p class="esi-alerta esi-alerta--error" role="alert">{{ errorEliminacion() }}</p>
+      }
+      <div class="acciones-modal">
+        <button
+          type="button"
+          class="esi-boton boton-secundario"
+          (click)="cancelarEliminacionCuenta()"
+          [disabled]="eliminandoCuenta()"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="esi-boton boton-eliminar"
+          (click)="eliminarMiCuenta()"
+          [disabled]="eliminandoCuenta()"
+        >
+          {{ eliminandoCuenta() ? 'Borrando cuenta…' : 'Sí, borrar cuenta' }}
+        </button>
+      </div>
+    </section>
+  </div>
+}
