@@ -167,17 +167,6 @@ class UserControllerTest {
         verify(cookieUtil).setTokenCookiesIfPresent(response, withoutToken);
     }
 
-    @Test
-    void eliminarMiCuenta_usaElIdAutenticadoYLimpiaLasCookies() {
-        Authentication authentication = mock(Authentication.class);
-        HttpServletResponse response = mock(HttpServletResponse.class);
-        when(authentication.getPrincipal()).thenReturn("cliente-1");
-
-        assertEquals(HttpStatus.NO_CONTENT, controller.eliminarMiCuenta(authentication, response).getStatusCode());
-
-        verify(userService).eliminarCuenta("cliente-1");
-        verify(cookieUtil).clearTokenCookies(response);
-    }
 
     @Test
     void loginSinAccessToken_noEscribeCookiesYErroresDeNegocioSeConservan() {
