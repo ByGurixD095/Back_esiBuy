@@ -43,6 +43,8 @@ public interface UsuarioRepository extends MongoRepository<Usuario, String> {
      * @return número de usuarios coincidentes
      */
     long countByRolAndEliminadoFalse(Rol rol);
+
+    long countByRolAndActivoTrueAndBloqueadoFalseAndEliminadoFalse(Rol rol);
     /**
      * Busca la cuenta asociada al hash de un token de recuperación.
      *

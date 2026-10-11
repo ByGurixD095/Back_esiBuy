@@ -8,8 +8,6 @@ import java.util.HexFormat;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,8 +26,6 @@ import jakarta.mail.MessagingException;
 @Service
 public class AuthService {
 
-    /** Logger de incidencias del flujo de autenticación. */
-    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
     /** Duración de los tokens de recuperación, en minutos. */
     private static final int RECOVERY_TOKEN_VALIDITY_MINUTES = 5;
     /** Validez asignada a una contraseña nueva, en días. */
@@ -180,7 +176,6 @@ public class AuthService {
         try {
             refreshTokenRepository.save(refreshToken);
         } catch (DataAccessException e) {
-            log.error("Error al guardar el refresh token", e);
             throw new BusinessException("Ocurrió un error interno", 500, SERVER_ERROR_MESSAGE, e);
         }
         return crearRespuestaAutenticacion(usuario, token, refreshTokenString);
@@ -263,6 +258,10 @@ public class AuthService {
         }
     }
 
+    public void revocarRefreshTokens(String usuarioId) {
+        refreshTokenRepository.deleteByUusuario_Id(usuarioId);
+    }
+
     /**
      * Verifica el token de recuperación y establece la nueva contraseña y su historial.
      *
@@ -337,4 +336,6 @@ public class AuthService {
             throw new BusinessException("Error al generar el hash del token", 500, SERVER_ERROR_MESSAGE, e);
         }
     }
+
+    
 }

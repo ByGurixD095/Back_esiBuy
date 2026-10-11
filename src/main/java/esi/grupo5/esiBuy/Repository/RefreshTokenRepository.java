@@ -21,4 +21,6 @@ public interface RefreshTokenRepository extends MongoRepository<RefreshToken, St
      * @param token JWT de refresco que se eliminará
      */
     void deleteByToken(String token);
+
+    void deleteByUusuario_Id(String usuarioId);
 }

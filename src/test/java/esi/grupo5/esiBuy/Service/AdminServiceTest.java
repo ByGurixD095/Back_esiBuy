@@ -24,9 +24,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 import esi.grupo5.esiBuy.Dto.UserPatchDTO;
 import esi.grupo5.esiBuy.Exception.NotFoundException;
-import esi.grupo5.esiBuy.Service.strategy.AdministradorUpdateStrategy;
-import esi.grupo5.esiBuy.Service.strategy.ClienteUpdateStrategy;
-import esi.grupo5.esiBuy.Service.strategy.VendedorUpdateStrategy;
 
 import java.time.LocalDate;
 import java.util.List;

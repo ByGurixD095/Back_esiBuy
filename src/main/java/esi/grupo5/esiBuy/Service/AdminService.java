@@ -204,8 +204,7 @@ public class AdminService {
             }
         }
 
-        usuario.setEliminado(true);
-        usuarioRepository.save(usuario);
+        userService.eliminarCuenta(id);
     }
 
 }

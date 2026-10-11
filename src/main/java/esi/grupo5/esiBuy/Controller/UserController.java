@@ -192,4 +192,12 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> eliminarMiCuenta(Authentication authentication, HttpServletResponse response) {
+        String idAutenticado = (String) authentication.getPrincipal();
+        userService.eliminarCuenta(idAutenticado);
+        cookieUtil.clearTokenCookies(response);
+        return ResponseEntity.noContent().build();
+    }
 }
