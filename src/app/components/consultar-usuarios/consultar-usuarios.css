@@ -1,9 +1,7 @@
 .pagina {
   position: relative;
-  left: 50%;
   width: min(1600px, calc(100vw - 48px));
-  margin: 0;
-  transform: translateX(-50%);
+  margin-inline: calc((100% - min(1600px, calc(100vw - 48px))) / 2);
 }
 
 .pagina .esi-eyebrow {
@@ -43,28 +41,6 @@
 .filtros select {
   box-sizing: border-box;
   width: 100%;
-}
-
-.usuario-id {
-  padding: 0;
-  color: var(--esi-orange-text);
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  font: inherit;
-  text-align: left;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  overflow-wrap: anywhere;
-}
-
-.usuario-id:hover:not(:disabled) {
-  color: var(--esi-orange-hover);
-}
-
-.usuario-id:disabled {
-  cursor: progress;
-  opacity: 0.65;
 }
 
 .mensaje-accion {
@@ -121,6 +97,25 @@ td {
 
 tbody tr:last-child td {
   border-bottom: 0;
+}
+
+.fila-seleccionable {
+  cursor: pointer;
+}
+
+.fila-seleccionable:hover td,
+.fila-seleccionable:focus-visible td,
+.fila-seleccionada td {
+  background: var(--esi-orange-soft);
+}
+
+.fila-seleccionable:focus-visible {
+  outline: 2px solid var(--esi-orange-text);
+  outline-offset: -2px;
+}
+
+.fila-seleccionable[aria-disabled='true'] {
+  cursor: progress;
 }
 
 .estado {
@@ -239,16 +234,7 @@ tbody tr:last-child td {
 }
 
 .detalle-fondo {
-  background: transparent;
-}
-
-.detalle-fondo::before {
-  position: absolute;
-  z-index: 0;
-  inset: 76px 0 56px;
   background: rgb(12 20 39 / 60%);
-  content: '';
-  pointer-events: none;
 }
 
 .confirmacion-dialogo {
@@ -266,7 +252,6 @@ tbody tr:last-child td {
 }
 
 .detalle-dialogo {
-  z-index: 1;
   width: min(720px, 100%);
   max-height: min(80vh, 760px);
   overflow-y: auto;
@@ -390,9 +375,8 @@ tbody tr:last-child td {
 
 @media (max-width: 700px) {
   .pagina {
-    left: auto;
     width: 100%;
-    transform: none;
+    margin: 0;
   }
 
   .filtros {
