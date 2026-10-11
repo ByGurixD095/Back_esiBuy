@@ -49,7 +49,8 @@ export class ProductService {
   obtenerCatalogoVendedor(pagina = 0, tamanoPagina = 36): Observable<PaginaProducto> {
     const params = new HttpParams()
       .set('page', pagina)
-      .set('size', tamanoPagina);
+      .set('size', tamanoPagina)
+      .set('sort', 'activo,desc');
 
     return this.http.get<PaginaProducto>(`${this.apiUrl}/catalogo`, {
       params,

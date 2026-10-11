@@ -90,7 +90,7 @@
           </thead>
           <tbody>
             @for (producto of productos(); track producto.id) {
-              <tr>
+              <tr [class.row-inactive]="!producto.activo">
                 <td class="product-cell">
                   @if (producto.urlImagen) {
                     <img [src]="producto.urlImagen" [alt]="producto.nombre" loading="lazy" />
@@ -131,18 +131,20 @@
                     </svg>
                     <span class="visually-hidden">Editar</span>
                   </a>
-                  <button class="icon-action delete-action" type="button" (click)="eliminarProducto(producto)" [disabled]="productoEliminando() === producto.id" aria-label="Eliminar {{ producto.nombre }}" title="Eliminar producto">
+                  <button class="icon-action" [class.delete-action]="producto.activo" [class.activate-action]="!producto.activo" type="button" (click)="cambiarEstadoProducto(producto)" [disabled]="productoEliminando() === producto.id" [attr.aria-label]="(producto.activo ? 'Desactivar ' : 'Activar ') + producto.nombre" [title]="producto.activo ? 'Desactivar producto' : 'Activar producto'">
                     @if (productoEliminando() === producto.id) {
                       <span class="icon-spinner" aria-hidden="true"></span>
+                    } @else if (producto.activo) {
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 3v8"></path>
+                        <path d="M6.3 6.8a8 8 0 1 0 11.4 0"></path>
+                      </svg>
                     } @else {
                       <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M4 7h16"></path>
-                        <path d="M9 7V4h6v3"></path>
-                        <path d="m7 7 .8 13h8.4L17 7"></path>
-                        <path d="M10 11v5M14 11v5"></path>
+                        <path d="m5 12.5 4.5 4.5L19 7.5"></path>
                       </svg>
                     }
-                    <span class="visually-hidden">Eliminar</span>
+                    <span class="visually-hidden">{{ producto.activo ? 'Desactivar' : 'Activar' }}</span>
                   </button>
                 </td>
               </tr>

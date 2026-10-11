@@ -37,7 +37,9 @@ export class CatalogoVendedor implements OnInit {
 
     this.productService.obtenerCatalogoVendedor(this.paginaActual(), this.tamanoPagina).subscribe({
       next: (paginaProductos: PaginaProducto) => {
-        this.productos.set(paginaProductos.content);
+        this.productos.set(
+          [...paginaProductos.content].sort((a, b) => Number(b.activo) - Number(a.activo)),
+        );
         this.totalElementos.set(paginaProductos.totalElements);
         this.totalPaginas.set(paginaProductos.totalPages);
         this.paginaActual.set(paginaProductos.number);
@@ -79,12 +81,14 @@ export class CatalogoVendedor implements OnInit {
     this.cargarCatalogo();
   }
 
-  eliminarProducto(producto: Producto): void {
+  cambiarEstadoProducto(producto: Producto): void {
     if (this.productoEliminando()) return;
-    if (!window.confirm(`¿Quieres eliminar "${producto.nombre}"?`)) return;
+    const activar = !producto.activo;
+    if (!activar && !window.confirm(`¿Quieres desactivar "${producto.nombre}"?`)) return;
 
-    this.productoEliminando.set(producto.id);
-    this.productoService.eliminarProducto(producto.id).subscribe({
+    const { id, ...datos } = producto;
+    this.productoEliminando.set(id);
+    this.productoService.actualizarProducto(id, { ...datos, activo: activar }).subscribe({
       next: () => {
         this.productoEliminando.set(null);
         this.cargarCatalogo();
