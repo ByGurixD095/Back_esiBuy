@@ -58,4 +58,22 @@ describe('authSessionInterceptor', () => {
     expect(authServiceFalso.clearSession).not.toHaveBeenCalled();
     expect(routerFalso.navigate).not.toHaveBeenCalled();
   });
+
+  it('no redirige a login mientras la sesión se valida durante la carga inicial', () => {
+    authServiceFalso.sessionChecked.mockReturnValue(false);
+    let requestFailed = false;
+    TestBed.inject(HttpClient).get('/admin/users').subscribe({
+      error: () => (requestFailed = true),
+    });
+
+    http.expectOne('/admin/users').flush(null, {
+      status: 401,
+      statusText: 'Unauthorized',
+    });
+
+    expect(requestFailed).toBe(true);
+    expect(authServiceFalso.refresh).toHaveBeenCalledOnce();
+    expect(authServiceFalso.clearSession).toHaveBeenCalledOnce();
+    expect(routerFalso.navigate).not.toHaveBeenCalled();
+  });
 });

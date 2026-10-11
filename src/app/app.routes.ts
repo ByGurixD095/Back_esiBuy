@@ -15,6 +15,7 @@ import { Gestionar } from './components/gestionar/gestionar';
 import { ConsultarUsuarios } from './components/consultar-usuarios/consultar-usuarios';
 import { AdminEditarUsuario } from './components/admin-editar-usuario/admin-editar-usuario';
 import { ProductoDetalle } from './components/producto-detalle/producto-detalle';
+import { guestGuard } from './guards/guest.guard';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', component: Inicio },
@@ -24,8 +25,9 @@ export const routes: Routes = [
   { path: 'products/:id/editar', component: ProductoForm, canActivate: [roleGuard(['VENDEDOR'])] },
   { path: 'products/:id', component: ProductoDetalle, canActivate: [roleGuard(['VENDEDOR'])] },
   { path: 'register', component: RegistroInicio },
-  { path: 'register/clientes', component: RegistroComponent, data: { tipoRegistro: 'cliente' } },
-  { path: 'register/vendedor', component: RegistroComponent, data: { tipoRegistro: 'vendedor' } },
+  { path: 'register', component: RegistroInicio, canActivate: [guestGuard] },
+  { path: 'register/clientes', component: RegistroComponent, data: { tipoRegistro: 'cliente' }, canActivate: [guestGuard] },
+  { path: 'register/vendedor', component: RegistroComponent, data: { tipoRegistro: 'vendedor' }, canActivate: [guestGuard] },
   { path: 'cart', children: [] },
   { path: 'account', component: Cuenta, canActivate: [roleGuard(['ADMINISTRADOR', 'VENDEDOR', 'CLIENTE'])] },
   {
@@ -48,7 +50,7 @@ export const routes: Routes = [
     component: AdminEditarUsuario,
     canActivate: [roleGuard(['ADMINISTRADOR'])],
   },
-  { path: 'login', component: InicioSesion },
-  { path: 'recover-password', component: RecoverPasswordComponent },
-  { path: 'reset-password', component: ResetPasswordComponent },
+  { path: 'login', component: InicioSesion, canActivate: [guestGuard] },
+  { path: 'recover-password', component: RecoverPasswordComponent, canActivate: [guestGuard] },
+  { path: 'reset-password', component: ResetPasswordComponent, canActivate: [guestGuard] },
 ];
