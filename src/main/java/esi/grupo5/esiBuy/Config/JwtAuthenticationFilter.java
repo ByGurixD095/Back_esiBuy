@@ -12,6 +12,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -19,25 +20,47 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+/**
+ * Autentica peticiones con cookies de acceso JWT y verifica que la cuenta siga disponible.
+ */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private JwtService jwtService;
+    /** Servicio que valida y extrae los datos de los JWT. */
+    private final JwtService jwtService;
+    /** Persistencia consultada para revocar inmediatamente sesiones de cuentas no disponibles. */
+    private final UsuarioRepository usuarioRepository;
 
-    public JwtAuthenticationFilter(JwtService jwtService) {
+    /**
+     * Crea el filtro con los servicios de tokens y consulta de cuentas.
+     *
+     * @param jwtService servicio de validación y lectura de JWT
+     * @param usuarioRepository repositorio usado para comprobar el estado actual de la cuenta
+     */
+    public JwtAuthenticationFilter(JwtService jwtService, UsuarioRepository usuarioRepository) {
         this.jwtService = jwtService;
+        this.usuarioRepository = usuarioRepository;
     }
 
+    /**
+     * Busca la cookie {@code accessToken}, valida el JWT y establece la autenticación
+     * únicamente si la cuenta continúa activa, desbloqueada y no eliminada. Así se revocan
+     * inmediatamente los tokens de acceso tras la baja, el bloqueo o la desactivación.
+     *
+     * @param request petición HTTP que puede contener la cookie de acceso
+     * @param response respuesta HTTP
+     * @param filterChain cadena de filtros que continuará procesando la petición
+     * @throws ServletException si falla el procesamiento de la cadena de filtros
+     * @throws IOException si ocurre un error de entrada/salida durante el filtrado
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         
         String token = null;
 
-        // 1. Extraer las cookies de la petición
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
-                // Buscamos específicamente el accessToken
                 if ("accessToken".equals(cookie.getName())) {
                     token = cookie.getValue();
                     break;
@@ -45,30 +68,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        // 2. Validar que el token existe, no ha caducado y la firma es correcta
-        if (token != null && this.jwtService.isTokenValid(token) && SecurityContextHolder.getContext().getAuthentication() == null) {
-            
-            // 3. Extraer los datos del token usando tu JwtService
+        if (token != null && this.jwtService.isTokenValid(token)
+                && SecurityContextHolder.getContext().getAuthentication() == null) {
             String id = this.jwtService.extractId(token);
-            String rol = this.jwtService.extractRol(token);
+            if (usuarioRepository.existsByIdAndActivoTrueAndBloqueadoFalseAndEliminadoFalse(id)) {
+                String rol = this.jwtService.extractRol(token);
+                List<GrantedAuthority> authorities =
+                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + rol));
 
-            // 4. Crear la lista de autoridades (roles). Spring Security espera el prefijo "ROLE_" por defecto.
-            List<GrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + rol));
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        id,
+                        null,
+                        authorities
+                );
 
-            // 5. Crear el objeto de autenticación
-            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                    id, 
-                    null, // No pasamos la contraseña porque ya confiamos en la firma del token
-                    authorities
-            );
-            
-            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            
-            // 6. Registrar al usuario en el contexto de seguridad de Spring
-            SecurityContextHolder.getContext().setAuthentication(authToken);
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            }
         }
 
-        // 7. Pasar la petición al siguiente filtro o controlador
         filterChain.doFilter(request, response);
     }
 }

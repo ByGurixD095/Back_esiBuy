@@ -1,8 +1,10 @@
 package esi.grupo5.esiBuy.Service;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.web.server.ResponseStatusException;
 import esi.grupo5.esiBuy.Exception.AuthException;
 import esi.grupo5.esiBuy.Exception.BusinessException;
 import esi.grupo5.esiBuy.Exception.ValidationException;
@@ -14,7 +16,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
 
 class PasswordValidatorServiceTest {
     private final PasswordValidatorService service =
@@ -52,6 +56,16 @@ class PasswordValidatorServiceTest {
     void validatePassword_permiteUnHistorialSinCoincidencias() {
         assertDoesNotThrow(() -> service.validatePassword("Strong#2026", List.of(
                 new BCryptPasswordEncoder().encode("Different#2026"))));
+    }
+
+    @Test
+    void validateRegistrationPassword_convierteErroresDeValidacionDelFramework() {
+        PasswordValidatorService validator = spy(new PasswordValidatorService(new BCryptPasswordEncoder()));
+        doThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "password policy"))
+                .when(validator).validatePassword("Weak#2026", List.of());
+
+        assertThrows(ValidationException.class,
+                () -> validator.validateRegistrationPassword("Weak#2026"));
     }
 
     @Test

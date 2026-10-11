@@ -5,6 +5,7 @@ import esi.grupo5.esiBuy.Config.SecurityConfig;
 import esi.grupo5.esiBuy.Service.AdminService;
 import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Service.UserService;
+import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +32,7 @@ class AdminControllerEliminarUsuarioTest {
     @MockitoBean private JwtService jwtService;
     @MockitoBean private AdminService adminService;
     @MockitoBean private UserService userService;
+    @MockitoBean private UsuarioRepository usuarioRepository;
 
     @BeforeEach
     void limpiarContextoAntesDeCadaTest() {
@@ -76,5 +78,7 @@ class AdminControllerEliminarUsuarioTest {
         when(jwtService.isTokenValid(any())).thenReturn(true);
         when(jwtService.extractId(any())).thenReturn(id);
         when(jwtService.extractRol(any())).thenReturn(rol);
+        when(usuarioRepository.existsByIdAndActivoTrueAndBloqueadoFalseAndEliminadoFalse(id))
+                .thenReturn(true);
     }
 }

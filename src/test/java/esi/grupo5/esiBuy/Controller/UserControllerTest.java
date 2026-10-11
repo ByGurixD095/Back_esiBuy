@@ -19,6 +19,7 @@ import esi.grupo5.esiBuy.Service.AuthService;
 import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Service.UserService;
 import esi.grupo5.esiBuy.Util.CookieUtil;
+import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
@@ -34,7 +35,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.doThrow;
@@ -55,6 +55,7 @@ class UserControllerTest {
     @MockitoBean private AuthService authService;
     @MockitoBean private CookieUtil cookieUtil;
     @MockitoBean private JwtService jwtService;
+    @MockitoBean private UsuarioRepository usuarioRepository;
 
     @Test
     void login_delegaConLaIpYDevuelveLaRespuestaConCookies() throws Exception {
@@ -71,7 +72,7 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.mfaStatus").value("SUCCESS"));
 
         verify(authService).login(any(LoginRequestDTO.class), eq("127.0.0.1"));
-        verify(cookieUtil).setTokenCookies(any(), eq(response));
+        verify(cookieUtil).setTokenCookiesIfPresent(any(), eq(response));
     }
 
     @Test
@@ -134,6 +135,18 @@ class UserControllerTest {
     }
 
     @Test
+    void eliminarMiCuenta_usaElIdAutenticadoYLimpiaLasCookies() {
+        Authentication authentication = mock(Authentication.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        when(authentication.getPrincipal()).thenReturn("cliente-1");
+
+        assertEquals(HttpStatus.NO_CONTENT, controller.eliminarMiCuenta(authentication, response).getStatusCode());
+
+        verify(userService).eliminarCuenta("cliente-1");
+        verify(cookieUtil).clearTokenCookies(response);
+    }
+
+    @Test
     void registroDeClienteYVendedor_soloCreanCookieSiHayToken() {
         HttpServletResponse response = mock(HttpServletResponse.class);
         LoginResponseDTO withToken = new LoginResponseDTO("access", "refresh", "CLIENTE", "NORMAL");
@@ -150,9 +163,10 @@ class UserControllerTest {
         assertEquals(HttpStatus.CREATED, controller.registrarCliente(cliente, response).getStatusCode());
         assertEquals(HttpStatus.CREATED, controller.registerVendedor(vendedor, response).getStatusCode());
 
-        verify(cookieUtil).setTokenCookies(response, withToken);
-        verify(cookieUtil, never()).setTokenCookies(response, withoutToken);
+        verify(cookieUtil).setTokenCookiesIfPresent(response, withToken);
+        verify(cookieUtil).setTokenCookiesIfPresent(response, withoutToken);
     }
+
 
     @Test
     void loginSinAccessToken_noEscribeCookiesYErroresDeNegocioSeConservan() {
@@ -163,7 +177,7 @@ class UserControllerTest {
                 .thenReturn(new LoginResponseDTO(null, null, "CLIENTE", "NORMAL"));
 
         controller.login(new LoginRequestDTO("cliente@test.com", "secret"), response, request);
-        verify(cookieUtil, never()).setTokenCookies(any(), any());
+        verify(cookieUtil).setTokenCookiesIfPresent(eq(response), any());
 
         when(authService.login(any(LoginRequestDTO.class), any()))
                 .thenThrow(new BusinessException("backend error", 503, "SERVICE_UNAVAILABLE"));
