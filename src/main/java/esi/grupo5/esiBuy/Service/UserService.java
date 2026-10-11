@@ -24,6 +24,7 @@ import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.Usuario;
 import esi.grupo5.esiBuy.Model.Vendedor;
+import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Model.enums.TipoCliente;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 
@@ -123,6 +124,28 @@ public class UserService {
         return usuarioRepository.findById(id)
                 .map(this::toResponseDto)
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+    }
+
+    public void eliminarCuenta(String id) {
+        Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+
+        if (esAdministradorDisponible(usuario)
+                && usuarioRepository.countByRolAndActivoTrueAndBloqueadoFalseAndEliminadoFalse(
+                        Rol.ADMINISTRADOR) <= 1) {
+            throw new ForbiddenException("No se puede eliminar su cuenta.");
+        }
+
+        usuario.setEliminado(true);
+        usuario.setActivo(false);
+        usuarioRepository.save(usuario);
+        authService.revocarRefreshTokens(id);
+    }
+
+    private boolean esAdministradorDisponible(Usuario usuario) {
+        return usuario.getRol() == Rol.ADMINISTRADOR
+                && usuario.isActivo()
+                && !usuario.isBloqueado();
     }
 
 

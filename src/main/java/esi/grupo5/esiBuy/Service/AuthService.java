@@ -135,6 +135,10 @@ public class AuthService {
         return new LoginResponseDTO(nuevoAccessToken, refreshTokenEntity.getToken(), usuario.getRol().toString(), tipoCliente, "SUCCESS", usuario.getEmail());
     }
 
+    public void revocarRefreshTokens(String usuarioId) {
+        refreshTokenRepository.deleteByUusuario_Id(usuarioId);
+    }
+
     public void requestPasswordReset(PasswordResetRequestDTO request) {
         String email = request.email();
         Optional<Usuario> optionalUsuario = usuarioRepository.findByEmail(email);

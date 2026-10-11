@@ -17,5 +17,6 @@ public interface UsuarioRepository extends MongoRepository<Usuario, String> {
     List<Usuario> findAllByEliminadoFalse();
     Optional<Usuario> findByIdAndEliminadoFalse(String id);
     long countByRolAndEliminadoFalse(Rol rol);
+    long countByRolAndActivoTrueAndBloqueadoFalseAndEliminadoFalse(Rol rol);
     Optional<Usuario> findByTokenRecuperacionContrasena(String hashToken);
 }
