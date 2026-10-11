@@ -3,6 +3,7 @@ package esi.grupo5.esiBuy.Controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
+import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Service.AdminService;
 import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Service.UserService;
@@ -31,6 +32,7 @@ class AdminControllerTest {
     @MockitoBean private UserService userService;
     @MockitoBean private AdminService adminService;
     @MockitoBean private JwtService jwtService;
+    @MockitoBean private UsuarioRepository usuarioRepository;
 
     @Test
     void crearAdministrador_datosValidosDevuelve201YRespuestaPublica() throws Exception {

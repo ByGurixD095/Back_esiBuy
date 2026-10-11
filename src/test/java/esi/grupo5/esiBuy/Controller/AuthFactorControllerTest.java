@@ -8,6 +8,7 @@ import esi.grupo5.esiBuy.Dto.MfaVerifyRequestDTO;
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
 import esi.grupo5.esiBuy.Exception.BusinessException;
 import esi.grupo5.esiBuy.Exception.ValidationException;
+import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Service.AuthFactorService;
 import esi.grupo5.esiBuy.Service.AuthService;
 import esi.grupo5.esiBuy.Service.JwtService;
@@ -39,6 +40,7 @@ class AuthFactorControllerTest {
     @MockitoBean private AuthFactorService authFactorService;
     @MockitoBean private CookieUtil cookieUtil;
     @MockitoBean private JwtService jwtService;
+    @MockitoBean private UsuarioRepository usuarioRepository;
 
     @Test
     void verifyMfa_soloEscribeCookieCuandoHayAccessToken() {

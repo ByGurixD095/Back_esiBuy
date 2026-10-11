@@ -5,6 +5,7 @@ import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 import esi.grupo5.esiBuy.Service.AdminService;
 import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Service.UserService;
+import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +40,7 @@ class SecurityAdminAuthorizationTest {
     @MockitoBean private JwtService jwtService;
     @MockitoBean private AdminService adminService;
     @MockitoBean private UserService userService;
+    @MockitoBean private UsuarioRepository usuarioRepository;
 
     @BeforeEach
     void clearSecurityContextBeforeTest() {
@@ -112,6 +114,8 @@ class SecurityAdminAuthorizationTest {
         when(jwtService.isTokenValid(any())).thenReturn(true);
         when(jwtService.extractId(any())).thenReturn("user-1");
         when(jwtService.extractRol(any())).thenReturn(role);
+        when(usuarioRepository.existsByIdAndActivoTrueAndBloqueadoFalseAndEliminadoFalse("user-1"))
+                .thenReturn(true);
     }
 
     @Test

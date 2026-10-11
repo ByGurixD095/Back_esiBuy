@@ -37,6 +37,13 @@ public interface UsuarioRepository extends MongoRepository<Usuario, String> {
      */
     Optional<Usuario> findByIdAndEliminadoFalse(String id);
     /**
+     * Comprueba que una cuenta siga activa, desbloqueada y no eliminada.
+     *
+     * @param id identificador de la cuenta
+     * @return {@code true} si la cuenta puede autenticarse
+     */
+    boolean existsByIdAndActivoTrueAndBloqueadoFalseAndEliminadoFalse(String id);
+    /**
      * Cuenta las cuentas no bloqueadas, activas y no eliminadas con el rol indicado.
      *
      * @param rol rol de las cuentas que se contarán

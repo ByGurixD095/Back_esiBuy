@@ -19,6 +19,7 @@ import esi.grupo5.esiBuy.Service.AuthService;
 import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Service.UserService;
 import esi.grupo5.esiBuy.Util.CookieUtil;
+import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
@@ -54,6 +55,7 @@ class UserControllerTest {
     @MockitoBean private AuthService authService;
     @MockitoBean private CookieUtil cookieUtil;
     @MockitoBean private JwtService jwtService;
+    @MockitoBean private UsuarioRepository usuarioRepository;
 
     @Test
     void login_delegaConLaIpYDevuelveLaRespuestaConCookies() throws Exception {
