@@ -20,6 +20,8 @@ export interface PerfilUsuario {
   nombreComercial?: string | null;
   cifNif?: string | null;
   categoriaPrincipalId?: string | null;
+  sede?: string | null;
+  fechaIncorporacion?: string | null;
   dosFactorActivoCliente?: boolean;
   tresFactorActivoCliente?: boolean;
 }
