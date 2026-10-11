@@ -21,21 +21,38 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
+/** Expone operaciones de cuenta, autenticación, registro y perfil de usuario. */
 @RestController
 @RequestMapping("/users")
 public class UserController {
 
+    /** Servicio de registro, consulta y actualización de perfiles. */
     private final UserService userService;
+    /** Servicio de autenticación, tokens y recuperación de contraseña. */
     private final AuthService authService;
+    /** Gestión de cookies de acceso y refresco. */
     private final CookieUtil cookieUtil;
     
+    /**
+     * Crea el controlador de usuarios.
+     *
+     * @param userService servicio de usuarios
+     * @param authService servicio de autenticación
+     * @param cookieUtil utilidad de cookies
+     */
     public UserController(UserService userService, AuthService authService, CookieUtil cookieUtil) {
         this.userService = userService;
         this.authService = authService;
         this.cookieUtil = cookieUtil;
     }
 
-    // --------- GET ------------
+    /**
+     * Devuelve el perfil del usuario autenticado ({@code GET /users/me}).
+     *
+     * @param authentication identidad de la petición
+     * @return perfil con estado HTTP 200
+     * @throws esi.grupo5.esiBuy.Exception.NotFoundException si la cuenta no existe o está eliminada
+     */
     @GetMapping("/me")
     public ResponseEntity<UsuarioResponseDTO> getUserById(Authentication authentication) {
         String idAutenticado = (String) authentication.getPrincipal();
@@ -44,7 +61,17 @@ public class UserController {
     }
 
 
-    // --------- POST ------------ 
+    /**
+     * Inicia sesión con las credenciales del cuerpo y añade las cookies de token si se emiten.
+     *
+     * @param dto credenciales de acceso
+     * @param response respuesta donde pueden establecerse cookies
+     * @param request petición de origen, usada para obtener la dirección IP
+     * @return resultado del inicio de sesión con estado HTTP 200
+     * @throws esi.grupo5.esiBuy.Exception.AuthException si las credenciales no son válidas
+     * @throws esi.grupo5.esiBuy.Exception.ForbiddenException si la cuenta no está disponible
+     * @throws esi.grupo5.esiBuy.Exception.PasswordExpiredException si la contraseña ha caducado
+     */
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO dto, HttpServletResponse response, HttpServletRequest request) {
         LoginResponseDTO loginResponse = authService.login(dto, request.getRemoteAddr());
@@ -52,6 +79,16 @@ public class UserController {
         return ResponseEntity.ok(loginResponse);
     }
 
+    /**
+     * Renueva el token de acceso a partir de la cookie opcional {@code refreshToken}.
+     *
+     * @param refreshToken cookie de refresco, que debe estar presente y no vacía
+     * @param response respuesta donde se establecen las cookies renovadas
+     * @return resultado de renovación con estado HTTP 200
+     * @throws ValidationException si falta la cookie de refresco
+     * @throws esi.grupo5.esiBuy.Exception.AuthException si el token no es válido
+     * @throws esi.grupo5.esiBuy.Exception.ExpiredTokenException si el token ha caducado
+     */
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponseDTO> refresh(@CookieValue(name = "refreshToken", required = false) String refreshToken, HttpServletResponse response) {
         if (refreshToken == null || refreshToken.isBlank()) {
@@ -63,6 +100,14 @@ public class UserController {
         return ResponseEntity.ok(loginResponse);
     }
 
+    /**
+     * Registra un cliente y establece cookies si se completa la autenticación.
+     *
+     * @param dto datos validados del cliente
+     * @param response respuesta donde pueden establecerse cookies
+     * @return resultado del registro con estado HTTP 201
+     * @throws esi.grupo5.esiBuy.Exception.ConflictException si el correo ya está registrado
+     */
     @PostMapping("/register/clientes")
     public ResponseEntity<LoginResponseDTO> registrarCliente(
             @Valid @RequestBody ClienteRegistroDTO dto, 
@@ -73,6 +118,14 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
     }
 
+    /**
+     * Registra un vendedor y establece cookies si se completa la autenticación.
+     *
+     * @param request datos validados del vendedor
+     * @param response respuesta donde pueden establecerse cookies
+     * @return resultado del registro con estado HTTP 201
+     * @throws esi.grupo5.esiBuy.Exception.ConflictException si el correo ya está registrado
+     */
     @PostMapping("/register/vendedor")
     public ResponseEntity<LoginResponseDTO> registerVendedor(
             @Valid @RequestBody VendedorRegisterRequest request, 
@@ -83,25 +136,52 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(loginResponse);
     }
 
+    /**
+     * Solicita por correo un enlace para recuperar la contraseña.
+     *
+     * @param request correo electrónico de la cuenta
+     * @return respuesta vacía con estado HTTP 200
+     */
     @PostMapping("/recover-password")
     public ResponseEntity<Void> requestPasswordReset(@Valid @RequestBody PasswordResetRequestDTO request) {
         authService.requestPasswordReset(request);
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * Confirma el cambio de contraseña con el token de recuperación.
+     *
+     * @param request token y nueva contraseña
+     * @return respuesta vacía con estado HTTP 200
+     * @throws esi.grupo5.esiBuy.Exception.NotFoundException si el token no corresponde a una cuenta
+     * @throws ValidationException si las contraseñas no coinciden o el token ha caducado
+     */
     @PostMapping("/reset-password")
     public ResponseEntity<Void> resetPassword(@Valid @RequestBody PasswordResetConfirmDTO request) {
         authService.resetPassword(request);
         return ResponseEntity.ok().build();
     }
 
+    /**
+     * Expira las cookies de acceso y refresco del navegador.
+     *
+     * @param response respuesta HTTP donde se eliminan las cookies
+     * @return respuesta vacía con estado HTTP 200
+     */
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletResponse response) {
         cookieUtil.clearTokenCookies(response);
         return ResponseEntity.ok().build();
     }
 
-    // --------- PATCH ------------ 
+    /**
+     * Actualiza los campos permitidos del perfil autenticado.
+     *
+     * @param dto campos opcionales que se modificarán
+     * @param authentication identidad de la petición autenticada
+     * @return respuesta sin cuerpo con estado HTTP 204
+     * @throws esi.grupo5.esiBuy.Exception.NotFoundException si la cuenta no existe o está eliminada
+     */
     @PatchMapping("/me/update")
     public ResponseEntity<Void> modificarMiPerfil(
             @Valid @RequestBody UserSelfUpdateDTO dto,

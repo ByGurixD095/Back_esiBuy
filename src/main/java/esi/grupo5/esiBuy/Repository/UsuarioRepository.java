@@ -9,13 +9,45 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
+/** Acceso persistente a usuarios y consultas por atributos de cuenta. */
 @Repository
 public interface UsuarioRepository extends MongoRepository<Usuario, String> {
 
+    /**
+     * Comprueba si ya existe una cuenta con el correo indicado.
+     *
+     * @param email correo que se consulta
+     * @return {@code true} si existe
+     */
     boolean existsByEmail(String email);
+    /**
+     * Busca una cuenta por correo.
+     *
+     * @param email correo de la cuenta
+     * @return usuario encontrado, o vacío si no existe
+     */
     Optional<Usuario> findByEmail(String email);
+    /** @return usuarios que no han sido eliminados lógicamente */
     List<Usuario> findAllByEliminadoFalse();
+    /**
+     * Busca una cuenta no eliminada por identificador.
+     *
+     * @param id identificador de usuario
+     * @return usuario encontrado, o vacío si no existe o fue eliminado
+     */
     Optional<Usuario> findByIdAndEliminadoFalse(String id);
+    /**
+     * Cuenta usuarios no eliminados con el rol indicado.
+     *
+     * @param rol rol que se cuenta
+     * @return número de usuarios coincidentes
+     */
     long countByRolAndEliminadoFalse(Rol rol);
+    /**
+     * Busca la cuenta asociada al hash de un token de recuperación.
+     *
+     * @param hashToken hash del token
+     * @return usuario asociado, o vacío si no existe
+     */
     Optional<Usuario> findByTokenRecuperacionContrasena(String hashToken);
 }

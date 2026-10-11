@@ -17,17 +17,34 @@ import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Service.strategy.UsuarioUpdateStrategy;
 
+/** Implementa las operaciones administrativas sobre cuentas de usuario. */
 @Service
 public class AdminService {
+    /** Longitud máxima almacenada para nombre y apellidos en modificaciones. */
     private static final int LONGITUD_MAXIMA_NOMBRE = 30;
+    /** Mensaje común para cuentas no encontradas. */
     private static final String USER_NOT_FOUND = "Usuario no encontrado";
     
+    /** Persistencia de cuentas. */
     private final UsuarioRepository usuarioRepository;
+    /** Codificador de contraseñas de nuevos administradores. */
     private final PasswordEncoder passwordEncoder;
+    /** Validador de contraseñas de registro. */
     private final PasswordValidatorService passwordValidatorService;
+    /** Estrategias de actualización específicas por tipo de usuario. */
     private final List<UsuarioUpdateStrategy> updateStrategies;
+    /** Conversión de usuarios a DTO de respuesta. */
     private final UserService userService;
 
+    /**
+     * Crea el servicio administrativo con sus dependencias.
+     *
+     * @param usuarioRepository repositorio de usuarios
+     * @param passwordEncoder codificador de contraseñas
+     * @param passwordValidatorService validador de contraseñas
+     * @param updateStrategies estrategias por tipo de usuario
+     * @param userService servicio de usuarios usado para construir respuestas
+     */
     public AdminService(UsuarioRepository usuarioRepository, 
                         PasswordEncoder passwordEncoder,
                         PasswordValidatorService passwordValidatorService,
@@ -39,6 +56,13 @@ public class AdminService {
         this.userService = userService;
     }
 
+    /**
+     * Actualiza los datos comunes y específicos de una cuenta y persiste los cambios.
+     *
+     * @param id identificador del usuario
+     * @param dto campos parciales que se aplicarán
+     * @throws NotFoundException si no existe la cuenta
+     */
     public void modificarUsuario(String id, UserPatchDTO dto) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND));
@@ -53,6 +77,12 @@ public class AdminService {
         usuarioRepository.save(usuario);
     }
 
+    /**
+     * Actualiza los campos compartidos por todos los tipos de usuario.
+     *
+     * @param usuario cuenta que se modificará
+     * @param dto datos parciales recibidos
+     */
     private void actualizarDatosComunes(Usuario usuario, UserPatchDTO dto) {
         actualizarTexto(
                 dto.nombre(), usuario::setNombre, "El nombre no puede estar vacío", LONGITUD_MAXIMA_NOMBRE);
@@ -67,6 +97,15 @@ public class AdminService {
         }
     }
 
+    /**
+     * Valida y asigna un texto opcional, truncándolo al máximo permitido.
+     *
+     * @param valor texto recibido; si es nulo no se modifica el campo
+     * @param setter operación que asigna el texto
+     * @param mensajeError mensaje para un valor en blanco
+     * @param longitudMaxima longitud máxima que se conservará
+     * @throws ValidationException si el texto está en blanco
+     */
     private void actualizarTexto(
             String valor, Consumer<String> setter, String mensajeError, int longitudMaxima) {
         if (valor != null) {
@@ -77,16 +116,34 @@ public class AdminService {
         }
     }
 
-    // --------- BLOQUEAR/DESBLOQUEAR USUARIOS ---------
-
+    /**
+     * Bloquea una cuenta existente.
+     *
+     * @param id identificador del usuario
+     * @return representación actualizada del usuario
+     */
     public UsuarioResponseDTO bloquearUsuario(String id) {
         return actualizarEstadoBloqueo(id, true);
     }
 
+    /**
+     * Desbloquea una cuenta existente.
+     *
+     * @param id identificador del usuario
+     * @return representación actualizada del usuario
+     */
     public UsuarioResponseDTO desbloquearUsuario(String id) {
         return actualizarEstadoBloqueo(id, false);
     }
 
+    /**
+     * Cambia y persiste el estado de bloqueo de una cuenta no eliminada.
+     *
+     * @param id identificador del usuario
+     * @param bloqueado nuevo estado de bloqueo
+     * @return representación actualizada del usuario
+     * @throws NotFoundException si no existe una cuenta no eliminada
+     */
     private UsuarioResponseDTO actualizarEstadoBloqueo(String id, boolean bloqueado) {
         Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND));
@@ -96,6 +153,14 @@ public class AdminService {
         return userService.toResponseDto(usuario);
     }
 
+    /**
+     * Crea una cuenta administrativa con contraseña validada y codificada.
+     *
+     * @param dto datos de registro del administrador
+     * @return respuesta del administrador creado
+     * @throws ConflictException si el correo ya está registrado
+     * @throws ValidationException si la contraseña no cumple los requisitos
+     */
     public AdministradorResponseDTO crearAdministrador(AdministradorRegistroDTO dto) {
         if (usuarioRepository.findByEmail(dto.email()).isPresent()) {
             throw new ConflictException("El email ya está registrado");
@@ -116,6 +181,14 @@ public class AdminService {
         return userService.toAdministradorResponseDto(guardado, "Administrador creado correctamente");
     }
 
+    /**
+     * Elimina lógicamente una cuenta, preservando la última cuenta administradora.
+     *
+     * @param id identificador del usuario que se eliminará
+     * @param usuarioActualId identificador del administrador que solicita la operación
+     * @throws ForbiddenException si se elimina la propia cuenta o al último administrador
+     * @throws NotFoundException si la cuenta no existe o ya fue eliminada
+     */
     public void eliminarUsuario(String id, String usuarioActualId) {
         if (id.equals(usuarioActualId)) {
             throw new ForbiddenException("No puedes eliminar tu propia cuenta");

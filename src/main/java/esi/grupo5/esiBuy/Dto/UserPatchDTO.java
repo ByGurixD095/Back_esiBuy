@@ -6,6 +6,21 @@ import esi.grupo5.esiBuy.Model.enums.TipoCliente;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Past;
 
+/**
+ * Campos opcionales que un administrador puede modificar en una cuenta.
+ *
+ * @param nombre nuevo nombre
+ * @param apellidos nuevos apellidos
+ * @param telefono nuevo teléfono
+ * @param imagenPerfil nueva imagen de perfil
+ * @param dni documento de identidad de un cliente
+ * @param fechaNacimiento fecha de nacimiento de un cliente
+ * @param tipoCliente nivel asignado a un cliente
+ * @param nombreComercial nombre comercial de un vendedor
+ * @param cifNif identificador fiscal de un vendedor
+ * @param categoriaPrincipalId categoría principal de un vendedor
+ * @param sede sede asignada a un administrador
+ */
 public record UserPatchDTO(
 
         String nombre,
@@ -16,7 +31,6 @@ public record UserPatchDTO(
 
         String imagenPerfil,
 
-        // Cliente
         String dni,
 
         @Past
@@ -24,12 +38,10 @@ public record UserPatchDTO(
         
         TipoCliente tipoCliente,
 
-        // Vendedor
         String nombreComercial,
         String cifNif,
         String categoriaPrincipalId,
 
-        // Administrador
         String sede
 ) {
 }

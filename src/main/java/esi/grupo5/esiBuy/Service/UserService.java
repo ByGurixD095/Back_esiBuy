@@ -29,16 +29,30 @@ import esi.grupo5.esiBuy.Model.Vendedor;
 import esi.grupo5.esiBuy.Model.enums.TipoCliente;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 
+/** Gestiona el registro, consulta y actualización de perfiles de usuario. */
 @Service
 public class UserService {
 
+    /** Mensaje común para búsquedas de usuarios sin resultado. */
     private static final String USER_NOT_FOUND_MESSAGE = "Usuario no encontrado";
 
+    /** Persistencia de cuentas. */
     private final UsuarioRepository usuarioRepository;
+    /** Codificador de contraseñas. */
     private final PasswordEncoder passwordEncoder;
+    /** Validador de contraseñas de registro. */
     private final PasswordValidatorService passwordValidatorService;
+    /** Servicio que continúa el flujo de autenticación tras el registro. */
     private final AuthService authService;
 
+    /**
+     * Crea el servicio de usuarios.
+     *
+     * @param usuarioRepository repositorio de cuentas
+     * @param passwordEncoder codificador de contraseñas
+     * @param passwordValidatorService validador de contraseñas
+     * @param authService servicio de autenticación posterior al registro
+     */
     public UserService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder,
                        PasswordValidatorService passwordValidatorService, AuthService authService) {
         this.usuarioRepository = usuarioRepository;
@@ -47,7 +61,14 @@ public class UserService {
         this.authService = authService;
     }
 
-    // REGISTER
+    /**
+     * Registra un cliente, inicializa su historial de contraseñas y comienza su autenticación.
+     *
+     * @param dto datos del cliente que se registrará
+     * @return respuesta del siguiente paso del flujo de autenticación
+     * @throws ConflictException si el correo ya está registrado
+     * @throws BusinessException si falla la consulta o persistencia
+     */
     @Transactional
     public LoginResponseDTO registrarCliente(ClienteRegistroDTO dto) {
         passwordValidatorService.validateRegistrationPassword(dto.contrasena());
@@ -68,6 +89,14 @@ public class UserService {
         return procesarRegistroUsuario(cliente);
     }
 
+    /**
+     * Registra un vendedor, inicializa su historial y comienza su autenticación.
+     *
+     * @param dto datos del vendedor que se registrará
+     * @return respuesta del siguiente paso del flujo de autenticación
+     * @throws ConflictException si el correo ya está registrado
+     * @throws BusinessException si falla la consulta o persistencia
+     */
     @Transactional
     public LoginResponseDTO registrarVendedor(VendedorRegisterRequest dto) {
         passwordValidatorService.validateRegistrationPassword(dto.contrasena());
@@ -88,19 +117,37 @@ public class UserService {
         return procesarRegistroUsuario(vendedor);
     }
 
-    // GETTER
+    /**
+     * Recupera todos los usuarios y los convierte a DTO de respuesta.
+     *
+     * @return lista de usuarios representados para la API
+     */
     public List<UsuarioResponseDTO> getAllUsers() {
         return usuarioRepository.findAll().stream()
                 .map(this::toResponseDto)
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
+    /**
+     * Recupera una cuenta que no haya sido eliminada lógicamente.
+     *
+     * @param id identificador del usuario
+     * @return DTO del usuario
+     * @throws NotFoundException si no existe o está eliminada
+     */
     public UsuarioResponseDTO getUserById(String id) {
         return usuarioRepository.findByIdAndEliminadoFalse(id)
                 .map(this::toResponseDto)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND_MESSAGE));
     }
     
+    /**
+     * Recupera una cuenta por identificador, incluyendo cuentas eliminadas lógicamente.
+     *
+     * @param id identificador del usuario
+     * @return DTO del usuario
+     * @throws NotFoundException si no existe
+     */
     public UsuarioResponseDTO getAdminUserById(String id) {
         return usuarioRepository.findById(id)
                 .map(this::toResponseDto)
@@ -108,7 +155,15 @@ public class UserService {
     }
 
 
-    // UPDATE PROFILE
+    /**
+     * Actualiza los campos permitidos del perfil de una cuenta no eliminada.
+     *
+     * @param id identificador del usuario
+     * @param dto campos opcionales de perfil
+     * @throws NotFoundException si la cuenta no existe o está eliminada
+     * @throws ConflictException si se duplica un campo único
+     * @throws BusinessException si falla la persistencia
+     */
     @Transactional
     public void modificarMiPerfil(String id, UserSelfUpdateDTO dto) {
         Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
@@ -119,6 +174,12 @@ public class UserService {
         guardarPerfilActualizado(usuario);
     }
 
+    /**
+     * Actualiza los campos comunes cuando se proporciona texto no vacío.
+     *
+     * @param usuario cuenta que se modificará
+     * @param dto valores solicitados
+     */
     private void actualizarDatosComunes(Usuario usuario, UserSelfUpdateDTO dto) {
         actualizarSiValido(dto.nombre(), usuario::setNombre);
         actualizarSiValido(dto.apellidos(), usuario::setApellidos);
@@ -126,6 +187,12 @@ public class UserService {
         actualizarSiValido(dto.imagenPerfil(), usuario::setImagenPerfil);
     }
 
+    /**
+     * Actualiza los campos específicos de cliente o vendedor que estén presentes.
+     *
+     * @param usuario cuenta que se modificará
+     * @param dto valores de perfil recibidos
+     */
     private void actualizarDatosEspecificos(Usuario usuario, UserSelfUpdateDTO dto) {
         if (usuario instanceof Cliente cliente && dto.tipoCliente() != null) {
             cliente.setTipoCliente(dto.tipoCliente());
@@ -135,6 +202,14 @@ public class UserService {
         }
     }
 
+    /**
+     * Persiste el perfil y convierte errores de unicidad y acceso a datos en errores
+     * de negocio de la API.
+     *
+     * @param usuario cuenta modificada
+     * @throws ConflictException si se duplica el nombre comercial
+     * @throws BusinessException si falla el acceso a datos
+     */
     private void guardarPerfilActualizado(Usuario usuario) {
         try {
             usuarioRepository.save(usuario);
@@ -145,11 +220,23 @@ public class UserService {
         }
     }
 
-    // AUXILIAR METHODS
+    /**
+     * Inicializa el historial de contraseñas con el hash actual.
+     *
+     * @param usuario cuenta recién creada
+     */
     private void inicializarHistorialContrasenas(Usuario usuario) {
         usuario.setHistorialContrasenas(new ArrayList<>(List.of(usuario.getContrasena())));
     }
 
+    /**
+     * Comprueba la unicidad del correo, persiste la cuenta y comienza su autenticación.
+     *
+     * @param usuario nueva cuenta
+     * @return respuesta del flujo de autenticación
+     * @throws ConflictException si el correo ya está registrado
+     * @throws BusinessException si falla la consulta o el guardado
+     */
     private LoginResponseDTO procesarRegistroUsuario(Usuario usuario) {
         boolean emailRegistrado;
         try {
@@ -173,8 +260,13 @@ public class UserService {
         return authService.completarAutenticacion(usuarioGuardado);
     }
 
+    /**
+     * Convierte una entidad al DTO de respuesta correspondiente a su subtipo.
+     *
+     * @param usuario entidad que se convertirá
+     * @return respuesta de cliente, vendedor, administrador o usuario genérico
+     */
     public UsuarioResponseDTO toResponseDto(Usuario usuario) {
-        // CLIENTE
         if (usuario instanceof Cliente cliente) {
             ClienteResponseDTO.Builder builder = ClienteResponseDTO.builder();
             populateCommonFields(builder, cliente);
@@ -184,7 +276,6 @@ public class UserService {
                     .build();
         }
 
-        // VENDEDOR
         if (usuario instanceof Vendedor vendedor) {
             VendedorResponseDTO.Builder builder = VendedorResponseDTO.builder();
             populateCommonFields(builder, vendedor);
@@ -194,17 +285,22 @@ public class UserService {
                     .build();
         }
 
-        // ADMINISTRADOR
         if (usuario instanceof Administrador administrador) {
             return toAdministradorResponseDto(administrador, null);
         }
 
-        //CAMPOS COMUNES USUARIO
         UsuarioResponseDTO.UsuarioBuilder builder = UsuarioResponseDTO.usuarioBuilder();
         populateCommonFields(builder, usuario);
         return builder.build();
     }
 
+    /**
+     * Construye el DTO específico de una cuenta administradora.
+     *
+     * @param administrador entidad del administrador
+     * @param mensaje mensaje opcional de respuesta
+     * @return DTO del administrador
+     */
     public AdministradorResponseDTO toAdministradorResponseDto(Administrador administrador, String mensaje) {
         AdministradorResponseDTO.Builder builder = AdministradorResponseDTO.builder();
         populateCommonFields(builder, administrador);
@@ -214,6 +310,13 @@ public class UserService {
                 .build();
     }
 
+    /**
+     * Copia al constructor de respuesta los atributos compartidos de usuario.
+     *
+     * @param <T> tipo de constructor de respuesta
+     * @param builder constructor que recibirá los atributos
+     * @param usuario entidad de origen
+     */
     private <T extends UsuarioResponseDTO.Builder<T>> void populateCommonFields(
             UsuarioResponseDTO.Builder<T> builder, Usuario usuario) {
         builder.id(usuario.getId())
@@ -234,6 +337,12 @@ public class UserService {
                 .tresFactorActivoCliente(usuario.is3faActivoCliente());
     }
     
+    /**
+     * Asigna el texto solo si está informado y no contiene únicamente espacios.
+     *
+     * @param valor texto solicitado
+     * @param setter operación que actualiza el atributo
+     */
     private void actualizarSiValido(String valor, Consumer<String> setter) {
         if (valor != null && !valor.isBlank()) {
             setter.accept(valor);

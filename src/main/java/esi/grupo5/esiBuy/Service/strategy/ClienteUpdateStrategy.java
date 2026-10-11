@@ -10,14 +10,24 @@ import esi.grupo5.esiBuy.Dto.UserPatchDTO;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.Usuario;
 
+/** Actualiza los campos específicos del perfil de cliente. */
 @Component
 public class ClienteUpdateStrategy implements UsuarioUpdateStrategy {
     
+    /** {@inheritDoc} */
     @Override
     public boolean supports(Usuario usuario) {
         return usuario instanceof Cliente;
     }
 
+    /**
+     * Actualiza los datos específicos presentes y rechaza fechas de nacimiento que
+     * correspondan a una persona menor de 18 años.
+     *
+     * @param usuario usuario de tipo cliente que se modificará
+     * @param dto datos parciales del cliente
+     * @throws ResponseStatusException si la fecha indica que no ha cumplido 18 años
+     */
     @Override
     public void actualizar(Usuario usuario, UserPatchDTO dto) {
         Cliente cliente = (Cliente) usuario;

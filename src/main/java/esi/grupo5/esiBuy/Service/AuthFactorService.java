@@ -43,26 +43,46 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+/** Gestiona factores TOTP, códigos de respaldo y códigos OTP por correo. */
 @Service
 public class AuthFactorService {
 
+    /** Validez del desafío temporal de configuración MFA, en minutos. */
     private static final int SETUP_TOKEN_VALIDITY_MINUTES = 10;
+    /** Validez del código OTP de correo, en minutos. */
     private static final int EMAIL_OTP_VALIDITY_MINUTES = 10;
+    /** Cantidad de códigos de respaldo generados al configurar MFA. */
     private static final int BACKUP_CODE_COUNT = 8;
+    /** Límite exclusivo para la generación de códigos de respaldo de ocho cifras. */
     private static final int BACKUP_CODE_BOUND = 100000000;
+    /** Límite usado para generar códigos OTP de correo. */
     private static final int EMAIL_OTP_BOUND = 999999;
+    /** Longitud del vector de inicialización AES-GCM, en bytes. */
     private static final int GCM_IV_LENGTH_BYTES = 12;
+    /** Longitud de la etiqueta de autenticación AES-GCM, en bits. */
     private static final int GCM_TAG_LENGTH_BITS = 128;
 
+    /** Clave configurada para cifrar y descifrar secretos TOTP. */
     @Value("${mfa.encryption.key:1234567890123456}")
     private String encryptionKey;
 
+    /** Codificador de hashes de códigos OTP y de respaldo. */
     private final PasswordEncoder passwordEncoder;
+    /** Servicio de envío de códigos MFA por correo. */
     private final EmailService emailService;
+    /** Persistencia de cuentas y configuración multifactor. */
     private final UsuarioRepository usuarioRepository;
 
+    /** Mensaje común para usuarios inexistentes. */
     private static final String MSG_USUARIO_NO_ENCONTRADO = "Usuario no encontrado";
 
+    /**
+     * Crea el servicio de factores multifactor.
+     *
+     * @param emailService servicio de envío de correo
+     * @param passwordEncoder codificador de códigos de verificación
+     * @param usuarioRepository repositorio de usuarios
+     */
     public AuthFactorService(EmailService emailService, PasswordEncoder passwordEncoder,
                              UsuarioRepository usuarioRepository) {
         this.emailService = emailService;
@@ -70,6 +90,12 @@ public class AuthFactorService {
         this.usuarioRepository = usuarioRepository;
     }
 
+    /**
+     * Determina si el rol o la configuración del cliente exige completar MFA.
+     *
+     * @param usuario usuario cuya política se consulta
+     * @return {@code true} si la cuenta debe completar MFA
+     */
     public boolean requiereMfaObligatorio(Usuario usuario) {
         if (usuario.getRol() == Rol.ADMINISTRADOR || usuario.getRol() == Rol.VENDEDOR) {
             return true;
@@ -77,6 +103,12 @@ public class AuthFactorService {
         return usuario.is2faActivoCliente();
     }
 
+    /**
+     * Persiste un desafío temporal de configuración y devuelve su valor sin cifrar.
+     *
+     * @param usuario cuenta que configurará MFA
+     * @return token temporal de configuración
+     */
     public String createSetupChallenge(Usuario usuario) {
         String rawToken = UUID.randomUUID().toString();
         usuario.setMfaSetupTokenHash(hash(rawToken));
@@ -85,6 +117,15 @@ public class AuthFactorService {
         return rawToken;
     }
 
+    /**
+     * Busca la cuenta y valida el correo y el desafío temporal de configuración.
+     *
+     * @param email correo de la cuenta
+     * @param setupToken desafío temporal recibido
+     * @return usuario autorizado para continuar la configuración
+     * @throws NotFoundException si no existe una cuenta con ese correo
+     * @throws ExpiredTokenException si el desafío es inválido o ha expirado
+     */
     public Usuario requireSetupAccess(String email, String setupToken) {
         Usuario usuario = buscarUsuarioPorEmail(email);
 
@@ -98,6 +139,14 @@ public class AuthFactorService {
         return usuario;
     }
 
+    /**
+     * Genera un secreto TOTP, lo cifra y devuelve su QR y el secreto para configurar
+     * la aplicación autenticadora.
+     *
+     * @param email correo de la cuenta
+     * @param setupToken desafío temporal de configuración
+     * @return secreto y URI de imagen QR
+     */
     public MfaSetupResponseDTO initializeSetup(String email, String setupToken) {
         Usuario usuario = requireSetupAccess(email, setupToken);
         String secret = generarNuevoSecretoTotp();
@@ -106,6 +155,13 @@ public class AuthFactorService {
         return new MfaSetupResponseDTO(generarQrUri(secret, email), secret);
     }
 
+    /**
+     * Valida el TOTP inicial, confirma MFA y genera códigos de respaldo.
+     *
+     * @param dto correo, desafío y código de confirmación
+     * @return códigos de respaldo que deben guardarse de forma segura
+     * @throws ValidationException si el TOTP es incorrecto
+     */
     public MfaBackupCodesDTO confirmSetup(MfaSetupConfirmDTO dto) {
         Usuario usuario = requireSetupAccess(dto.email(), dto.setupToken());
         if (!verificarCodigoTotp(usuario, dto.code())) {
@@ -120,6 +176,14 @@ public class AuthFactorService {
                 "MFA configurado con éxito. Guarda estos códigos en un lugar seguro.");
     }
 
+    /**
+     * Actualiza las opciones de segundo y tercer factor de una cuenta no eliminada.
+     *
+     * @param userId identificador de usuario
+     * @param enable2fa indicador de segundo factor
+     * @param enable3fa indicador de tercer factor
+     * @throws NotFoundException si no existe una cuenta no eliminada con ese identificador
+     */
     public void configureMfa(String userId, boolean enable2fa, boolean enable3fa) {
         Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(userId)
                 .orElseThrow(() -> new NotFoundException(MSG_USUARIO_NO_ENCONTRADO));
@@ -128,11 +192,25 @@ public class AuthFactorService {
         usuarioRepository.save(usuario);
     }
 
+    /**
+     * Genera y envía el OTP de correo y persiste su hash y expiración.
+     *
+     * @param usuario cuenta que realizará la verificación
+     */
     public void prepareVerification(Usuario usuario) {
         generarYEnviarEmailOtp(usuario);
         usuarioRepository.save(usuario);
     }
 
+    /**
+     * Valida el código TOTP o uno de respaldo y, cuando se exige, el OTP de correo.
+     *
+     * @param dto correo y códigos que se verificarán
+     * @return cuenta verificada
+     * @throws NotFoundException si no existe el usuario
+     * @throws AuthException si el TOTP y los códigos de respaldo no son válidos
+     * @throws ExpiredTokenException si el OTP de correo no es válido o ha expirado
+     */
     public Usuario verifyFactors(MfaVerifyRequestDTO dto) {
         Usuario usuario = buscarUsuarioPorEmail(dto.email());
         boolean totpValid = verificarCodigoTotp(usuario, dto.totpCode())
@@ -152,21 +230,43 @@ public class AuthFactorService {
         return usuario;
     }
 
+    /**
+     * Busca un usuario por su correo.
+     *
+     * @param email correo de la cuenta
+     * @return usuario encontrado
+     * @throws NotFoundException si no existe una cuenta con ese correo
+     */
     private Usuario buscarUsuarioPorEmail(String email) {
         return usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException(MSG_USUARIO_NO_ENCONTRADO));
     }
 
+    /**
+     * Determina si la cuenta debe verificar también un código enviado por correo.
+     *
+     * @param usuario cuenta cuya política se consulta
+     * @return {@code true} para administradores, vendedores y clientes con 3FA activo
+     */
     private boolean requiereOtpEmail(Usuario usuario) {
         return usuario.getRol() == Rol.ADMINISTRADOR
                 || usuario.getRol() == Rol.VENDEDOR
                 || usuario.is3faActivoCliente();
     }
 
+    /** @return secreto TOTP generado aleatoriamente */
     public String generarNuevoSecretoTotp() {
         return new DefaultSecretGenerator().generate();
     }
 
+    /**
+     * Genera una imagen QR PNG codificada como URI de datos para el secreto indicado.
+     *
+     * @param secretoPlano secreto TOTP que se codificará
+     * @param email correo que se muestra como etiqueta
+     * @return URI de imagen PNG en Base64
+     * @throws BusinessException si no se puede generar el QR
+     */
     public String generarQrUri(String secretoPlano, String email) {
         try {
             QrData data = new QrData.Builder()
@@ -178,6 +278,13 @@ public class AuthFactorService {
         }
     }
 
+    /**
+     * Descifra el secreto TOTP de la cuenta y comprueba el código presentado.
+     *
+     * @param usuario cuenta con el secreto cifrado
+     * @param codigoUsuario código TOTP recibido
+     * @return {@code true} si el código es válido; {@code false} si no hay secreto
+     */
     public boolean verificarCodigoTotp(Usuario usuario, String codigoUsuario) {
         if (usuario.getTotpSecretCifrado() == null) return false;
         String secretoPlano = descifrar(usuario.getTotpSecretCifrado());
@@ -185,6 +292,13 @@ public class AuthFactorService {
         return verifier.isValidCode(secretoPlano, codigoUsuario);
     }
 
+    /**
+     * Compara el código presentado con los códigos de respaldo y consume el que coincida.
+     *
+     * @param usuario cuenta con los hashes de respaldo
+     * @param codigoUsuario código presentado
+     * @return {@code true} si se encontró y consumió un código válido
+     */
     public boolean verificarCodigoRespaldo(Usuario usuario, String codigoUsuario) {
         Iterator<String> hashes = usuario.getCodigosRespaldoHasheados().iterator();
         while (hashes.hasNext()) {
@@ -197,6 +311,12 @@ public class AuthFactorService {
         return false;
     }
 
+    /**
+     * Genera códigos de respaldo, guarda sus hashes y devuelve sus valores en claro.
+     *
+     * @param usuario cuenta a la que pertenecen los códigos
+     * @return códigos de respaldo en texto plano
+     */
     public List<String> generarCodigosRespaldo(Usuario usuario) {
         SecureRandom random = new SecureRandom();
         List<String> codigosPlanos = IntStream.range(0, BACKUP_CODE_COUNT)
@@ -206,6 +326,12 @@ public class AuthFactorService {
         return codigosPlanos;
     }
 
+    /**
+     * Genera y envía por correo un OTP de seis cifras, guardando el hash y la expiración.
+     *
+     * @param usuario cuenta destinataria
+     * @throws BusinessException si falla el envío del correo
+     */
     public void generarYEnviarEmailOtp(Usuario usuario) {
         String otp = String.format("%06d", new SecureRandom().nextInt(EMAIL_OTP_BOUND));
         usuario.setEmailOtpHash(passwordEncoder.encode(otp));
@@ -219,6 +345,13 @@ public class AuthFactorService {
         }
     }
 
+    /**
+     * Comprueba la vigencia y coincidencia del OTP enviado por correo.
+     *
+     * @param usuario cuenta con el hash y la expiración
+     * @param codigoUsuario OTP recibido
+     * @return {@code true} si el OTP coincide y sigue vigente
+     */
     public boolean verificarEmailOtp(Usuario usuario, String codigoUsuario) {
         if (usuario.getEmailOtpExpiracion() == null || usuario.getEmailOtpExpiracion().isBefore(LocalDateTime.now())) {
             return false;
@@ -226,6 +359,14 @@ public class AuthFactorService {
         return passwordEncoder.matches(codigoUsuario, usuario.getEmailOtpHash());
     }
 
+    /**
+     * Cifra texto mediante AES-GCM y devuelve el vector de inicialización y el texto
+     * cifrado autenticado en una cadena Base64.
+     *
+     * @param textoPlano valor que se cifrará
+     * @return vector y contenido cifrado codificados en Base64
+     * @throws BusinessException si falla el cifrado
+     */
     public String cifrar(String textoPlano) {
         try {
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
@@ -236,7 +377,6 @@ public class AuthFactorService {
             
             byte[] cifrado = cipher.doFinal(textoPlano.getBytes());
             
-            // Combinar IV + texto cifrado
             byte[] ivYCifrado = new byte[GCM_IV_LENGTH_BYTES + cifrado.length];
             System.arraycopy(iv, 0, ivYCifrado, 0, GCM_IV_LENGTH_BYTES);
             System.arraycopy(cifrado, 0, ivYCifrado, GCM_IV_LENGTH_BYTES, cifrado.length);
@@ -247,11 +387,18 @@ public class AuthFactorService {
         }
     }
 
+    /**
+     * Descifra un valor Base64 que contiene el vector de inicialización y el contenido
+     * cifrado con AES-GCM.
+     *
+     * @param textoCifrado contenido cifrado en Base64
+     * @return texto original
+     * @throws BusinessException si el contenido no se puede descifrar o autenticar
+     */
     private String descifrar(String textoCifrado) {
         try {
             byte[] ivYCifrado = Base64.getDecoder().decode(textoCifrado);
             
-            // Extraer el IV (primeros 12 bytes) y el texto cifrado
             byte[] iv = new byte[GCM_IV_LENGTH_BYTES];
             byte[] cifrado = new byte[ivYCifrado.length - GCM_IV_LENGTH_BYTES];
             System.arraycopy(ivYCifrado, 0, iv, 0, GCM_IV_LENGTH_BYTES);
@@ -267,6 +414,13 @@ public class AuthFactorService {
         }
     }
 
+    /**
+     * Calcula el hash SHA-256 hexadecimal del valor recibido.
+     *
+     * @param value texto que se resumirá
+     * @return hash hexadecimal
+     * @throws BusinessException si el algoritmo SHA-256 no está disponible
+     */
     private String hash(String value) {
         try {
             return HexFormat.of().formatHex(

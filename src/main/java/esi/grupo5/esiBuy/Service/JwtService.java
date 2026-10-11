@@ -13,28 +13,50 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
+/** Genera, valida y extrae información de los JWT de acceso y refresco. */
 @Service
 public class JwtService {
 
+    /** Secreto configurado para firmar y verificar los JWT. */
     @Value("${jwt.secret}")
     private String secretKey;
 
+    /** Duración configurada del token de acceso, en milisegundos. */
     @Value("${jwt.expiration}")
     private long expirationTime;
 
+    /** Duración configurada del token de refresco, en milisegundos. */
     @Value("${jwt.refresh.expiration}")
     private long refreshExpirationTime;
 
-    // generar token JWT
+    /**
+     * Genera un JWT de acceso con el identificador y el rol del usuario.
+     *
+     * @param userDetails usuario representado en el token
+     * @return token de acceso firmado
+     */
     public String generateToken(Usuario userDetails) {
         return generateToken(userDetails, expirationTime, true);
     }
 
-    // Generar token de refresco JWT
+    /**
+     * Genera un JWT de refresco sin incluir el rol.
+     *
+     * @param userDetails usuario asociado al token
+     * @return token de refresco firmado
+     */
     public String generateRefreshToken(Usuario userDetails) {
         return generateToken(userDetails, refreshExpirationTime, false);
     }
 
+    /**
+     * Construye y firma el token con la duración y los claims solicitados.
+     *
+     * @param userDetails usuario cuyo identificador se usa como sujeto
+     * @param tokenExpirationTime duración en milisegundos
+     * @param includeRole indica si se incluye el claim de rol
+     * @return JWT compacto firmado
+     */
     private String generateToken(Usuario userDetails, long tokenExpirationTime, boolean includeRole) {
         var tokenBuilder = Jwts.builder()
                 .subject(userDetails.getId());
@@ -50,50 +72,79 @@ public class JwtService {
                 .compact();
     }
 
-    // Obetener clave de firma a partir de la clave secreta
+    /**
+     * Deriva la clave HMAC usada para firmar y verificar los tokens.
+     *
+     * @return clave de firma
+     */
     private SecretKey getSignInKey() {
         return Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
-    // 2. Extraer todos los claims del token
+    /**
+     * Verifica y analiza el contenido firmado de un JWT.
+     *
+     * @param token token compacto que se analizará
+     * @return claims contenidos en el token
+     */
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
-                .verifyWith(getSignInKey()) // Verifica matemáticamente que la firma sea tuya
+                .verifyWith(getSignInKey())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
     }
 
-    // 3. Extraer específicamente el ID (subject) del token
+    /**
+     * Extrae del sujeto del JWT el identificador de usuario.
+     *
+     * @param token JWT que se analizará
+     * @return identificador de usuario
+     */
     public String extractId(String token) {
         return extractAllClaims(token).getSubject();
     }
 
-    // 3. Extraer específicamente el rol del token
+    /**
+     * Extrae el claim de rol del JWT.
+     *
+     * @param token JWT que se analizará
+     * @return rol del usuario
+     */
     public String extractRol(String token) {
         return extractAllClaims(token).get("rol", String.class);
     }
 
-    // 4. Validar que el token es correcto y que su fecha no ha expirado
+    /**
+     * Comprueba que la firma sea válida y que el token no haya expirado.
+     *
+     * @param token JWT que se validará
+     * @return {@code true} si la firma y la expiración son válidas
+     */
     public boolean isTokenValid(String token) {
         try {
-            // Si pasamos la validación de firma y la fecha de expiración es posterior a hoy, es válido
             return !extractAllClaims(token).getExpiration().before(new Date());
         } catch (JwtException | IllegalArgumentException e) {
-            // Si el token fue manipulado, caducó, o tiene un formato incorrecto, JJWT lanzará una excepción.
-            // La capturamos y devolvemos false para denegar el acceso.
             return false; 
         }
     }
 
+    /** @return duración del token de acceso en segundos */
     public int getAccessTokenExpirationSeconds() {
         return toSeconds(expirationTime);
     }
 
+    /** @return duración del token de refresco en segundos */
     public int getRefreshTokenExpirationSeconds() {
         return toSeconds(refreshExpirationTime);
     }
 
+    /**
+     * Convierte milisegundos en segundos enteros.
+     *
+     * @param durationInMilliseconds duración en milisegundos
+     * @return duración en segundos, truncada a entero
+     */
     private int toSeconds(long durationInMilliseconds) {
         return (int) (durationInMilliseconds / 1000L);
     }

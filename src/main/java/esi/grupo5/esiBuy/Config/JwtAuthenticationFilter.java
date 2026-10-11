@@ -19,25 +19,40 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+/** Autentica peticiones a partir de la cookie de acceso JWT cuando existe y es válida. */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    /** Servicio que valida y extrae los datos de los JWT. */
     private JwtService jwtService;
 
+    /**
+     * Crea el filtro con el servicio de gestión de tokens.
+     *
+     * @param jwtService servicio de validación y lectura de JWT
+     */
     public JwtAuthenticationFilter(JwtService jwtService) {
         this.jwtService = jwtService;
     }
 
+    /**
+     * Busca la cookie {@code accessToken}, establece la autenticación si el JWT es válido
+     * y continúa la cadena de filtros.
+     *
+     * @param request petición HTTP que puede contener la cookie de acceso
+     * @param response respuesta HTTP
+     * @param filterChain cadena de filtros que continuará procesando la petición
+     * @throws ServletException si falla el procesamiento de la cadena de filtros
+     * @throws IOException si ocurre un error de entrada/salida durante el filtrado
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         
         String token = null;
 
-        // 1. Extraer las cookies de la petición
         if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
-                // Buscamos específicamente el accessToken
                 if ("accessToken".equals(cookie.getName())) {
                     token = cookie.getValue();
                     break;
@@ -45,30 +60,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        // 2. Validar que el token existe, no ha caducado y la firma es correcta
         if (token != null && this.jwtService.isTokenValid(token) && SecurityContextHolder.getContext().getAuthentication() == null) {
             
-            // 3. Extraer los datos del token usando tu JwtService
             String id = this.jwtService.extractId(token);
             String rol = this.jwtService.extractRol(token);
 
-            // 4. Crear la lista de autoridades (roles). Spring Security espera el prefijo "ROLE_" por defecto.
             List<GrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + rol));
 
-            // 5. Crear el objeto de autenticación
             UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                     id, 
-                    null, // No pasamos la contraseña porque ya confiamos en la firma del token
+                    null,
                     authorities
             );
             
             authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             
-            // 6. Registrar al usuario en el contexto de seguridad de Spring
             SecurityContextHolder.getContext().setAuthentication(authToken);
         }
 
-        // 7. Pasar la petición al siguiente filtro o controlador
         filterChain.doFilter(request, response);
     }
 }
