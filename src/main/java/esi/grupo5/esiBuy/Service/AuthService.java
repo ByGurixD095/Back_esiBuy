@@ -30,6 +30,8 @@ public class AuthService {
     private static final int PASSWORD_VALIDITY_DAYS = 30;
     private static final int PASSWORD_HISTORY_LIMIT = 5;
     private static final String SERVER_ERROR_MESSAGE = "INTERNAL_ERROR";
+    private static final String ACCOUNT_UNAVAILABLE_MESSAGE = "El usuario no puede iniciar sesión";
+    private static final String PASSWORD_EXPIRED_MESSAGE = "Tu contraseña ha caducado. Debes cambiarla.";
     
     private final UsuarioRepository usuarioRepository;
     private final JwtService jwtService;
@@ -70,13 +72,11 @@ public class AuthService {
             throw new AuthException("Credenciales inválidas");
         }
         
-        if (usuario.isBloqueado() || !usuario.isActivo()) {
+        try {
+            validarEstadoCuenta(usuario);
+        } catch (ForbiddenException | PasswordExpiredException e) {
             loginAttempService.registerFailedLogin(ipAddress);
-            throw new ForbiddenException("El usuario no puede iniciar sesión");
-        }
-        if (usuario.getFechaCambioContrasena() != null && LocalDateTime.now().isAfter(usuario.getFechaCambioContrasena())) {
-            loginAttempService.registerFailedLogin(ipAddress);
-            throw new PasswordExpiredException("Tu contraseña ha caducado. Debes cambiarla.");
+            throw e;
         }
         
         loginAttempService.registerSuccessfulLogin(ipAddress);
@@ -104,7 +104,9 @@ public class AuthService {
     }
 
     public LoginResponseDTO verifyMFA(MfaVerifyRequestDTO dto) {
-        return generarTokens(authFactorService.verifyFactors(dto));
+        Usuario usuario = authFactorService.verifyFactors(dto);
+        validarEstadoCuenta(usuario);
+        return generarTokens(usuario);
     }
 
     public LoginResponseDTO generarTokens(Usuario usuario) {
@@ -132,10 +134,30 @@ public class AuthService {
             refreshTokenRepository.delete(refreshTokenEntity);
             throw new ExpiredTokenException("Refresh token expirado");
         }
-        Usuario usuario = refreshTokenEntity.getUsuario(); 
+        Usuario usuario = refreshTokenEntity.getUsuario();
+        if (usuario == null) {
+            refreshTokenRepository.delete(refreshTokenEntity);
+            throw new AuthException("Token de refresco inválido");
+        }
+        try {
+            validarEstadoCuenta(usuario);
+        } catch (ForbiddenException | PasswordExpiredException e) {
+            refreshTokenRepository.delete(refreshTokenEntity);
+            throw e;
+        }
         String nuevoAccessToken = jwtService.generateToken(usuario);
         
         return crearRespuestaAutenticacion(usuario, nuevoAccessToken, refreshTokenEntity.getToken());
+    }
+
+    private void validarEstadoCuenta(Usuario usuario) {
+        if (usuario.isBloqueado() || usuario.isEliminado() || !usuario.isActivo()) {
+            throw new ForbiddenException(ACCOUNT_UNAVAILABLE_MESSAGE);
+        }
+        if (usuario.getFechaCambioContrasena() != null
+                && LocalDateTime.now().isAfter(usuario.getFechaCambioContrasena())) {
+            throw new PasswordExpiredException(PASSWORD_EXPIRED_MESSAGE);
+        }
     }
 
     public void requestPasswordReset(PasswordResetRequestDTO request) {

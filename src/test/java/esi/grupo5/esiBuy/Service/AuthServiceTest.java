@@ -109,6 +109,20 @@ class AuthServiceTest {
     }
 
     @Test
+    void loginDeUsuarioEliminado_esProhibido() {
+        Cliente usuario = cliente();
+        usuario.setEliminado(true);
+        when(usuarioRepository.findByEmail(usuario.getEmail())).thenReturn(Optional.of(usuario));
+        when(encoder.matches("Password#1", "hash")).thenReturn(true);
+
+        assertThrows(ForbiddenException.class, () -> service.login(
+                new LoginRequestDTO(usuario.getEmail(), "Password#1"), "127.0.0.1"));
+
+        verify(loginAttemptService).registerFailedLogin("127.0.0.1");
+        verify(authFactorService, never()).requiereMfaObligatorio(any());
+    }
+
+    @Test
     void loginConContrasenaExpirada_noAutentica() {
         Cliente usuario = cliente();
         usuario.setFechaCambioContrasena(LocalDateTime.now().minusSeconds(1));
@@ -193,6 +207,19 @@ class AuthServiceTest {
         assertEquals("SUCCESS", result.mfaStatus());
         verify(authFactorService).verifyFactors(request);
         verify(refreshTokenRepository).save(any());
+    }
+
+    @Test
+    void verifyMfa_noEmiteTokensSiLaCuentaFueBloqueadaDuranteElDesafio() {
+        Cliente usuario = cliente();
+        usuario.setBloqueado(true);
+        MfaVerifyRequestDTO request = new MfaVerifyRequestDTO(usuario.getEmail(), "123456", null);
+        when(authFactorService.verifyFactors(request)).thenReturn(usuario);
+
+        assertThrows(ForbiddenException.class, () -> service.verifyMFA(request));
+
+        verify(jwtService, never()).generateToken(any());
+        verify(refreshTokenRepository, never()).save(any());
     }
 
     @Test
