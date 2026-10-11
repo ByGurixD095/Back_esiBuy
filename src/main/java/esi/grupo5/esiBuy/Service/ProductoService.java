@@ -2,6 +2,7 @@ package esi.grupo5.esiBuy.Service;
 
 import esi.grupo5.esiBuy.Dto.FiltroCatalogoDTO;
 import esi.grupo5.esiBuy.Dto.ProductoDTO;
+import esi.grupo5.esiBuy.Exception.NotFoundException;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
 
@@ -32,7 +33,7 @@ public class ProductoService {
         this.mongoTemplate = mongoTemplate;
     }
 
-    public Producto crearProducto(ProductoDTO dto) {
+    public Producto crearProducto(ProductoDTO dto, String idVendedor) {
         Producto producto = new Producto(
                 dto.nombre(),
                 dto.referencia(),
@@ -46,6 +47,8 @@ public class ProductoService {
         );
 
         producto.setActivo(dto.activo() == null || dto.activo());
+        producto.setIdVendedor(idVendedor);
+        
         return productoRepository.save(producto);
     }
 
@@ -139,6 +142,40 @@ public class ProductoService {
     public Page<Producto> obtenerCatalogoVendedor(String idVendedor, int numeroPagina, int tamanoPagina) {
         Pageable pageable = PageRequest.of(numeroPagina, tamanoPagina);
         return productoRepository.findByIdVendedor(idVendedor, pageable);
+    }
+
+    public Producto obtenerProducto(String id, String idVendedor) {
+        return buscarProductoPropio(id, idVendedor);
+    }
+
+    public Producto actualizarProducto(String id, ProductoDTO dto, String idVendedor) {
+        Producto producto = buscarProductoPropio(id, idVendedor);
+
+        producto.setNombre(dto.nombre());
+        producto.setReferencia(dto.referencia());
+        producto.setNumStock(dto.numStock() != null ? dto.numStock() : 0);
+        producto.setPrecioCent(dto.precioCent());
+        producto.setDescripcion(dto.descripcion());
+        producto.setCategoria(dto.categoria());
+        producto.setUrlImagen(dto.urlImagen());
+        producto.setDescuento(valorPorDefecto(dto.descuento()));
+        producto.setDescuentoPremium(valorPorDefecto(dto.descuentoPremium()));
+        if (dto.activo() != null) {
+            producto.setActivo(dto.activo());
+        }
+
+        return productoRepository.save(producto);
+    }
+
+    public void eliminarProducto(String id, String idVendedor) {
+        Producto producto = buscarProductoPropio(id, idVendedor);
+        producto.setActivo(false);
+        productoRepository.save(producto);
+    }
+
+    private Producto buscarProductoPropio(String id, String idVendedor) {
+        return productoRepository.findByIdAndIdVendedor(id, idVendedor)
+                .orElseThrow(() -> new NotFoundException("Producto no encontrado"));
     }
 
     private int valorPorDefecto(Integer valor) {

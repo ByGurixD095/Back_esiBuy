@@ -14,16 +14,20 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -56,9 +60,10 @@ class ProductoControllerTest {
         productoCreado.setPrecioCent(dto.precioCent());
         productoCreado.setActivo(true);
 
-        when(productoService.crearProducto(any(ProductoDTO.class))).thenReturn(productoCreado);
+        when(productoService.crearProducto(any(ProductoDTO.class), any(String.class))).thenReturn(productoCreado);
 
         mockMvc.perform(post("/products")
+                .principal(new UsernamePasswordAuthenticationToken("vendedor-1", null))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
@@ -75,9 +80,10 @@ class ProductoControllerTest {
         Producto productoCreado = new Producto();
         productoCreado.setId("mongo-id-123");
 
-        when(productoService.crearProducto(any(ProductoDTO.class))).thenReturn(productoCreado);
+        when(productoService.crearProducto(any(ProductoDTO.class), any(String.class))).thenReturn(productoCreado);
 
         mockMvc.perform(post("/products/createProduct")
+            .principal(new UsernamePasswordAuthenticationToken("vendedor-1", null))
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(dto)))
             .andExpect(status().isCreated())
@@ -172,7 +178,7 @@ class ProductoControllerTest {
                 void crearProducto_SinStock_InicializaStockA0() throws Exception {
                 Producto productoCreado = new Producto();
                 productoCreado.setId("mongo-id-123");
-                when(productoService.crearProducto(any(ProductoDTO.class))).thenReturn(productoCreado);
+                when(productoService.crearProducto(any(ProductoDTO.class), any(String.class))).thenReturn(productoCreado);
 
                 String dtoSinStock = """
                     {
@@ -188,18 +194,19 @@ class ProductoControllerTest {
                     """;
 
                 mockMvc.perform(post("/products")
+                    .principal(new UsernamePasswordAuthenticationToken("vendedor-1", null))
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(dtoSinStock))
                     .andExpect(status().isCreated());
 
-                verify(productoService).crearProducto(argThat(dto -> dto.numStock() == null));
+                verify(productoService).crearProducto(argThat(dto -> dto.numStock() == null), eq("vendedor-1"));
                 }
 
             @Test
             void crearProducto_SinDescripcionNiImagen_EsAceptado() throws Exception {
             Producto productoCreado = new Producto();
             productoCreado.setId("mongo-id-123");
-            when(productoService.crearProducto(any(ProductoDTO.class))).thenReturn(productoCreado);
+            when(productoService.crearProducto(any(ProductoDTO.class), any(String.class))).thenReturn(productoCreado);
 
             String dtoSinCamposOpcionales = """
                 {
@@ -214,6 +221,7 @@ class ProductoControllerTest {
                 """;
 
             mockMvc.perform(post("/products")
+                .principal(new UsernamePasswordAuthenticationToken("vendedor-1", null))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(dtoSinCamposOpcionales))
                 .andExpect(status().isCreated());
@@ -268,5 +276,61 @@ class ProductoControllerTest {
             verify(productoService).obtenerProductosDisponibles(
                 any(FiltroCatalogoDTO.class), any(org.springframework.data.domain.Pageable.class));
     }
-}
 
+    @Test
+    void obtenerCatalogoVendedor_incluyeEstadoDeProductosInactivos() throws Exception {
+        Producto productoInactivo = new Producto("Camiseta ESI", "REF-092026a", 0, 1999,
+                "Camiseta oficial", "Ropa", "url_imagen.jpg", 0, 0);
+        productoInactivo.setActivo(false);
+
+        when(productoService.obtenerCatalogoVendedor("vendedor-1", 0, 36))
+                .thenReturn(new PageImpl<>(List.of(productoInactivo), PageRequest.of(0, 36), 1));
+
+        mockMvc.perform(get("/products/catalogo")
+                .principal(new UsernamePasswordAuthenticationToken("vendedor-1", null)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].activo").value(false));
+
+        verify(productoService).obtenerCatalogoVendedor("vendedor-1", 0, 36);
+    }
+
+    @Test
+    void obtenerProducto_pasaElVendedorAutenticado() throws Exception {
+        Producto producto = new Producto();
+        producto.setId("producto-1");
+        when(productoService.obtenerProducto("producto-1", "vendedor-1")).thenReturn(producto);
+
+        mockMvc.perform(get("/products/producto-1")
+                .principal(new UsernamePasswordAuthenticationToken("vendedor-1", null)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("producto-1"));
+    }
+
+    @Test
+    void actualizarProducto_pasaElVendedorAutenticado() throws Exception {
+        ProductoDTO dto = new ProductoDTO(
+                "Producto actualizado", "REF-2", 1999, "Descripción",
+                "Ropa", null, 5, 0, 0, true);
+        Producto producto = new Producto();
+        producto.setId("producto-1");
+        when(productoService.actualizarProducto("producto-1", dto, "vendedor-1"))
+                .thenReturn(producto);
+
+        mockMvc.perform(put("/products/producto-1")
+                .principal(new UsernamePasswordAuthenticationToken("vendedor-1", null))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("producto-1"));
+    }
+
+    @Test
+    void eliminarProducto_devuelve204YpasaElVendedorAutenticado() throws Exception {
+        mockMvc.perform(delete("/products/producto-1")
+                .principal(new UsernamePasswordAuthenticationToken("vendedor-1", null)))
+                .andExpect(status().isNoContent());
+
+        verify(productoService).eliminarProducto("producto-1", "vendedor-1");
+    }
+}

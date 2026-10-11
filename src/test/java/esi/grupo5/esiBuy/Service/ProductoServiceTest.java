@@ -6,6 +6,7 @@ import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -47,7 +49,7 @@ class ProductoServiceTest {
         when(productoRepository.save(any(Producto.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Producto resultado = productoService.crearProducto(dto);
+        Producto resultado = productoService.crearProducto(dto, "vendedor-1");
 
         assertEquals("Camiseta ESI", resultado.getNombre());
         assertEquals("REF-092026a", resultado.getReferencia());
@@ -56,6 +58,7 @@ class ProductoServiceTest {
         assertEquals("Camiseta oficial", resultado.getDescripcion());
         assertEquals("Ropa", resultado.getCategoria());
         assertEquals("url_imagen.jpg", resultado.getUrlImagen());
+        assertEquals("vendedor-1", resultado.getIdVendedor());
         assertEquals(5, resultado.getDescuento());
         assertEquals(10, resultado.getDescuentoPremium());
         assertTrue(resultado.isActivo());
@@ -66,7 +69,7 @@ class ProductoServiceTest {
         when(productoRepository.save(any(Producto.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Producto resultado = productoService.crearProducto(productoDTO(null, 1999, 5, 10, null));
+        Producto resultado = productoService.crearProducto(productoDTO(null, 1999, 5, 10, null), "vendedor-1");
 
         assertEquals(0, resultado.getNumStock());
     }
@@ -76,7 +79,7 @@ class ProductoServiceTest {
         when(productoRepository.save(any(Producto.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Producto resultado = productoService.crearProducto(productoDTO(10, 1999, 5, 10, false));
+        Producto resultado = productoService.crearProducto(productoDTO(10, 1999, 5, 10, false), "vendedor-1");
 
         assertFalse(resultado.isActivo());
     }
@@ -87,7 +90,7 @@ class ProductoServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         Producto resultado = productoService.crearProducto(
-                productoDTO(Integer.MAX_VALUE, Integer.MAX_VALUE, 100, 100, true));
+                productoDTO(Integer.MAX_VALUE, Integer.MAX_VALUE, 100, 100, true), "vendedor-1");
 
         assertEquals(Integer.MAX_VALUE, resultado.getNumStock());
         assertEquals(Integer.MAX_VALUE, resultado.getPrecioCent());
@@ -102,7 +105,7 @@ class ProductoServiceTest {
         when(productoRepository.save(any(Producto.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Producto resultado = productoService.crearProducto(dto);
+        Producto resultado = productoService.crearProducto(dto, "vendedor-1");
 
         assertEquals(0, resultado.getNumStock());
         assertEquals(0, resultado.getPrecioCent());
@@ -119,10 +122,61 @@ class ProductoServiceTest {
         when(productoRepository.save(any(Producto.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        Producto resultado = productoService.crearProducto(dto);
+        Producto resultado = productoService.crearProducto(dto, "vendedor-1");
 
         assertEquals(0, resultado.getDescuento());
         assertEquals(0, resultado.getDescuentoPremium());
+    }
+
+    @Test
+    void obtenerProducto_soloDevuelveProductoDelVendedor() {
+        Producto producto = new Producto();
+        producto.setId("producto-1");
+        producto.setIdVendedor("vendedor-1");
+        when(productoRepository.findByIdAndIdVendedor("producto-1", "vendedor-1"))
+                .thenReturn(Optional.of(producto));
+
+        assertEquals(producto, productoService.obtenerProducto("producto-1", "vendedor-1"));
+    }
+
+    @Test
+    void obtenerCatalogoVendedor_incluyeProductosInactivos() {
+        Producto productoInactivo = new Producto();
+        productoInactivo.setActivo(false);
+        when(productoRepository.findByIdVendedor("vendedor-1", PageRequest.of(0, 36)))
+                .thenReturn(new PageImpl<>(List.of(productoInactivo)));
+
+        Page<Producto> resultado = productoService.obtenerCatalogoVendedor("vendedor-1", 0, 36);
+
+        assertEquals(1, resultado.getTotalElements());
+        assertFalse(resultado.getContent().get(0).isActivo());
+        verify(productoRepository).findByIdVendedor("vendedor-1", PageRequest.of(0, 36));
+    }
+
+    @Test
+    void actualizarProducto_noPermiteEditarProductoDeOtroVendedor() {
+        when(productoRepository.findByIdAndIdVendedor("producto-1", "vendedor-2"))
+                .thenReturn(Optional.empty());
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                esi.grupo5.esiBuy.Exception.NotFoundException.class,
+                () -> productoService.actualizarProducto(
+                        "producto-1", productoDTO(10, 1999, 5, 10, true), "vendedor-2"));
+    }
+
+    @Test
+    void eliminarProducto_realizaBorradoLogico() {
+        Producto producto = new Producto();
+        producto.setId("producto-1");
+        producto.setIdVendedor("vendedor-1");
+        producto.setActivo(true);
+        when(productoRepository.findByIdAndIdVendedor("producto-1", "vendedor-1"))
+                .thenReturn(Optional.of(producto));
+
+        productoService.eliminarProducto("producto-1", "vendedor-1");
+
+        assertFalse(producto.isActivo());
+        verify(productoRepository).save(producto);
     }
 
     @Test
