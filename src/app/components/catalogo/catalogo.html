@@ -1,4 +1,4 @@
-<main class="catalog-shell">
+﻿<main class="catalog-shell">
   <header class="catalog-header">
     <a class="brand" routerLink="/" aria-label="EsiBuy, ir al inicio"><img src="/assets/images/svg/logo.svg" alt="EsiBuy" /></a>
     <div class="header-context">Catálogo de productos</div>
@@ -39,46 +39,7 @@
       </aside>
     </div>
 
-    <section class="filters-panel" aria-label="Filtros del catálogo">
-      <label class="filter-search">
-        <span aria-hidden="true">⌕</span>
-        <span class="visually-hidden">Buscar productos</span>
-        <input type="search" placeholder="Buscar por nombre o referencia" [value]="busqueda()" (input)="actualizarBusqueda($event)" />
-      </label>
-      <label class="filter-select">
-        <span>Categoría</span>
-        <select [value]="categoriaSeleccionada()" (change)="actualizarCategoria($event)">
-          @for (categoria of categorias(); track categoria) { <option [value]="categoria">{{ categoria }}</option> }
-        </select>
-      </label>
-      <label class="filter-select">
-        <span>Ordenar por</span>
-        <select [value]="orden()" (change)="actualizarOrden($event)">
-          <option value="relevancia">Relevancia</option>
-          <option value="precioAsc">Precio menor</option>
-          <option value="precioDesc">Precio mayor</option>
-          <option value="descuento">Mayor descuento</option>
-        </select>
-      </label>
-      <fieldset class="price-filter">
-        <legend>Precio</legend>
-        <div class="price-range" [style.--price-min]="precioMinimoSlider() + 'c'" [style.--price-max]="precioMaximoSlider() + 'c'" [style.--price-scale]="precioEscalaMaxima() + 'c'">
-          <input class="range-input range-min" type="range" min="0" [max]="precioEscalaMaxima()" step="1" [value]="precioMinimoSlider()" aria-label="Precio mínimo" (input)="actualizarPrecioMinimo($event)" />
-          <input class="range-input range-max" type="range" min="0" [max]="precioEscalaMaxima()" step="1" [value]="precioMaximoSlider()" aria-label="Precio máximo" (input)="actualizarPrecioMaximo($event)" />
-        </div>
-        <div class="price-inputs">
-          <label>Desde (€)<input type="number" min="0" step="0.01" inputmode="decimal" [value]="precioMinimo() === null ? '' : precioMinimo()! / 100" placeholder="Sin mínimo" (input)="actualizarPrecioTexto($event, 'minimo')" /></label>
-          <label>Hasta (€)<input type="number" min="0" step="0.01" inputmode="decimal" [value]="precioMaximo() === null ? '' : precioMaximo()! / 100" placeholder="Sin máximo" (input)="actualizarPrecioTexto($event, 'maximo')" /></label>
-        </div>
-      </fieldset>
-      <label class="discount-filter"><input type="checkbox" [checked]="soloConDescuento()" (change)="alternarDescuento($event)" /> Solo ofertas</label>
-      <div class="filter-actions">
-        <button class="apply-filter" type="button" (click)="aplicarFiltros()">Aplicar filtros</button>
-        @if (busqueda() || categoriaSeleccionada() !== 'Todas' || orden() !== 'relevancia' || precioMinimo() !== null || precioMaximo() !== null || soloConDescuento()) {
-          <button class="clear-filter" type="button" (click)="limpiarFiltros()"><span aria-hidden="true">↺</span> Limpiar</button>
-        }
-      </div>
-    </section>
+    <app-panel-filtros-productos [productos]="productos()" (filtrosChange)="aplicarFiltros($event)" />
 
     @if (cargando()) {
       <section class="state-panel loading-state" aria-live="polite" aria-busy="true">
@@ -149,3 +110,4 @@
 
   <footer class="catalog-footer"><span>© 2026 EsiBuy</span><span>Productos disponibles en tiempo real</span></footer>
 </main>
+

@@ -2,7 +2,7 @@ import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http'
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { PaginaProducto } from '../models/producto.model';
+import { PaginaProducto, Producto } from '../models/producto.model';
 
 export class ProductApiError extends Error {
   constructor(
@@ -14,6 +14,9 @@ export class ProductApiError extends Error {
   }
 }
 
+export type OrdenCatalogo = 'relevancia' | 'precioAsc' | 'precioDesc' | 'descuento';
+export type EstadoProducto = 'todos' | 'activos' | 'inactivos';
+
 export interface FiltrosProductos {
   busqueda?: string;
   categoria?: string;
@@ -21,6 +24,36 @@ export interface FiltrosProductos {
   precioMaxCent?: number | null;
   soloOfertas?: boolean;
   orden?: string;
+  estado?: EstadoProducto;
+}
+
+function paramsDeFiltros(filtros: FiltrosProductos, pagina: number, tamanoPagina: number): HttpParams {
+  let params = new HttpParams();
+
+  if (filtros.busqueda?.trim()) params = params.set('busqueda', filtros.busqueda.trim());
+  if (filtros.categoria && filtros.categoria !== 'Todas' && filtros.categoria !== 'TODAS') params = params.set('categoria', filtros.categoria);
+  if (filtros.precioMinCent != null) params = params.set('precioMinCent', filtros.precioMinCent);
+  if (filtros.precioMaxCent != null) params = params.set('precioMaxCent', filtros.precioMaxCent);
+  if (filtros.soloOfertas) params = params.set('soloOfertas', true);
+  if (filtros.orden && filtros.orden !== 'relevancia') params = params.set('orden', filtros.orden);
+  if (filtros.estado && filtros.estado !== 'todos') params = params.set('activo', filtros.estado === 'activos');
+  return params.set('page', pagina).set('size', tamanoPagina);
+}
+
+// Garantiza el filtrado aunque el backend ignore algún parámetro.
+export function filtrarProductos(productos: Producto[], filtros: FiltrosProductos): Producto[] {
+  const texto = filtros.busqueda?.trim().toLowerCase();
+  const categoria = filtros.categoria && filtros.categoria !== 'Todas' && filtros.categoria !== 'TODAS' ? filtros.categoria : null;
+
+  return productos.filter(
+    (p) =>
+      (!texto || p.nombre.toLowerCase().includes(texto) || p.referencia.toLowerCase().includes(texto)) &&
+      (!categoria || p.categoria === categoria) &&
+      (filtros.precioMinCent == null || p.precioCent >= filtros.precioMinCent) &&
+      (filtros.precioMaxCent == null || p.precioCent <= filtros.precioMaxCent) &&
+      (!filtros.soloOfertas || p.descuento > 0) &&
+      (!filtros.estado || filtros.estado === 'todos' || p.activo === (filtros.estado === 'activos')),
+  );
 }
 
 @Injectable({ providedIn: 'root' })
@@ -29,15 +62,7 @@ export class ProductService {
   private readonly apiUrl = `${environment.apiUrl}/products`;
 
   obtenerDisponibles(filtros: FiltrosProductos = {}, pagina = 0, tamanoPagina = 36): Observable<PaginaProducto> {
-    let params = new HttpParams();
-
-    if (filtros.busqueda?.trim()) params = params.set('busqueda', filtros.busqueda.trim());
-    if (filtros.categoria && filtros.categoria !== 'Todas' && filtros.categoria !== 'TODAS') params = params.set('categoria', filtros.categoria);
-    if (filtros.precioMinCent != null) params = params.set('precioMinCent', filtros.precioMinCent);
-    if (filtros.precioMaxCent != null) params = params.set('precioMaxCent', filtros.precioMaxCent);
-    if (filtros.soloOfertas) params = params.set('soloOfertas', true);
-    if (filtros.orden && filtros.orden !== 'relevancia') params = params.set('orden', filtros.orden);
-    params = params.set('page', pagina).set('size', tamanoPagina);
+    const params = paramsDeFiltros(filtros, pagina, tamanoPagina);
 
     return this.http.get<PaginaProducto>(`${this.apiUrl}/disponibles`, { params, withCredentials: true }).pipe(
       catchError((error: HttpErrorResponse) => {
@@ -46,11 +71,8 @@ export class ProductService {
     );
   }
 
-  obtenerCatalogoVendedor(pagina = 0, tamanoPagina = 36): Observable<PaginaProducto> {
-    const params = new HttpParams()
-      .set('page', pagina)
-      .set('size', tamanoPagina)
-      .set('sort', 'activo,desc');
+  obtenerCatalogoVendedor(pagina = 0, tamanoPagina = 36, filtros: FiltrosProductos = {}): Observable<PaginaProducto> {
+    const params = paramsDeFiltros(filtros, pagina, tamanoPagina).set('sort', 'activo,desc');
 
     return this.http.get<PaginaProducto>(`${this.apiUrl}/catalogo`, {
       params,

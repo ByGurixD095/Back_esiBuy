@@ -1,4 +1,4 @@
-<main class="seller-shell">
+﻿<main class="seller-shell">
   <header class="seller-header">
     <a class="brand" routerLink="/products" aria-label="EsiBuy, catálogo">
       <img src="/assets/images/svg/logo.svg" alt="EsiBuy" />
@@ -46,6 +46,8 @@
     @if (demoResultado(); as resultado) {
       <p class="demo-result" role="status">{{ resultado }}</p>
     }
+
+    <app-panel-filtros-productos [productos]="productos()" [mostrarEstado]="true" (filtrosChange)="aplicarFiltros($event)" />
 
     @if (cargando()) {
       <section class="state-panel" aria-live="polite" aria-busy="true">
@@ -165,3 +167,4 @@
 
   <footer class="seller-footer"><span>© 2026 EsiBuy</span><span>Panel del vendedor</span></footer>
 </main>
+

@@ -1,13 +1,14 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PaginaProducto, Producto, ProductoDTO } from '../../models/producto.model';
-import { ProductApiError, ProductService } from '../../services/product.service';
+import { PanelFiltrosProductos } from '../panel-filtros-productos/panel-filtros-productos';
+import { FiltrosProductos, ProductApiError, ProductService, filtrarProductos } from '../../services/product.service';
 import { ProductoApiError, ProductoService } from '../../services/producto.service';
 import { concatMap, from, toArray } from 'rxjs';
 
 @Component({
   selector: 'app-catalogo-vendedor',
-  imports: [RouterLink],
+  imports: [RouterLink, PanelFiltrosProductos],
   templateUrl: './catalogo-vendedor.html',
   styleUrl: './catalogo-vendedor.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -26,6 +27,7 @@ export class CatalogoVendedor implements OnInit {
   readonly cargandoDemo = signal(false);
   readonly demoResultado = signal<string | null>(null);
   readonly productoEliminando = signal<string | null>(null);
+  private readonly filtros = signal<FiltrosProductos>({});
 
   ngOnInit(): void {
     this.cargarCatalogo();
@@ -35,10 +37,10 @@ export class CatalogoVendedor implements OnInit {
     this.cargando.set(true);
     this.error.set(null);
 
-    this.productService.obtenerCatalogoVendedor(this.paginaActual(), this.tamanoPagina).subscribe({
+    this.productService.obtenerCatalogoVendedor(this.paginaActual(), this.tamanoPagina, this.filtros()).subscribe({
       next: (paginaProductos: PaginaProducto) => {
         this.productos.set(
-          [...paginaProductos.content].sort((a, b) => Number(b.activo) - Number(a.activo)),
+          filtrarProductos(paginaProductos.content, this.filtros()).sort((a, b) => Number(b.activo) - Number(a.activo)),
         );
         this.totalElementos.set(paginaProductos.totalElements);
         this.totalPaginas.set(paginaProductos.totalPages);
@@ -50,6 +52,12 @@ export class CatalogoVendedor implements OnInit {
         this.cargando.set(false);
       },
     });
+  }
+
+  aplicarFiltros(filtros: FiltrosProductos): void {
+    this.filtros.set(filtros);
+    this.paginaActual.set(0);
+    this.cargarCatalogo();
   }
 
   cargarCatalogoDemo(): void {
@@ -257,3 +265,4 @@ export class CatalogoVendedor implements OnInit {
     return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(precioCent / 100);
   }
 }
+
