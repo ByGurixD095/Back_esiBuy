@@ -37,13 +37,11 @@ public interface UsuarioRepository extends MongoRepository<Usuario, String> {
      */
     Optional<Usuario> findByIdAndEliminadoFalse(String id);
     /**
-     * Cuenta usuarios no eliminados con el rol indicado.
+     * Cuenta las cuentas no bloqueadas, activas y no eliminadas con el rol indicado.
      *
-     * @param rol rol que se cuenta
-     * @return número de usuarios coincidentes
+     * @param rol rol de las cuentas que se contarán
+     * @return número de cuentas que cumplen todos los criterios
      */
-    long countByRolAndEliminadoFalse(Rol rol);
-
     long countByRolAndActivoTrueAndBloqueadoFalseAndEliminadoFalse(Rol rol);
     /**
      * Busca la cuenta asociada al hash de un token de recuperación.

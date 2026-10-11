@@ -258,6 +258,11 @@ public class AuthService {
         }
     }
 
+    /**
+     * Revoca todos los tokens de refresco asociados a una cuenta.
+     *
+     * @param usuarioId identificador de la cuenta cuyos tokens se eliminarán
+     */
     public void revocarRefreshTokens(String usuarioId) {
         refreshTokenRepository.deleteByUusuario_Id(usuarioId);
     }

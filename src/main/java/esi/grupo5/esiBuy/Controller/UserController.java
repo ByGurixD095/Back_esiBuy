@@ -192,7 +192,16 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-
+    /**
+     * Elimina lógicamente la cuenta autenticada, revoca sus tokens de refresco y expira
+     * las cookies de sesión.
+     *
+     * @param authentication identidad de la petición autenticada
+     * @param response respuesta HTTP en la que se expiran las cookies
+     * @return respuesta vacía con estado HTTP 204
+     * @throws esi.grupo5.esiBuy.Exception.NotFoundException si la cuenta no existe o ya está eliminada
+     * @throws esi.grupo5.esiBuy.Exception.ForbiddenException si la cuenta es el último administrador disponible
+     */
     @DeleteMapping("/me")
     public ResponseEntity<Void> eliminarMiCuenta(Authentication authentication, HttpServletResponse response) {
         String idAutenticado = (String) authentication.getPrincipal();

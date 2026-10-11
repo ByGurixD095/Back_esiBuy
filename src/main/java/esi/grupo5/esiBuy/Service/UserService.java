@@ -156,10 +156,17 @@ public class UserService {
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
     }
 
-
-     public void eliminarCuenta(String id) {
+    /**
+     * Elimina lógicamente una cuenta, la desactiva y revoca sus tokens de refresco.
+     * No permite eliminar al último administrador activo y desbloqueado.
+     *
+     * @param id identificador de la cuenta que se eliminará
+     * @throws NotFoundException si la cuenta no existe o ya está eliminada
+     * @throws ForbiddenException si es el último administrador activo y desbloqueado
+     */
+    public void eliminarCuenta(String id) {
         Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
-                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND_MESSAGE));
 
         if (esAdministradorDisponible(usuario)
                 && usuarioRepository.countByRolAndActivoTrueAndBloqueadoFalseAndEliminadoFalse(
@@ -173,6 +180,7 @@ public class UserService {
         authService.revocarRefreshTokens(id);
     }
 
+    /** Determina si una cuenta es un administrador actualmente activo y desbloqueado. */
     private boolean esAdministradorDisponible(Usuario usuario) {
         return usuario.getRol() == Rol.ADMINISTRADOR
                 && usuario.isActivo()

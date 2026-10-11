@@ -13,7 +13,6 @@ import esi.grupo5.esiBuy.Dto.UsuarioResponseDTO;
 import esi.grupo5.esiBuy.Exception.*;
 import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Model.Usuario;
-import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Service.strategy.UsuarioUpdateStrategy;
 
@@ -182,26 +181,18 @@ public class AdminService {
     }
 
     /**
-     * Elimina lógicamente una cuenta, preservando la última cuenta administradora.
+     * Solicita la eliminación lógica de una cuenta y evita que el administrador actual
+     * elimine su propia cuenta. La regla común de eliminación se aplica en {@link UserService}.
      *
      * @param id identificador del usuario que se eliminará
      * @param usuarioActualId identificador del administrador que solicita la operación
-     * @throws ForbiddenException si se elimina la propia cuenta o al último administrador
+     * @throws ForbiddenException si el administrador intenta eliminar su propia cuenta o si
+     *         la operación dejaría el sistema sin administradores disponibles
      * @throws NotFoundException si la cuenta no existe o ya fue eliminada
      */
     public void eliminarUsuario(String id, String usuarioActualId) {
         if (id.equals(usuarioActualId)) {
             throw new ForbiddenException("No puedes eliminar tu propia cuenta");
-        }
-
-        Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
-                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND));
-
-        if (usuario.getRol() == Rol.ADMINISTRADOR) {
-            long administradores = usuarioRepository.countByRolAndEliminadoFalse(Rol.ADMINISTRADOR);
-            if (administradores <= 1) {
-                throw new ForbiddenException("No se puede eliminar el último administrador");
-            }
         }
 
         userService.eliminarCuenta(id);
