@@ -52,6 +52,11 @@
           <input id="sede" type="text" formControlName="sede" />
         </div>
 
+        <app-avatar-selector
+          [value]="form.controls.imagenPerfil.value"
+          (valueChange)="form.controls.imagenPerfil.setValue($event)"
+        />
+
         @if (mensajeExito()) {
         <p class="exito esi-alerta esi-alerta--ok" role="status">{{ mensajeExito() }}</p>
         }

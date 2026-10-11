@@ -75,19 +75,10 @@
               }
             </div>
 
-            <div class="esi-campo campo-completo">
-              <label for="imagenPerfil"
-                >Imagen de perfil <span class="opcional">Opcional</span></label
-              >
-              <input
-                id="imagenPerfil"
-                type="url"
-                formControlName="imagenPerfil"
-                placeholder="https://"
-                autocomplete="url"
-              />
-              <small class="esi-ayuda">Déjalo vacío para conservar la imagen actual.</small>
-            </div>
+            <app-avatar-selector
+              [value]="form.controls.imagenPerfil.value"
+              (valueChange)="form.controls.imagenPerfil.setValue($event)"
+            />
           </div>
         </section>
 

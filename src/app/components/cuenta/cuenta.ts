@@ -10,13 +10,14 @@ import {
   PerfilUsuario,
   TipoCliente,
 } from '../../services/perfil.service';
+import { AvatarSelector, avatarAleatorio } from '../avatar-selector/avatar-selector';
 
 const NO_VACIO = /\S/;
 const TELEFONO_PATTERN = /^\d{9}$/;
 
 @Component({
   selector: 'app-cuenta',
-  imports: [MarcoPagina, ReactiveFormsModule],
+  imports: [MarcoPagina, ReactiveFormsModule, AvatarSelector],
   templateUrl: './cuenta.html',
   styleUrl: './cuenta.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -135,6 +136,8 @@ export class Cuenta {
     }
 
     const valores = this.form.getRawValue();
+    const imagenPerfil = valores.imagenPerfil.trim() || avatarAleatorio();
+    this.form.controls.imagenPerfil.setValue(imagenPerfil);
     const datosEspecificos: Partial<ActualizarPerfilRequest> = {};
     if (rol === 'CLIENTE') {
       datosEspecificos.tipoCliente = valores.tipoCliente;
@@ -146,7 +149,7 @@ export class Cuenta {
       nombre: valores.nombre.trim(),
       apellidos: valores.apellidos.trim(),
       ...(valores.telefono.trim() ? { telefono: valores.telefono.trim() } : {}),
-      ...(valores.imagenPerfil.trim() ? { imagenPerfil: valores.imagenPerfil.trim() } : {}),
+      imagenPerfil,
       ...datosEspecificos,
     };
 

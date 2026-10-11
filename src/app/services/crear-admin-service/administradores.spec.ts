@@ -13,6 +13,7 @@ describe('Administradores', () => {
     email: 'ana.lopez@esi.es',
     contrasena: 'Admin123!x',
     sede: 'Ciudad Real',
+    imagenPerfil: '/assets/avatares/avatar-01.svg',
   };
 
   beforeEach(() => {
