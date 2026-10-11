@@ -3,6 +3,7 @@ package esi.grupo5.esiBuy.Controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
+import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Service.AdminService;
 import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Service.UserService;
@@ -10,9 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -33,14 +32,21 @@ class AdminControllerTest {
     @MockitoBean private UserService userService;
     @MockitoBean private AdminService adminService;
     @MockitoBean private JwtService jwtService;
+    @MockitoBean private UsuarioRepository usuarioRepository;
 
     @Test
     void crearAdministrador_datosValidosDevuelve201YRespuestaPublica() throws Exception {
-        AdministradorResponseDTO response = new AdministradorResponseDTO(
-                "admin-1", "Ana", "Pérez", "ana@esibuy.com",
-                "Madrid", "ADMINISTRADOR", "Administrador creado correctamente");
+        AdministradorResponseDTO response = AdministradorResponseDTO.builder()
+                .id("admin-1")
+                .name("Ana")
+                .apellidos("Pérez")
+                .email("ana@esibuy.com")
+                .sede("Madrid")
+                .rol(esi.grupo5.esiBuy.Model.enums.Rol.ADMINISTRADOR)
+                .mensaje("Administrador creado correctamente")
+                .build();
         when(adminService.crearAdministrador(any(AdministradorRegistroDTO.class)))
-                .thenReturn(ResponseEntity.status(HttpStatus.CREATED).body(response));
+                .thenReturn(response);
 
         mockMvc.perform(post("/admin")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -48,6 +54,7 @@ class AdminControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.email").value("ana@esibuy.com"))
                 .andExpect(jsonPath("$.rol").value("ADMINISTRADOR"))
+                .andExpect(jsonPath("$.sede").value("Madrid"))
                 .andExpect(jsonPath("$.mensaje").value("Administrador creado correctamente"))
                 .andExpect(jsonPath("$.contrasena").doesNotExist());
 

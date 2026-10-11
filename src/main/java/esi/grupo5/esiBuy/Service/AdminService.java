@@ -1,47 +1,70 @@
 package esi.grupo5.esiBuy.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-import java.util.Optional;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 import esi.grupo5.esiBuy.Dto.UserPatchDTO;
+import esi.grupo5.esiBuy.Dto.UsuarioResponseDTO;
 import esi.grupo5.esiBuy.Exception.*;
 import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Model.Usuario;
-import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Service.strategy.UsuarioUpdateStrategy;
 
+/** Implementa las operaciones administrativas sobre cuentas de usuario. */
 @Service
 public class AdminService {
+    /** Longitud máxima almacenada para nombre y apellidos en modificaciones. */
+    private static final int LONGITUD_MAXIMA_NOMBRE = 30;
+    /** Mensaje común para cuentas no encontradas. */
+    private static final String USER_NOT_FOUND = "Usuario no encontrado";
     
+    /** Persistencia de cuentas. */
     private final UsuarioRepository usuarioRepository;
-    private final BCryptPasswordEncoder encoder;
+    /** Codificador de contraseñas de nuevos administradores. */
+    private final PasswordEncoder passwordEncoder;
+    /** Validador de contraseñas de registro. */
     private final PasswordValidatorService passwordValidatorService;
+    /** Estrategias de actualización específicas por tipo de usuario. */
     private final List<UsuarioUpdateStrategy> updateStrategies;
+    /** Conversión de usuarios a DTO de respuesta. */
+    private final UserService userService;
 
+    /**
+     * Crea el servicio administrativo con sus dependencias.
+     *
+     * @param usuarioRepository repositorio de usuarios
+     * @param passwordEncoder codificador de contraseñas
+     * @param passwordValidatorService validador de contraseñas
+     * @param updateStrategies estrategias por tipo de usuario
+     * @param userService servicio de usuarios usado para construir respuestas
+     */
     public AdminService(UsuarioRepository usuarioRepository, 
-                        BCryptPasswordEncoder encoder, 
+                        PasswordEncoder passwordEncoder,
                         PasswordValidatorService passwordValidatorService,
-                        List<UsuarioUpdateStrategy> updateStrategies) {
+                        List<UsuarioUpdateStrategy> updateStrategies, UserService userService) {
         this.usuarioRepository = usuarioRepository;
-        this.encoder = encoder;
+        this.passwordEncoder = passwordEncoder;
         this.passwordValidatorService = passwordValidatorService;
         this.updateStrategies = updateStrategies;
+        this.userService = userService;
     }
 
+    /**
+     * Actualiza los datos comunes y específicos de una cuenta y persiste los cambios.
+     *
+     * @param id identificador del usuario
+     * @param dto campos parciales que se aplicarán
+     * @throws NotFoundException si no existe la cuenta
+     */
     public void modificarUsuario(String id, UserPatchDTO dto) {
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND));
 
         actualizarDatosComunes(usuario, dto);
 
@@ -53,9 +76,17 @@ public class AdminService {
         usuarioRepository.save(usuario);
     }
 
+    /**
+     * Actualiza los campos compartidos por todos los tipos de usuario.
+     *
+     * @param usuario cuenta que se modificará
+     * @param dto datos parciales recibidos
+     */
     private void actualizarDatosComunes(Usuario usuario, UserPatchDTO dto) {
-        actualizarTexto(dto.nombre(), usuario::setNombre, "El nombre no puede estar vacío");
-        actualizarTexto(dto.apellidos(), usuario::setApellidos, "Los apellidos no pueden estar vacíos");
+        actualizarTexto(
+                dto.nombre(), usuario::setNombre, "El nombre no puede estar vacío", LONGITUD_MAXIMA_NOMBRE);
+        actualizarTexto(
+                dto.apellidos(), usuario::setApellidos, "Los apellidos no pueden estar vacíos", LONGITUD_MAXIMA_NOMBRE);
 
         if (dto.telefono() != null) {
             usuario.setTelefono(dto.telefono());
@@ -65,77 +96,106 @@ public class AdminService {
         }
     }
 
-    private void actualizarTexto(String valor, Consumer<String> setter, String mensajeError) {
+    /**
+     * Valida y asigna un texto opcional, truncándolo al máximo permitido.
+     *
+     * @param valor texto recibido; si es nulo no se modifica el campo
+     * @param setter operación que asigna el texto
+     * @param mensajeError mensaje para un valor en blanco
+     * @param longitudMaxima longitud máxima que se conservará
+     * @throws ValidationException si el texto está en blanco
+     */
+    private void actualizarTexto(
+            String valor, Consumer<String> setter, String mensajeError, int longitudMaxima) {
         if (valor != null) {
             if (valor.isBlank()) {
                 throw new ValidationException(mensajeError);
             }
-            setter.accept(valor);
+            setter.accept(valor.substring(0, Math.min(valor.length(), longitudMaxima)));
         }
     }
 
-    public ResponseEntity<AdministradorResponseDTO> crearAdministrador(AdministradorRegistroDTO dto) {
+    /**
+     * Bloquea una cuenta existente.
+     *
+     * @param id identificador del usuario
+     * @return representación actualizada del usuario
+     */
+    public UsuarioResponseDTO bloquearUsuario(String id) {
+        return actualizarEstadoBloqueo(id, true);
+    }
+
+    /**
+     * Desbloquea una cuenta existente.
+     *
+     * @param id identificador del usuario
+     * @return representación actualizada del usuario
+     */
+    public UsuarioResponseDTO desbloquearUsuario(String id) {
+        return actualizarEstadoBloqueo(id, false);
+    }
+
+    /**
+     * Cambia y persiste el estado de bloqueo de una cuenta no eliminada.
+     *
+     * @param id identificador del usuario
+     * @param bloqueado nuevo estado de bloqueo
+     * @return representación actualizada del usuario
+     * @throws NotFoundException si no existe una cuenta no eliminada
+     */
+    private UsuarioResponseDTO actualizarEstadoBloqueo(String id, boolean bloqueado) {
+        Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND));
+
+        usuario.setBloqueado(bloqueado);
+        usuarioRepository.save(usuario);
+        return userService.toResponseDto(usuario);
+    }
+
+    /**
+     * Crea una cuenta administrativa con contraseña validada y codificada.
+     *
+     * @param dto datos de registro del administrador
+     * @return respuesta del administrador creado
+     * @throws ConflictException si el correo ya está registrado
+     * @throws ValidationException si la contraseña no cumple los requisitos
+     */
+    public AdministradorResponseDTO crearAdministrador(AdministradorRegistroDTO dto) {
         if (usuarioRepository.findByEmail(dto.email()).isPresent()) {
             throw new ConflictException("El email ya está registrado");
         }
 
-        try {
-            passwordValidatorService.validatePassword(
-                dto.contrasena(),
-                new ArrayList<>()
-            );
-        } catch (ResponseStatusException e) {
-            throw new ValidationException("La contraseña no cumple con los requisitos de seguridad: " + e.getReason());
-        }
+        passwordValidatorService.validateRegistrationPassword(dto.contrasena());
 
         Administrador admin = Administrador.builder()
                 .nombre(dto.nombre())
                 .apellidos(dto.apellidos())
                 .email(dto.email())
-                .contrasena(encoder.encode(dto.contrasena()))
+                .contrasena(passwordEncoder.encode(dto.contrasena()))
                 .sede(dto.sede())
                 .build();
 
         Administrador guardado = usuarioRepository.save(admin);
 
-        AdministradorResponseDTO respuesta = new AdministradorResponseDTO(
-                guardado.getId(),
-                guardado.getNombre(),
-                guardado.getApellidos(),
-                guardado.getEmail(),
-                guardado.getSede(),
-                guardado.getRol().toString(),
-                "Administrador creado correctamente");
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(respuesta);
+        return userService.toAdministradorResponseDto(guardado, "Administrador creado correctamente");
     }
 
+    /**
+     * Solicita la eliminación lógica de una cuenta y evita que el administrador actual
+     * elimine su propia cuenta. La regla común de eliminación se aplica en {@link UserService}.
+     *
+     * @param id identificador del usuario que se eliminará
+     * @param usuarioActualId identificador del administrador que solicita la operación
+     * @throws ForbiddenException si el administrador intenta eliminar su propia cuenta o si
+     *         la operación dejaría el sistema sin administradores disponibles
+     * @throws NotFoundException si la cuenta no existe o ya fue eliminada
+     */
     public void eliminarUsuario(String id, String usuarioActualId) {
-
         if (id.equals(usuarioActualId)) {
             throw new ForbiddenException("No puedes eliminar tu propia cuenta");
         }
 
-        Optional<Usuario> optionalUsuario = usuarioRepository.findByIdAndEliminadoFalse(id);
-
-        if (optionalUsuario.isEmpty()) {
-            throw new NotFoundException("Usuario no encontrado");
-        }
-
-        Usuario usuario = optionalUsuario.get();
-
-        if (usuario.getRol() == Rol.ADMINISTRADOR) {
-
-        long administradores = usuarioRepository
-                .countByRolAndEliminadoFalse(Rol.ADMINISTRADOR);
-
-        if (administradores <= 1) {
-            throw new ForbiddenException("No se puede eliminar el último administrador");
-        }
-    }
-
-        usuario.setEliminado(true);
-        usuarioRepository.save(usuario);
+        userService.eliminarCuenta(id);
     }
 
 }

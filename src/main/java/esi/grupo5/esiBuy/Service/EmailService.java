@@ -17,15 +17,26 @@ import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Envía mensajes HTML y correos de recuperación mediante SMTP. */
 @Service
 public class EmailService {
 
+    /** Logger para registrar los envíos. */
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
-    private static final String TIMEOUT_PROPERTY = "10000"; // 10 seconds
+    /** Límite de conexión, lectura y escritura SMTP en milisegundos. */
+    private static final String TIMEOUT_PROPERTY = "10000";
 
+    /** Usuario SMTP y dirección remitente. */
     private final String username;
+    /** Credencial SMTP de aplicación. */
     private final String appPassword;
 
+    /**
+     * Crea el servicio con las credenciales SMTP configuradas.
+     *
+     * @param username usuario SMTP y dirección del remitente
+     * @param appPassword contraseña de aplicación SMTP
+     */
     public EmailService(
         @Value("${mail.username}") String username,
         @Value("${mail.password}") String appPassword
@@ -34,6 +45,14 @@ public class EmailService {
         this.appPassword = appPassword;
     }
 
+    /**
+     * Envía un mensaje HTML al destinatario mediante SMTP.
+     *
+     * @param to dirección del destinatario
+     * @param subject asunto del mensaje
+     * @param htmlContent contenido HTML
+     * @throws MessagingException si falla la composición o el envío
+     */
     public void sendHtmlEmail(String to, String subject, String htmlContent) throws MessagingException {
         Properties props = new Properties();
         props.put("mail.smtp.auth", "true");
@@ -45,6 +64,7 @@ public class EmailService {
         props.put("mail.smtp.writetimeout", TIMEOUT_PROPERTY);
 
         Session session = Session.getInstance(props, new Authenticator() {
+            /** {@inheritDoc} */
             @Override
             protected PasswordAuthentication getPasswordAuthentication() {
                 return new PasswordAuthentication(username, appPassword);
@@ -62,6 +82,14 @@ public class EmailService {
         logger.info("Email enviado correctamente a {}", to);
     }
 
+    /**
+     * Compone y envía el correo con el enlace de recuperación de contraseña.
+     *
+     * @param to dirección del destinatario
+     * @param nombre nombre que se muestra en el saludo
+     * @param resetLink enlace de recuperación insertado en el mensaje
+     * @throws MessagingException si falla el envío SMTP
+     */
     public void sendRecoveryEmail(String to, String nombre, String resetLink) throws MessagingException {
         String subject = "Recuperar contraseña de esiBuy";
         String nombreApp = "esiBuy";
