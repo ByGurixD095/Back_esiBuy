@@ -170,6 +170,20 @@ class UserServiceConsultarUsuariosLecturaTest {
 
         verify(usuarioRepository).findByIdAndEliminadoFalse("no-existe");
     }
+    
+    @Test
+    void consultarUsuarioAdminPorId_permiteConsultarUsuarioEliminado() {
+        Cliente cliente = cliente("cliente-eliminado", "Ana", "ana@test.com");
+        cliente.setEliminado(true);
+        when(usuarioRepository.findById("cliente-eliminado"))
+                .thenReturn(Optional.of(cliente));
+
+        UsuarioResponseDTO resultado = service.getAdminUserById("cliente-eliminado");
+
+        assertEquals("cliente-eliminado", resultado.getId());
+        assertEquals(true, resultado.isEliminado());
+        verify(usuarioRepository).findById("cliente-eliminado");
+    }
 
     @Test
     void registrarCliente_validaGuardaYCompletaAutenticacion() {
