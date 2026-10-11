@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { PaginaProducto, Producto } from '../../models/producto.model';
 import { PanelFiltrosProductos } from '../panel-filtros-productos/panel-filtros-productos';
-import { FiltrosProductos, ProductApiError, ProductService } from '../../services/product.service';
+import { FiltrosProductos, ProductApiError, ProductService, filtrarProductos } from '../../services/product.service';
 
 @Component({
   selector: 'app-catalogo',
@@ -34,7 +34,7 @@ export class Catalogo implements OnInit {
     this.error.set(null);
     this.productService.obtenerDisponibles(filtros, this.paginaActual(), this.tamanoPagina).subscribe({
       next: (paginaProductos: PaginaProducto) => {
-        this.productos.set(paginaProductos.content);
+        this.productos.set(filtrarProductos(paginaProductos.content, filtros));
         this.totalPaginas.set(paginaProductos.totalPages);
         this.totalElementos.set(paginaProductos.totalElements);
         this.paginaActual.set(paginaProductos.number);

@@ -45,7 +45,7 @@ export function filtrarProductos(productos: Producto[], filtros: FiltrosProducto
   const texto = filtros.busqueda?.trim().toLowerCase();
   const categoria = filtros.categoria && filtros.categoria !== 'Todas' && filtros.categoria !== 'TODAS' ? filtros.categoria : null;
 
-  return productos.filter(
+  const filtrados = productos.filter(
     (p) =>
       (!texto || p.nombre.toLowerCase().includes(texto) || p.referencia.toLowerCase().includes(texto)) &&
       (!categoria || p.categoria === categoria) &&
@@ -54,7 +54,19 @@ export function filtrarProductos(productos: Producto[], filtros: FiltrosProducto
       (!filtros.soloOfertas || p.descuento > 0) &&
       (!filtros.estado || filtros.estado === 'todos' || p.activo === (filtros.estado === 'activos')),
   );
-}
+
+        const precioFinal = (p: Producto) => p.precioCent * (1 - (p.descuento || 0) / 100);
+        switch (filtros.orden) {
+          case 'precioAsc':
+            return filtrados.sort((a, b) => precioFinal(a) - precioFinal(b));
+          case 'precioDesc':
+            return filtrados.sort((a, b) => precioFinal(b) - precioFinal(a));
+          case 'descuento':
+            return filtrados.sort((a, b) => (b.descuento || 0) - (a.descuento || 0));
+          default:
+            return filtrados;
+        }
+      }
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
