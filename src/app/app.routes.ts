@@ -14,12 +14,15 @@ import { Cuenta } from './components/cuenta/cuenta';
 import { Gestionar } from './components/gestionar/gestionar';
 import { ConsultarUsuarios } from './components/consultar-usuarios/consultar-usuarios';
 import { AdminEditarUsuario } from './components/admin-editar-usuario/admin-editar-usuario';
+import { ProductoDetalle } from './components/producto-detalle/producto-detalle';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', component: Inicio },
   { path: 'products', component: Catalogo },
   { path: 'products/catalogo', component: CatalogoVendedor, canActivate: [roleGuard(['VENDEDOR'])] },
   { path: 'products/new', component: ProductoForm, canActivate: [roleGuard(['VENDEDOR'])] },
+  { path: 'products/:id/editar', component: ProductoForm, canActivate: [roleGuard(['VENDEDOR'])] },
+  { path: 'products/:id', component: ProductoDetalle, canActivate: [roleGuard(['VENDEDOR'])] },
   { path: 'register', component: RegistroInicio },
   { path: 'register/clientes', component: RegistroComponent, data: { tipoRegistro: 'cliente' } },
   { path: 'register/vendedor', component: RegistroComponent, data: { tipoRegistro: 'vendedor' } },

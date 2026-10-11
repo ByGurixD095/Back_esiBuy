@@ -34,6 +34,19 @@
       </aside>
     </div>
 
+    <div class="demo-tools">
+      <div>
+        <strong>¿Quieres probar la tienda?</strong>
+        <p>Carga 12 productos de ejemplo con imágenes en tu catálogo.</p>
+      </div>
+      <button type="button" class="demo-button" [disabled]="cargandoDemo()" (click)="cargarCatalogoDemo()">
+        {{ cargandoDemo() ? 'Cargando productos...' : 'Cargar catálogo de ejemplo' }}
+      </button>
+    </div>
+    @if (demoResultado(); as resultado) {
+      <p class="demo-result" role="status">{{ resultado }}</p>
+    }
+
     @if (cargando()) {
       <section class="state-panel" aria-live="polite" aria-busy="true">
         <span class="loader" aria-hidden="true"></span>
@@ -66,12 +79,13 @@
           <thead>
             <tr>
               <th scope="col">Producto</th>
-              <th scope="col">Referencia</th>
               <th scope="col">Categoría</th>
               <th scope="col">Precio</th>
               <th scope="col">Stock</th>
               <th scope="col">Descuento</th>
+              <th scope="col">Premium</th>
               <th scope="col">Estado</th>
+              <th scope="col">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -88,17 +102,48 @@
                     @if (producto.descripcion) { <small>{{ producto.descripcion }}</small> }
                   </span>
                 </td>
-                <td data-label="Referencia">{{ producto.referencia }}</td>
                 <td data-label="Categoría">{{ producto.categoria }}</td>
                 <td class="price-cell" data-label="Precio">{{ formatearPrecio(producto.precioCent) }}</td>
                 <td data-label="Stock">{{ producto.numStock }}</td>
                 <td data-label="Descuento">
                   @if (producto.descuento > 0) { <span class="discount">{{ producto.descuento }}%</span> } @else { <span>—</span> }
                 </td>
+                <td data-label="Premium">
+                  @if (producto.descuentoPremium > 0) { <span class="discount">{{ producto.descuentoPremium }}%</span> } @else { <span>—</span> }
+                </td>
                 <td data-label="Estado">
                   <span class="status" [class.status-inactive]="!producto.activo">
                     {{ producto.activo ? 'Activo' : 'Inactivo' }}
                   </span>
+                </td>
+                <td class="product-actions">
+                  <a class="icon-action" [routerLink]="['/products', producto.id]" aria-label="Ver detalle de {{ producto.nombre }}" title="Ver detalle">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path>
+                      <circle cx="12" cy="12" r="2.5"></circle>
+                    </svg>
+                    <span class="visually-hidden">Ver</span>
+                  </a>
+                  <a class="icon-action" [routerLink]="['/products', producto.id, 'editar']" aria-label="Editar {{ producto.nombre }}" title="Editar producto">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="m4 16-.8 4.8L8 20l11.2-11.2a2.1 2.1 0 0 0-3-3L4 17.1Z"></path>
+                      <path d="m14.8 7.2 3 3"></path>
+                    </svg>
+                    <span class="visually-hidden">Editar</span>
+                  </a>
+                  <button class="icon-action delete-action" type="button" (click)="eliminarProducto(producto)" [disabled]="productoEliminando() === producto.id" aria-label="Eliminar {{ producto.nombre }}" title="Eliminar producto">
+                    @if (productoEliminando() === producto.id) {
+                      <span class="icon-spinner" aria-hidden="true"></span>
+                    } @else {
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 7h16"></path>
+                        <path d="M9 7V4h6v3"></path>
+                        <path d="m7 7 .8 13h8.4L17 7"></path>
+                        <path d="M10 11v5M14 11v5"></path>
+                      </svg>
+                    }
+                    <span class="visually-hidden">Eliminar</span>
+                  </button>
                 </td>
               </tr>
             }

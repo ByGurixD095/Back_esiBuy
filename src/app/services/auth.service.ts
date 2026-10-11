@@ -55,7 +55,9 @@ export class AuthService {
   readonly sessionChecked = this.sessionCheckedSignal.asReadonly();
 
   login(datos: LoginRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${environment.apiUrl}/users/login`, datos).pipe(
+    return this.http.post<LoginResponse>(`${environment.apiUrl}/users/login`, datos, {
+      withCredentials: true,
+    }).pipe(
       tap((respuesta) => this.storeSessionIfComplete(respuesta)),
     );
   }
@@ -64,24 +66,29 @@ export class AuthService {
     return this.http.post<MfaSetupResponse>(`${environment.apiUrl}/mfa/setup-init`, {
       email,
       setupToken,
-    });
+    }, { withCredentials: true });
   }
 
   confirmMfaSetup(datos: MfaSetupConfirmRequest): Observable<MfaBackupCodesResponse> {
     return this.http.post<MfaBackupCodesResponse>(
       `${environment.apiUrl}/mfa/setup-confirm`,
       datos,
+      { withCredentials: true },
     );
   }
 
   verifyMfa(datos: MfaVerifyRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${environment.apiUrl}/mfa/verify-mfa`, datos).pipe(
+    return this.http.post<LoginResponse>(`${environment.apiUrl}/mfa/verify-mfa`, datos, {
+      withCredentials: true,
+    }).pipe(
       tap((respuesta) => this.storeSessionIfComplete(respuesta)),
     );
   }
 
   refresh(): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${environment.apiUrl}/users/refresh`, {}).pipe(
+    return this.http.post<LoginResponse>(`${environment.apiUrl}/users/refresh`, {}, {
+      withCredentials: true,
+    }).pipe(
       tap((respuesta) => this.storeSessionIfComplete(respuesta)),
     );
   }
@@ -98,7 +105,9 @@ export class AuthService {
   }
 
   logout(): Observable<void> {
-    return this.http.post<void>(`${environment.apiUrl}/users/logout`, {}).pipe(
+    return this.http.post<void>(`${environment.apiUrl}/users/logout`, {}, {
+      withCredentials: true,
+    }).pipe(
       tap(() => this.clearSession()),
     );
   }
