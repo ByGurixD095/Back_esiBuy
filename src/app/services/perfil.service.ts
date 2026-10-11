@@ -44,4 +44,8 @@ export class PerfilService {
   actualizarMiPerfil(datos: ActualizarPerfilRequest): Observable<void> {
     return this.http.patch<void>(`${this.apiUrl}/me/update`, datos);
   }
+
+  eliminarMiCuenta(): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/me`);
+  }
 }

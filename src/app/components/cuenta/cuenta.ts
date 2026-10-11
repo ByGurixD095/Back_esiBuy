@@ -36,6 +36,12 @@ export class Cuenta {
   readonly guardando = signal(false);
   readonly mensajeExito = signal('');
   readonly mensajeError = signal('');
+  readonly confirmandoCierreSesion = signal(false);
+  readonly cerrandoSesion = signal(false);
+  readonly confirmandoEliminacion = signal(false);
+  readonly eliminandoCuenta = signal(false);
+  readonly errorEliminacion = signal('');
+  readonly puedeEliminarCuenta = computed(() => this.rol() !== null);
 
   readonly form = new FormGroup({
     nombre: new FormControl('', {
@@ -151,9 +157,63 @@ export class Cuenta {
   }
 
   cerrarSesion(): void {
+    this.confirmandoCierreSesion.set(true);
+  }
+
+  cancelarCierreSesion(): void {
+    if (!this.cerrandoSesion()) {
+      this.confirmandoCierreSesion.set(false);
+    }
+  }
+
+  confirmarCierreSesion(): void {
+    if (!this.confirmandoCierreSesion() || this.cerrandoSesion()) {
+      return;
+    }
+
+    this.cerrandoSesion.set(true);
     this.auth.logout().subscribe({
-      next: () => void this.router.navigate(['/']),
-      error: () => void this.router.navigate(['/']),
+      next: () => {
+        this.confirmandoCierreSesion.set(false);
+        void this.router.navigate(['/']);
+      },
+      error: () => {
+        this.confirmandoCierreSesion.set(false);
+        void this.router.navigate(['/']);
+      },
+    });
+  }
+
+  solicitarEliminacionCuenta(): void {
+    this.errorEliminacion.set('');
+    this.confirmandoEliminacion.set(true);
+  }
+
+  cancelarEliminacionCuenta(): void {
+    if (!this.eliminandoCuenta()) {
+      this.confirmandoEliminacion.set(false);
+      this.errorEliminacion.set('');
+    }
+  }
+
+  eliminarMiCuenta(): void {
+    if (!this.confirmandoEliminacion() || this.eliminandoCuenta()) {
+      return;
+    }
+
+    this.eliminandoCuenta.set(true);
+    this.errorEliminacion.set('');
+    this.perfilService.eliminarMiCuenta().subscribe({
+      next: () => {
+        this.auth.clearSession();
+        void this.router.navigate(['/']);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.eliminandoCuenta.set(false);
+        this.errorEliminacion.set(
+          this.auth.errorMessage(error, 'No se ha podido eliminar la cuenta. Inténtalo de nuevo.'),
+        );
+      },
     });
   }
 
