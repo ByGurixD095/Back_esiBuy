@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -136,6 +137,20 @@ class ProductoServiceTest {
                 .thenReturn(Optional.of(producto));
 
         assertEquals(producto, productoService.obtenerProducto("producto-1", "vendedor-1"));
+    }
+
+    @Test
+    void obtenerCatalogoVendedor_incluyeProductosInactivos() {
+        Producto productoInactivo = new Producto();
+        productoInactivo.setActivo(false);
+        when(productoRepository.findByIdVendedor("vendedor-1", PageRequest.of(0, 36)))
+                .thenReturn(new PageImpl<>(List.of(productoInactivo)));
+
+        Page<Producto> resultado = productoService.obtenerCatalogoVendedor("vendedor-1", 0, 36);
+
+        assertEquals(1, resultado.getTotalElements());
+        assertFalse(resultado.getContent().get(0).isActivo());
+        verify(productoRepository).findByIdVendedor("vendedor-1", PageRequest.of(0, 36));
     }
 
     @Test

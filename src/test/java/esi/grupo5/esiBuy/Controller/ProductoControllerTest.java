@@ -278,6 +278,24 @@ class ProductoControllerTest {
     }
 
     @Test
+    void obtenerCatalogoVendedor_incluyeEstadoDeProductosInactivos() throws Exception {
+        Producto productoInactivo = new Producto("Camiseta ESI", "REF-092026a", 0, 1999,
+                "Camiseta oficial", "Ropa", "url_imagen.jpg", 0, 0);
+        productoInactivo.setActivo(false);
+
+        when(productoService.obtenerCatalogoVendedor("vendedor-1", 0, 36))
+                .thenReturn(new PageImpl<>(List.of(productoInactivo), PageRequest.of(0, 36), 1));
+
+        mockMvc.perform(get("/products/catalogo")
+                .principal(new UsernamePasswordAuthenticationToken("vendedor-1", null)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].activo").value(false));
+
+        verify(productoService).obtenerCatalogoVendedor("vendedor-1", 0, 36);
+    }
+
+    @Test
     void obtenerProducto_pasaElVendedorAutenticado() throws Exception {
         Producto producto = new Producto();
         producto.setId("producto-1");
