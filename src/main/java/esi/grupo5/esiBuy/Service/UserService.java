@@ -103,6 +103,13 @@ public class UserService {
                 .map(this::toResponseDto)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND_MESSAGE));
     }
+    
+    public UsuarioResponseDTO getAdminUserById(String id) {
+        return usuarioRepository.findById(id)
+                .map(this::toResponseDto)
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+    }
+
 
     // UPDATE PROFILE
     @Transactional

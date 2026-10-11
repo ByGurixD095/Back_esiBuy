@@ -18,7 +18,7 @@ public class Producto {
     private boolean activo; // Control para el borrado lógico del producto
     private int descuento; // Un descuento = 5 será de un 5%
     private int descuentoPremium;
-    String idVendedor; // NEW para asociar cada producto a su vendedor
+    private String idVendedor; // NEW para asociar cada producto a su vendedor
 
     public Producto() {
         this.activo = true; // Por defecto, el producto está activo
@@ -71,5 +71,14 @@ public class Producto {
     public int getDescuentoPremium() { return descuentoPremium; }
     public void setDescuentoPremium(int descuentoPremium) { this.descuentoPremium = descuentoPremium; }
 
+    public String getIdVendedor() {
+    return idVendedor;
+    }
+
+    public void setIdVendedor(String idVendedor) {
+        this.idVendedor = idVendedor;
+    }
+
+    
 }
 

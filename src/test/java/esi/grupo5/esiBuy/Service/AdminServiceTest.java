@@ -171,6 +171,29 @@ class AdminServiceTest {
     }
 
     @Test
+    void modificarUsuario_truncaNombreYApellidosA30Caracteres() {
+        String id = "admin1";
+        Administrador administrador = Administrador.builder()
+            .nombre("Ana")
+            .apellidos("Pérez")
+            .email("ana@esibuy.com")
+            .contrasena("password")
+            .sede("Madrid")
+            .build();
+        UserPatchDTO dto = new UserPatchDTO(
+            "123456789012345678901234567890EXTRA",
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456",
+            null, null, null, null, null, null, null, null, null);
+        when(usuarioRepository.findById(id)).thenReturn(Optional.of(administrador));
+
+        service.modificarUsuario(id, dto);
+
+        assertEquals("123456789012345678901234567890", administrador.getNombre());
+        assertEquals("ABCDEFGHIJKLMNOPQRSTUVWXYZ1234", administrador.getApellidos());
+        verify(usuarioRepository).save(administrador);
+    }
+
+    @Test
     void modificarUsuario_clienteMenorDeEdad() {
         String id = "cliente1";
 

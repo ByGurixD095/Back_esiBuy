@@ -23,7 +23,7 @@ import esi.grupo5.esiBuy.Service.strategy.UsuarioUpdateStrategy;
 
 @Service
 public class AdminService {
-
+    private static final int LONGITUD_MAXIMA_NOMBRE = 30;
     private static final String USER_NOT_FOUND = "Usuario no encontrado";
     
     private final UsuarioRepository usuarioRepository;
@@ -58,8 +58,10 @@ public class AdminService {
     }
 
     private void actualizarDatosComunes(Usuario usuario, UserPatchDTO dto) {
-        actualizarTexto(dto.nombre(), usuario::setNombre, "El nombre no puede estar vacío");
-        actualizarTexto(dto.apellidos(), usuario::setApellidos, "Los apellidos no pueden estar vacíos");
+        actualizarTexto(
+                dto.nombre(), usuario::setNombre, "El nombre no puede estar vacío", LONGITUD_MAXIMA_NOMBRE);
+        actualizarTexto(
+                dto.apellidos(), usuario::setApellidos, "Los apellidos no pueden estar vacíos", LONGITUD_MAXIMA_NOMBRE);
 
         if (dto.telefono() != null) {
             usuario.setTelefono(dto.telefono());
@@ -69,12 +71,13 @@ public class AdminService {
         }
     }
 
-    private void actualizarTexto(String valor, Consumer<String> setter, String mensajeError) {
+    private void actualizarTexto(
+            String valor, Consumer<String> setter, String mensajeError, int longitudMaxima) {
         if (valor != null) {
             if (valor.isBlank()) {
                 throw new ValidationException(mensajeError);
             }
-            setter.accept(valor);
+            setter.accept(valor.substring(0, Math.min(valor.length(), longitudMaxima)));
         }
     }
 
