@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.ArgumentCaptor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.List;
@@ -31,6 +32,8 @@ import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+  import static org.junit.jupiter.api.Assertions.assertFalse;
+  import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -185,28 +188,51 @@ class UserServiceConsultarUsuariosLecturaTest {
     }
 
     @Test
-    void registrarCliente_validaGuardaYCompletaAutenticacion() {
+    void registrarCliente_guardaInactivoYPideActivacionSinAutenticar() {
         ClienteRegistroDTO dto = new ClienteRegistroDTO(
                 "Ana", "López", "ana@test.com", "Strong#2026", "123456789",
                 null, "12345678A", LocalDate.of(2000, 1, 1), null);
-        LoginResponseDTO respuesta = new LoginResponseDTO("access", "refresh", "CLIENTE", "NORMAL");
         doReturn(false).when(usuarioRepository).existsByEmail(dto.email());
         when(usuarioRepository.save(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(authService.completarAutenticacion(any())).thenReturn(respuesta);
 
         LoginResponseDTO resultado = service.registrarCliente(dto);
 
-        assertEquals(respuesta, resultado);
+        assertEquals("PENDING_ACTIVATION", resultado.mfaStatus());
+        assertEquals("ana@test.com", resultado.email());
+        assertNull(resultado.accessToken());
+        assertNull(resultado.refreshToken());
         verify(passwordValidatorService).validateRegistrationPassword(dto.contrasena());
-        verify(usuarioRepository).save(any(Cliente.class));
-        verify(authService).completarAutenticacion(any());
+
+        ArgumentCaptor<Cliente> captor = ArgumentCaptor.forClass(Cliente.class);
+        verify(usuarioRepository).save(captor.capture());
+        assertFalse(captor.getValue().isActivo());
+        verify(authService, never()).completarAutenticacion(any());
+    }
+
+    @Test
+    void registrarVendedor_guardaInactivoYPideActivacionSinAutenticar() {
+        VendedorRegisterRequest dto = new VendedorRegisterRequest(
+                "Luis", "García", "luis@test.com", "Strong#2026", null, null,
+                "Tienda Luis", "B12345678", "electronica");
+        doReturn(false).when(usuarioRepository).existsByEmail(dto.email());
+        when(usuarioRepository.save(any(Vendedor.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        LoginResponseDTO resultado = service.registrarVendedor(dto);
+
+        assertEquals("PENDING_ACTIVATION", resultado.mfaStatus());
+        assertNull(resultado.accessToken());
+
+        ArgumentCaptor<Vendedor> captor = ArgumentCaptor.forClass(Vendedor.class);
+        verify(usuarioRepository).save(captor.capture());
+        assertFalse(captor.getValue().isActivo());
+        verify(authService, never()).completarAutenticacion(any());
     }
 
     @Test
     void registrarVendedor_emailExistenteImpideGuardar() {
-        VendedorRegisterRequest dto = new VendedorRegisterRequest(
-                "Luis", "García", "luis@test.com", "Strong#2026", null, null,
-                "Tienda Luis", "B12345678", "electronica");
+         VendedorRegisterRequest dto = new VendedorRegisterRequest(
+                        "Luis", "García", "luis@test.com", "Strong#2026", null, null,
+                        "Tienda Luis", "B12345678", "electronica");
         when(usuarioRepository.existsByEmail(dto.email())).thenReturn(true);
 
         assertThrows(ConflictException.class, () -> service.registrarVendedor(dto));

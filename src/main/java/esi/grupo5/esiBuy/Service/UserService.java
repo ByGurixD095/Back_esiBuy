@@ -279,7 +279,7 @@ public class UserService {
             throw new ConflictException("El email ya está registrado");
         }
 
-        usuario.setActivo(true);
+        usuario.setActivo(false); // pendiente de activación por un administrador
         Usuario usuarioGuardado;
 
         try {
@@ -288,7 +288,9 @@ public class UserService {
             throw new BusinessException("Error interno al registrar el usuario", 500, "INTERNAL_ERROR", e);
         }
 
-        return authService.completarAutenticacion(usuarioGuardado);
+        // Sin tokens ni MFA: hasta que un administrador la active no puede entrar
+        return new LoginResponseDTO(null, null, usuarioGuardado.getRol().toString(), null,
+                "PENDING_ACTIVATION", usuarioGuardado.getEmail());
     }
 
     /**
