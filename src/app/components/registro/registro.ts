@@ -1,6 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService, LoginResponse } from '../../services/auth.service';
 import { Registro as RegistroService } from '../../services/registro-service/registro';
@@ -10,6 +17,7 @@ import { MarcoPagina } from '../marco-pagina/marco-pagina';
 type TipoRegistro = 'cliente' | 'vendedor';
 
 const NO_VACIO = /\S/;
+const PATRON_CONTRASENA = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).+$/;
 
 function fechaAnteriorAHoy(fecha: string): boolean {
   if (!fecha) {
@@ -19,6 +27,22 @@ function fechaAnteriorAHoy(fecha: string): boolean {
   const fechaLocal = new Date(`${fecha}T00:00:00`);
   hoy.setHours(0, 0, 0, 0);
   return !Number.isNaN(fechaLocal.getTime()) && fechaLocal < hoy;
+}
+
+function validarMayorDeEdad(control: AbstractControl): ValidationErrors | null {
+  if (!control.value) {
+    return null;
+  }
+
+  const fechaNacimiento = new Date(`${control.value}T00:00:00`);
+  if (Number.isNaN(fechaNacimiento.getTime())) {
+    return { fechaInvalida: true };
+  }
+
+  const fechaLimite = new Date();
+  fechaLimite.setFullYear(fechaLimite.getFullYear() - 18);
+  fechaLimite.setHours(0, 0, 0, 0);
+  return fechaNacimiento <= fechaLimite ? null : { menorDeEdad: true };
 }
 
 @Component({
@@ -57,7 +81,12 @@ export class RegistroComponent {
     }),
     contrasena: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.pattern(NO_VACIO)],
+      validators: [
+        Validators.required,
+        Validators.minLength(8),
+        Validators.maxLength(72),
+        Validators.pattern(PATRON_CONTRASENA),
+      ],
     }),
     telefono: new FormControl('', { nonNullable: true }),
     imagenPerfil: new FormControl('', { nonNullable: true }),
@@ -89,6 +118,7 @@ export class RegistroComponent {
       this.form.controls.fechaNacimiento.addValidators([
         Validators.required,
         (control) => (fechaAnteriorAHoy(control.value) ? null : { past: true }),
+        validarMayorDeEdad,
       ]);
       this.form.controls.dni.updateValueAndValidity();
       this.form.controls.fechaNacimiento.updateValueAndValidity();
@@ -104,7 +134,7 @@ export class RegistroComponent {
       return;
     }
     if (!this.form.controls.imagenPerfil.value.trim()) {
-      this.form.controls.imagenPerfil.setValue(avatarAleatorio());
+      this.form.controls.imagenPerfil.setValue(avatarAleatorio(this.esVendedor));
     }
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -168,7 +198,10 @@ export class RegistroComponent {
       return 'No se ha podido conectar con el servidor.';
     }
     if (error.status === 409) {
-      return 'Ya existe una cuenta con ese correo electrónico o documento.';
+      const message = error.error?.message ?? error.error?.mensaje;
+      return typeof message === 'string' && message.length > 0
+        ? message
+        : 'Ya existe una cuenta con ese correo electrónico o documento.';
     }
     if (error.status === 400) {
       return 'No se ha podido crear la cuenta. Revisa los datos introducidos.';

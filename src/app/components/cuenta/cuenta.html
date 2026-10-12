@@ -77,6 +77,7 @@
 
             <app-avatar-selector
               [value]="form.controls.imagenPerfil.value"
+              [esVendedor]="rol() === 'VENDEDOR'"
               (valueChange)="form.controls.imagenPerfil.setValue($event)"
             />
           </div>
@@ -155,8 +156,7 @@
                 <input
                   id="sede"
                   type="text"
-                  [value]="perfil()?.sede ?? 'No especificada'"
-                  readonly
+                  formControlName="sede"
                 />
               </div>
               <div class="esi-campo">

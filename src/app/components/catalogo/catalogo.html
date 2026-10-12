@@ -24,15 +24,18 @@
       </div>
       <aside class="catalog-summary" aria-label="Resumen del catálogo">
         <span class="summary-label">Ahora mismo</span>
-        @if (cargando()) {
+        @if (totalCatalogo() === null && cargando()) {
           <strong class="summary-number">...</strong>
           <p>Consultando disponibilidad</p>
-        } @else if (error()) {
+        } @else if (totalCatalogo() === null && error()) {
           <strong class="summary-number">!</strong>
           <p>No se pudo consultar el catálogo</p>
+        } @else if (totalCatalogo() !== null) {
+          <strong class="summary-number">{{ totalCatalogo() }}</strong>
+          <p>{{ totalCatalogo() === 1 ? 'producto disponible' : 'productos disponibles' }}</p>
         } @else {
-          <strong class="summary-number">{{ productos().length }}</strong>
-          <p>{{ productos().length === 1 ? 'producto disponible' : 'productos disponibles' }}</p>
+          <strong class="summary-number">...</strong>
+          <p>Consultando disponibilidad</p>
         }
         <span class="summary-line" aria-hidden="true"></span>
         <small>Stock actualizado desde el catálogo online</small>
@@ -67,8 +70,8 @@
       </section>
     } @else {
       <div class="results-toolbar" aria-live="polite">
-        <p>Mostrando <strong>{{ totalElementos() }}</strong> artículos</p>
-        <p class="success-note"><span aria-hidden="true">●</span> Catálogo actualizado · 36 por página</p>
+        <p>Mostrando <strong>{{ productos().length }}</strong> de <strong>{{ totalElementos() }}</strong> productos disponibles</p>
+        <p class="success-note"><span aria-hidden="true">●</span> Catálogo actualizado · {{ tamanoPagina }} por página</p>
       </div>
 
       <div class="product-grid">
@@ -91,7 +94,19 @@
                 @if (producto.descuentoPremium > 0) { <span class="premium-discount">Premium -{{ producto.descuentoPremium }}%</span> }
               </div>
               <div class="product-footer">
-                <strong class="price">{{ formatearPrecio(producto.precioCent) }}</strong>
+                <div class="product-pricing">
+                  @if (producto.descuento > 0) {
+                    <span class="discount-note">{{ producto.descuento }}% de descuento</span>
+                  }
+                  <div class="price-block">
+                    @if (producto.descuento > 0) {
+                      <del>{{ formatearPrecio(producto.precioCent) }}</del>
+                      <strong class="discounted-price">{{ formatearPrecioConDescuento(producto.precioCent, producto.descuento) }}</strong>
+                    } @else {
+                      <strong class="price">{{ formatearPrecio(producto.precioCent) }}</strong>
+                    }
+                  </div>
+                </div>
                 <span class="reference">{{ producto.referencia }}</span>
               </div>
             </div>
@@ -110,4 +125,3 @@
 
   <footer class="catalog-footer"><span>© 2026 EsiBuy</span><span>Productos disponibles en tiempo real</span></footer>
 </main>
-

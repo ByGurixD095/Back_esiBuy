@@ -162,7 +162,9 @@
             }
           }
           @if (draftSaved()) {
-            <output class="feedback feedback-success">Borrador guardado.</output>
+            <output class="feedback feedback-success">
+              {{ draftRestored() ? 'Borrador recuperado de este navegador.' : 'Borrador guardado en este navegador.' }}
+            </output>
           }
 
           <button class="primary-action" type="submit" [disabled]="isSubmitting() || loadingProduct()">

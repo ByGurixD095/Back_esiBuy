@@ -67,6 +67,7 @@ export class Cuenta {
     }),
     imagenPerfil: new FormControl('', { nonNullable: true }),
     tipoCliente: new FormControl<TipoCliente>('NORMAL', { nonNullable: true }),
+    sede: new FormControl('', { nonNullable: true }),
     nombreComercial: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required, Validators.pattern(NO_VACIO)],
@@ -106,6 +107,7 @@ export class Cuenta {
           telefono: perfil.telefono ?? '',
           imagenPerfil: perfil.imagenPerfil ?? '',
           tipoCliente: perfil.tipoCliente ?? 'NORMAL',
+          sede: perfil.sede ?? '',
           nombreComercial: perfil.nombreComercial ?? '',
           categoriaPrincipalId: perfil.categoriaPrincipalId ?? '',
         });
@@ -136,11 +138,13 @@ export class Cuenta {
     }
 
     const valores = this.form.getRawValue();
-    const imagenPerfil = valores.imagenPerfil.trim() || avatarAleatorio();
+    const imagenPerfil = valores.imagenPerfil.trim() || avatarAleatorio(rol === 'VENDEDOR');
     this.form.controls.imagenPerfil.setValue(imagenPerfil);
     const datosEspecificos: Partial<ActualizarPerfilRequest> = {};
     if (rol === 'CLIENTE') {
       datosEspecificos.tipoCliente = valores.tipoCliente;
+    } else if (rol === 'ADMINISTRADOR') {
+      datosEspecificos.sede = valores.sede.trim();
     } else if (rol === 'VENDEDOR') {
       datosEspecificos.nombreComercial = valores.nombreComercial.trim();
       datosEspecificos.categoriaPrincipalId = valores.categoriaPrincipalId.trim();
@@ -263,6 +267,8 @@ export class Cuenta {
     const datosEspecificos: Partial<PerfilUsuario> = {};
     if (rol === 'CLIENTE') {
       datosEspecificos.tipoCliente = datos.tipoCliente;
+    } else if (rol === 'ADMINISTRADOR') {
+      datosEspecificos.sede = datos.sede;
     } else if (rol === 'VENDEDOR') {
       datosEspecificos.nombreComercial = datos.nombreComercial;
       datosEspecificos.categoriaPrincipalId = datos.categoriaPrincipalId;

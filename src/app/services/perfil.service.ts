@@ -34,6 +34,7 @@ export interface ActualizarPerfilRequest {
   tipoCliente?: TipoCliente;
   categoriaPrincipalId?: string;
   nombreComercial?: string;
+  sede?: string;
 }
 
 @Injectable({ providedIn: 'root' })

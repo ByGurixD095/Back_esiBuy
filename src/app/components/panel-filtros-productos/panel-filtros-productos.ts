@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, linkedSignal, output, signal } from '@angular/core';
 import { Producto } from '../../models/producto.model';
 import { EstadoProducto, FiltrosProductos, OrdenCatalogo } from '../../services/product.service';
 
@@ -21,7 +21,13 @@ export class PanelFiltrosProductos {
   readonly precioMaximo = signal<number | null>(null);
   readonly soloConDescuento = signal(false);
 
-  readonly categorias = computed(() => ['Todas', ...new Set(this.productos().map((producto) => producto.categoria))]);
+  readonly categorias = linkedSignal<string[], string[]>({
+    source: () => this.productos().map((producto) => producto.categoria),
+    computation: (nuevasCategorias, anteriores) => [
+      ...new Set(['Todas', ...(anteriores?.value.slice(1) ?? []), ...nuevasCategorias]),
+    ],
+  });
+
   readonly precioEscalaMaxima = computed(() => {
     const maximo = this.productos().reduce((mayor, producto) => Math.max(mayor, producto.precioCent), 0);
     return Math.max(100_000, Math.ceil(maximo / 100) * 100);
