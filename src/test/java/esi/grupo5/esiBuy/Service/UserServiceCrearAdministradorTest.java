@@ -12,21 +12,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-
 import java.util.List;
 import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import esi.grupo5.esiBuy.Exception.BusinessException;
 import esi.grupo5.esiBuy.Exception.ConflictException;
 import esi.grupo5.esiBuy.Exception.ValidationException;
@@ -45,11 +40,12 @@ class AdminServiceCrearAdministradorTest {
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
     private AdminService adminService;
 
-    private final AdministradorRegistroDTO dto = new AdministradorRegistroDTO("Ana", "Pérez", "ana@esibuy.com", "Clave#2026x", "Madrid", null);
+    private final AdministradorRegistroDTO dto = new AdministradorRegistroDTO("Ana", "Pérez", "ana@esibuy.com",
+            "Clave#2026x", "Madrid", null);
 
     @BeforeEach
     void setUp() {
-            adminService = new AdminService(usuarioRepository, encoder, passwordValidatorService, List.of(), userService);
+        adminService = new AdminService(usuarioRepository, encoder, passwordValidatorService, List.of(), userService);
     }
 
     @Test
@@ -76,7 +72,7 @@ class AdminServiceCrearAdministradorTest {
         assertTrue(encoder.matches("Clave#2026x", guardado.getContrasena()));
     }
 
-        @Test
+    @Test
     void crearAdministrador_emailYaRegistrado_lanzaErrorYNoGuarda() {
         when(usuarioRepository.findByEmail("ana@esibuy.com")).thenReturn(Optional.of(new Administrador()));
 
@@ -91,7 +87,7 @@ class AdminServiceCrearAdministradorTest {
     void crearAdministrador_contrasenaNoValida_lanza400YNoGuarda() {
         when(usuarioRepository.findByEmail("ana@esibuy.com")).thenReturn(Optional.empty());
         doThrow(new ValidationException("demasiado débil"))
-        .when(passwordValidatorService).validateRegistrationPassword(anyString());
+                .when(passwordValidatorService).validateRegistrationPassword(anyString());
 
         BusinessException error = assertThrows(ValidationException.class,
                 () -> adminService.crearAdministrador(dto));

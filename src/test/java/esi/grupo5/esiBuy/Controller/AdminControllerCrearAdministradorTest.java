@@ -10,12 +10,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -47,27 +44,27 @@ class AdminControllerCrearAdministradorTest {
                                 """.formatted(email, contrasena);
         }
 
-    @Test
-    void postAdmin_datosValidos_devuelve201ConMensajeYSinContrasena() throws Exception {
-        when(adminService.crearAdministrador(any(AdministradorRegistroDTO.class)))
-        .thenReturn(AdministradorResponseDTO.builder()
-                .id("1")
-                .name("Ana")
-                .apellidos("Pérez")
-                .email("ana@esibuy.com")
-                .sede("Madrid")
-                .rol(Rol.ADMINISTRADOR)   // el valor que ya usabas
-                .mensaje("Administrador creado correctamente")
-                .build());
+        @Test
+        void postAdmin_datosValidos_devuelve201ConMensajeYSinContrasena() throws Exception {
+                when(adminService.crearAdministrador(any(AdministradorRegistroDTO.class)))
+                                .thenReturn(AdministradorResponseDTO.builder()
+                                                .id("1")
+                                                .name("Ana")
+                                                .apellidos("Pérez")
+                                                .email("ana@esibuy.com")
+                                                .sede("Madrid")
+                                                .rol(Rol.ADMINISTRADOR) // el valor que ya usabas
+                                                .mensaje("Administrador creado correctamente")
+                                                .build());
 
-        mockMvc.perform(post("/admin")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(json("ana@esibuy.com", "Clave#2026x")))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.email").value("ana@esibuy.com"))
-                .andExpect(jsonPath("$.mensaje").value("Administrador creado correctamente"))
-                .andExpect(jsonPath("$.contrasena").doesNotExist());
-    }
+                mockMvc.perform(post("/admin")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(json("ana@esibuy.com", "Clave#2026x")))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.email").value("ana@esibuy.com"))
+                                .andExpect(jsonPath("$.mensaje").value("Administrador creado correctamente"))
+                                .andExpect(jsonPath("$.contrasena").doesNotExist());
+        }
 
         @Test
         void postAdmin_emailInvalido_devuelve400YNoLlamaAlServicio() throws Exception {

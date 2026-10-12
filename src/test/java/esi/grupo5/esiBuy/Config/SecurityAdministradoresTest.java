@@ -4,20 +4,16 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-
 import esi.grupo5.esiBuy.Controller.AdminController;
 import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
@@ -27,8 +23,6 @@ import esi.grupo5.esiBuy.Service.AdminService;
 import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Service.UserService;
 import jakarta.servlet.http.Cookie;
-
-import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 
 @WebMvcTest(AdminController.class)
 @Import({ SecurityConfig.class, JwtAuthenticationFilter.class })
@@ -71,15 +65,15 @@ class SecurityAdministradoresTest {
     void administrador_puedeCrearAdministradores() throws Exception {
         simularLogin("ADMINISTRADOR");
         when(adminService.crearAdministrador(any(AdministradorRegistroDTO.class)))
-        .thenReturn(AdministradorResponseDTO.builder()
-                .id("1")
-                .name("Ana")
-                .apellidos("Pérez")
-                .email("ana@esibuy.com")
-                .sede("Madrid")
-                .rol(Rol.ADMINISTRADOR)   // el valor que ya usabas
-                .mensaje("Administrador creado correctamente")
-                .build());
+                .thenReturn(AdministradorResponseDTO.builder()
+                        .id("1")
+                        .name("Ana")
+                        .apellidos("Pérez")
+                        .email("ana@esibuy.com")
+                        .sede("Madrid")
+                        .rol(Rol.ADMINISTRADOR) // el valor que ya usabas
+                        .mensaje("Administrador creado correctamente")
+                        .build());
 
         mockMvc.perform(post("/admin")
                 .cookie(new Cookie("accessToken", "token"))
