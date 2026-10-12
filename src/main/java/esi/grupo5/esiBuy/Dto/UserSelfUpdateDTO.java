@@ -13,6 +13,7 @@ import jakarta.validation.constraints.Pattern;
  * @param tipoCliente tipo de cliente, aplicable a cuentas de cliente
  * @param categoriaPrincipalId nueva categoría principal, aplicable a vendedores
  * @param nombreComercial nuevo nombre comercial, aplicable a vendedores
+ * @param sede nueva sede, aplicable a administradores
  */
 public record UserSelfUpdateDTO(
         String nombre,
@@ -26,5 +27,6 @@ public record UserSelfUpdateDTO(
         TipoCliente tipoCliente,
 
         String categoriaPrincipalId,
-        String nombreComercial
+        String nombreComercial,
+        String sede
 ) {}

@@ -126,7 +126,7 @@ class UserControllerTest {
         assertEquals(user, controller.getUserById(authentication).getBody());
         assertEquals(HttpStatus.NO_CONTENT,
                 controller.modificarMiPerfil(new UserSelfUpdateDTO(
-                        "Ana", null, null, null, null, null, null), authentication).getStatusCode());
+                        "Ana", null, null, null, null, null, null, null), authentication).getStatusCode());
         assertEquals(HttpStatus.OK, controller.logout(mock(HttpServletResponse.class)).getStatusCode());
 
         verify(userService).getUserById("user-1");
@@ -210,7 +210,7 @@ class UserControllerTest {
 
         BusinessException propagated = assertThrows(BusinessException.class,
                 () -> controller.modificarMiPerfil(new UserSelfUpdateDTO(
-                        null, null, null, null, null, null, null), authentication));
+                        null, null, null, null, null, null, null, null), authentication));
         assertEquals("INTERNAL_ERROR", propagated.getErrorCode());
     }
 
@@ -258,7 +258,7 @@ class UserControllerTest {
         Authentication authentication = mock(Authentication.class);
         when(authentication.getPrincipal()).thenReturn("user-1");
         UserSelfUpdateDTO update = new UserSelfUpdateDTO(
-                null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null);
         doThrow(new NotFoundException("not found"))
                 .when(userService).modificarMiPerfil("user-1", update);
         assertThrows(NotFoundException.class, () -> controller.modificarMiPerfil(update, authentication));
