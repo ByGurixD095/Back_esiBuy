@@ -2,8 +2,14 @@ package esi.grupo5.esiBuy.Service;
 
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 import esi.grupo5.esiBuy.Dto.ClienteResponseDTO;
+import esi.grupo5.esiBuy.Dto.ClienteRegistroDTO;
+import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
+import esi.grupo5.esiBuy.Dto.UserSelfUpdateDTO;
 import esi.grupo5.esiBuy.Dto.UsuarioResponseDTO;
+import esi.grupo5.esiBuy.Dto.VendedorRegisterRequest;
 import esi.grupo5.esiBuy.Dto.VendedorResponseDTO;
+import esi.grupo5.esiBuy.Exception.BusinessException;
+import esi.grupo5.esiBuy.Exception.ConflictException;
 import esi.grupo5.esiBuy.Exception.NotFoundException;
 import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Model.Cliente;
@@ -21,11 +27,16 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import java.util.List;
 import java.util.Optional;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceConsultarUsuariosLecturaTest {
@@ -157,6 +168,145 @@ class UserServiceConsultarUsuariosLecturaTest {
         assertThrows(NotFoundException.class, () -> service.getUserById("no-existe"));
 
         verify(usuarioRepository).findByIdAndEliminadoFalse("no-existe");
+    }
+    
+    @Test
+    void consultarUsuarioAdminPorId_permiteConsultarUsuarioEliminado() {
+        Cliente cliente = cliente("cliente-eliminado", "Ana", "ana@test.com");
+        cliente.setEliminado(true);
+        when(usuarioRepository.findById("cliente-eliminado"))
+                .thenReturn(Optional.of(cliente));
+
+        UsuarioResponseDTO resultado = service.getAdminUserById("cliente-eliminado");
+
+        assertEquals("cliente-eliminado", resultado.getId());
+        assertEquals(true, resultado.isEliminado());
+        verify(usuarioRepository).findById("cliente-eliminado");
+    }
+
+    @Test
+    void registrarCliente_validaGuardaYCompletaAutenticacion() {
+        ClienteRegistroDTO dto = new ClienteRegistroDTO(
+                "Ana", "López", "ana@test.com", "Strong#2026", "123456789",
+                null, "12345678A", LocalDate.of(2000, 1, 1), null);
+        LoginResponseDTO respuesta = new LoginResponseDTO("access", "refresh", "CLIENTE", "NORMAL");
+        doReturn(false).when(usuarioRepository).existsByEmail(dto.email());
+        when(usuarioRepository.save(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(authService.completarAutenticacion(any())).thenReturn(respuesta);
+
+        LoginResponseDTO resultado = service.registrarCliente(dto);
+
+        assertEquals(respuesta, resultado);
+        verify(passwordValidatorService).validateRegistrationPassword(dto.contrasena());
+        verify(usuarioRepository).save(any(Cliente.class));
+        verify(authService).completarAutenticacion(any());
+    }
+
+    @Test
+    void registrarVendedor_emailExistenteImpideGuardar() {
+        VendedorRegisterRequest dto = new VendedorRegisterRequest(
+                "Luis", "García", "luis@test.com", "Strong#2026", null, null,
+                "Tienda Luis", "B12345678", "electronica");
+        when(usuarioRepository.existsByEmail(dto.email())).thenReturn(true);
+
+        assertThrows(ConflictException.class, () -> service.registrarVendedor(dto));
+
+        verify(passwordValidatorService).validateRegistrationPassword(dto.contrasena());
+        verify(usuarioRepository, never()).save(any());
+        verify(authService, never()).completarAutenticacion(any());
+    }
+
+    @Test
+    void registrarCliente_erroresDeRepositorioSeTraducenAErrorDeNegocio() {
+        ClienteRegistroDTO dto = new ClienteRegistroDTO(
+                "Ana", "López", "ana@test.com", "Strong#2026", null, null,
+                "12345678A", LocalDate.of(2000, 1, 1), TipoCliente.NORMAL);
+        when(usuarioRepository.existsByEmail(dto.email())).thenThrow(
+                new org.springframework.dao.DataAccessResourceFailureException("database unavailable"));
+
+        assertThrows(BusinessException.class, () -> service.registrarCliente(dto));
+
+        doReturn(false).when(usuarioRepository).existsByEmail(dto.email());
+        doThrow(new org.springframework.dao.DataAccessResourceFailureException("database unavailable"))
+                .when(usuarioRepository).save(any(Cliente.class));
+        assertThrows(BusinessException.class, () -> service.registrarCliente(dto));
+    }
+
+    @Test
+    void registrarCliente_errorDeValidacionDePasswordSeTraduce() {
+        ClienteRegistroDTO dto = new ClienteRegistroDTO(
+                "Ana", "López", "ana@test.com", "weak", null, null,
+                "12345678A", LocalDate.of(2000, 1, 1), TipoCliente.NORMAL);
+        doThrow(new esi.grupo5.esiBuy.Exception.ValidationException("password policy"))
+                .when(passwordValidatorService).validateRegistrationPassword(dto.contrasena());
+
+        assertThrows(esi.grupo5.esiBuy.Exception.ValidationException.class,
+                () -> service.registrarCliente(dto));
+
+        verify(usuarioRepository, never()).existsByEmail(any());
+    }
+
+    @Test
+    void modificarPerfil_actualizaCamposValidosYTraduceErroresDeGuardado() {
+        Cliente cliente = cliente("cliente-1", "Ana", "ana@test.com");
+        when(usuarioRepository.findByIdAndEliminadoFalse("cliente-1")).thenReturn(Optional.of(cliente));
+
+        service.modificarMiPerfil("cliente-1", new UserSelfUpdateDTO(
+                "Eva", "Gómez", "987654321", "avatar.png", TipoCliente.PREMIUM, null, null));
+
+        assertEquals("Eva", cliente.getNombre());
+        assertEquals("Gómez", cliente.getApellidos());
+        assertEquals("987654321", cliente.getTelefono());
+        assertEquals("avatar.png", cliente.getImagenPerfil());
+        assertEquals(TipoCliente.PREMIUM, cliente.getTipoCliente());
+        verify(usuarioRepository).save(cliente);
+
+        doThrow(new org.springframework.dao.DuplicateKeyException("duplicate"))
+                .when(usuarioRepository).save(cliente);
+        assertThrows(ConflictException.class, () -> service.modificarMiPerfil(
+                "cliente-1", new UserSelfUpdateDTO(null, null, null, null, null, null, null)));
+        doThrow(new org.springframework.dao.DataAccessResourceFailureException("database unavailable"))
+                .when(usuarioRepository).save(cliente);
+        assertThrows(BusinessException.class, () -> service.modificarMiPerfil(
+                "cliente-1", new UserSelfUpdateDTO(null, null, null, null, null, null, null)));
+    }
+
+    @Test
+    void modificarPerfilVendedor_actualizaDatosComercialesYUsuarioInexistenteFalla() {
+        Vendedor vendedor = new Vendedor();
+        vendedor.setId("vendedor-1");
+        when(usuarioRepository.findByIdAndEliminadoFalse("vendedor-1")).thenReturn(Optional.of(vendedor));
+
+        service.modificarMiPerfil("vendedor-1", new UserSelfUpdateDTO(
+                "Luis", null, null, null, null, "tecnologia", "Tienda Luis"));
+
+        assertEquals("Luis", vendedor.getNombre());
+        assertEquals("tecnologia", vendedor.getCategoriaPrincipalId());
+        assertEquals("Tienda Luis", vendedor.getNombreComercial());
+        verify(usuarioRepository).save(vendedor);
+
+        when(usuarioRepository.findByIdAndEliminadoFalse("missing")).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> service.modificarMiPerfil(
+                "missing", new UserSelfUpdateDTO(null, null, null, null, null, null, null)));
+    }
+
+    @Test
+    void modificarPerfil_ignoraCamposComunesEnBlanco() {
+        Cliente cliente = cliente("cliente-1", "Ana", "ana@test.com");
+        cliente.setApellidos("López");
+        cliente.setTelefono("123456789");
+        cliente.setImagenPerfil("avatar.png");
+        when(usuarioRepository.findByIdAndEliminadoFalse("cliente-1"))
+                .thenReturn(Optional.of(cliente));
+
+        service.modificarMiPerfil("cliente-1", new UserSelfUpdateDTO(
+                " ", "", " ", " ", null, null, null));
+
+        assertEquals("Ana", cliente.getNombre());
+        assertEquals("López", cliente.getApellidos());
+        assertEquals("123456789", cliente.getTelefono());
+        assertEquals("avatar.png", cliente.getImagenPerfil());
+        verify(usuarioRepository).save(cliente);
     }
 
     private Cliente cliente(String id, String nombre, String email) {

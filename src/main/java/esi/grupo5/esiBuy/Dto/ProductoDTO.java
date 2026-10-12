@@ -7,6 +7,20 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.PositiveOrZero;
 
+/**
+ * Datos de creación o actualización de un producto.
+ *
+ * @param nombre nombre visible del producto
+ * @param referencia referencia comercial
+ * @param precioCent precio expresado en céntimos
+ * @param descripcion descripción opcional
+ * @param categoria categoría asociada al producto
+ * @param urlImagen URL o referencia de la imagen
+ * @param numStock unidades disponibles
+ * @param descuento porcentaje de descuento general
+ * @param descuentoPremium porcentaje de descuento para clientes prémium
+ * @param activo estado de publicación; si se omite al crear, se crea activo
+ */
 public record ProductoDTO(
 
         @NotBlank(message = "El nombre del producto no puede ser nulo ni vacío")

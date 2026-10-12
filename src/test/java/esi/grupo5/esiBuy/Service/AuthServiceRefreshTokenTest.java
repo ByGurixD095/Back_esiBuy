@@ -3,6 +3,8 @@ package esi.grupo5.esiBuy.Service;
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
 import esi.grupo5.esiBuy.Exception.AuthException;
 import esi.grupo5.esiBuy.Exception.ExpiredTokenException;
+import esi.grupo5.esiBuy.Exception.ForbiddenException;
+import esi.grupo5.esiBuy.Exception.PasswordExpiredException;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.RefreshToken;
 import esi.grupo5.esiBuy.Model.Usuario;
@@ -17,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -81,8 +84,64 @@ class AuthServiceRefreshTokenTest {
         verify(jwtService, never()).generateToken(any());
     }
 
+    @Test
+    void refreshTokenDeUsuarioBloqueado_seEliminaYSeRechaza() {
+        Usuario usuario = usuario();
+        usuario.setBloqueado(true);
+        RefreshToken refreshToken = refreshToken("blocked-token", usuario);
+        when(refreshTokenRepository.findByToken("blocked-token")).thenReturn(Optional.of(refreshToken));
+        when(jwtService.isTokenValid("blocked-token")).thenReturn(true);
+
+        assertThrows(ForbiddenException.class, () -> service.refreshToken("blocked-token"));
+
+        verify(refreshTokenRepository).delete(refreshToken);
+        verify(jwtService, never()).generateToken(any());
+    }
+
+    @Test
+    void refreshTokenDeUsuarioEliminado_seEliminaYSeRechaza() {
+        Usuario usuario = usuario();
+        usuario.setEliminado(true);
+        RefreshToken refreshToken = refreshToken("deleted-token", usuario);
+        when(refreshTokenRepository.findByToken("deleted-token")).thenReturn(Optional.of(refreshToken));
+        when(jwtService.isTokenValid("deleted-token")).thenReturn(true);
+
+        assertThrows(ForbiddenException.class, () -> service.refreshToken("deleted-token"));
+
+        verify(refreshTokenRepository).delete(refreshToken);
+        verify(jwtService, never()).generateToken(any());
+    }
+
+    @Test
+    void refreshTokenConContrasenaExpirada_seEliminaYSeRechaza() {
+        Usuario usuario = usuario();
+        usuario.setFechaCambioContrasena(LocalDateTime.now().minusSeconds(1));
+        RefreshToken refreshToken = refreshToken("expired-password-token", usuario);
+        when(refreshTokenRepository.findByToken("expired-password-token"))
+                .thenReturn(Optional.of(refreshToken));
+        when(jwtService.isTokenValid("expired-password-token")).thenReturn(true);
+
+        assertThrows(PasswordExpiredException.class,
+                () -> service.refreshToken("expired-password-token"));
+
+        verify(refreshTokenRepository).delete(refreshToken);
+        verify(jwtService, never()).generateToken(any());
+    }
+
+    @Test
+    void refreshTokenSinUsuarioAsociado_seEliminaYSeRechaza() {
+        RefreshToken refreshToken = refreshToken("orphan-token", null);
+        when(refreshTokenRepository.findByToken("orphan-token")).thenReturn(Optional.of(refreshToken));
+        when(jwtService.isTokenValid("orphan-token")).thenReturn(true);
+
+        assertThrows(AuthException.class, () -> service.refreshToken("orphan-token"));
+
+        verify(refreshTokenRepository).delete(refreshToken);
+        verify(jwtService, never()).generateToken(any());
+    }
+
     private Usuario usuario() {
-        return Cliente.builder()
+        Usuario usuario = Cliente.builder()
                 .nombre("Cliente")
                 .apellidos("Prueba")
                 .email("cliente@test.com")
@@ -91,5 +150,15 @@ class AuthServiceRefreshTokenTest {
                 .fechaNacimiento(LocalDate.of(1990, 1, 1))
                 .tipoCliente(TipoCliente.NORMAL)
                 .build();
+        usuario.setActivo(true);
+        usuario.setFechaCambioContrasena(LocalDateTime.now().plusDays(1));
+        return usuario;
+    }
+
+    private RefreshToken refreshToken(String token, Usuario usuario) {
+        RefreshToken refreshToken = new RefreshToken();
+        refreshToken.setToken(token);
+        refreshToken.setUsuario(usuario);
+        return refreshToken;
     }
 }

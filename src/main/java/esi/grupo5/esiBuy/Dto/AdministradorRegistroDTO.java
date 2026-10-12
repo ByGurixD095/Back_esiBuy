@@ -5,6 +5,16 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Datos validados para registrar una cuenta de administrador.
+ *
+ * @param nombre nombre del administrador
+ * @param apellidos apellidos del administrador
+ * @param email dirección de correo que identificará la cuenta
+ * @param contrasena contraseña inicial de la cuenta
+ * @param sede sede asignada al administrador
+ * @param imagenPerfil URL o referencia de la imagen de perfil
+ */
 public record AdministradorRegistroDTO(
         @NotBlank String nombre,
         @NotBlank String apellidos,
@@ -13,5 +23,6 @@ public record AdministradorRegistroDTO(
         @Size(min = 8, max = 64)
         @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^\\w\\s]).+$")
         String contrasena,
-        String sede
+        String sede,
+        String imagenPerfil
 ) {}

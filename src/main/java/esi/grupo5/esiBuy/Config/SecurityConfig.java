@@ -8,18 +8,28 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 
+/** Configura la cadena de seguridad, el codificador y la autenticación JWT. */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    /** Filtro que establece la identidad y el rol a partir de la cookie JWT. */
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    // Evita que Spring Boot registre el filtro JWT también como filtro de servlet
-    // (solo debe ejecutarse dentro de la cadena de Spring Security)
+    /**
+     * Evita que Spring Boot registre el filtro también como filtro de servlet independiente.
+     *
+     * @param filter filtro JWT que se deshabilitará en el registro de servlet
+     * @return registro del filtro deshabilitado
+     */
     @Bean
     public FilterRegistrationBean<JwtAuthenticationFilter> jwtFilterRegistration(
             JwtAuthenticationFilter filter) {
@@ -32,15 +42,33 @@ public class SecurityConfig {
         return registration;
     }
 
+    /**
+     * Proporciona el codificador BCrypt para contraseñas.
+     *
+     * @return codificador BCrypt
+     */
     @Bean
-    public BCryptPasswordEncoder bCryptPasswordEncoder() {
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Crea la configuración con el filtro JWT de la aplicación.
+     *
+     * @param jwtAuthenticationFilter filtro de autenticación JWT
+     */
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
+    /**
+     * Define la política HTTP, los endpoints públicos y los permisos por rol, e inserta
+     * el filtro JWT antes de la autenticación estándar.
+     *
+     * @param http configuración HTTP de Spring Security
+     * @return cadena de filtros configurada
+     * @throws Exception si no se puede construir la configuración de seguridad
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
@@ -48,22 +76,19 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())
 
-            // La API no guarda sesiones.
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            ).exceptionHandling(exceptions -> exceptions
+                .authenticationEntryPoint((request, response, authException) -> 
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token expirado o no proporcionado")
+                )
             )
-
             .authorizeHttpRequests(auth -> {
 
-                // CORS
                 auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
 
-                // Errores
                 auth.requestMatchers("/error").permitAll();
 
-                // -------------------------------------------------
-                // ENDPOINTS PÚBLICOS
-                // -------------------------------------------------
                 auth.requestMatchers(
                     "/users/login",
                     "/users/refresh",
@@ -75,10 +100,8 @@ public class SecurityConfig {
                     "/mfa/setup-confirm"
                 ).permitAll();
 
-                // El catalogo es publico; no necesita una cookie JWT para consultarse.
                 auth.requestMatchers(HttpMethod.GET, "/products/disponibles").permitAll();
 
-                // Las operaciones de administracion requieren un JWT de administrador.
                 auth.requestMatchers(HttpMethod.POST, "/users/administradores")
                     .hasRole("ADMINISTRADOR");
                 auth.requestMatchers(HttpMethod.PATCH, "/users/*")
@@ -87,26 +110,15 @@ public class SecurityConfig {
                     .hasRole("ADMINISTRADOR");
                 auth.requestMatchers("/mfa/config").authenticated();
 
-                // -------------------------------------------------
-                // ADMINISTRADOR
-                // -------------------------------------------------
                 auth.requestMatchers("/admin/**")
                     .hasRole("ADMINISTRADOR");
-
-                // -------------------------------------------------
-                // VENDEDOR
-                // -------------------------------------------------
 
                 auth.requestMatchers("/products/**")
                     .hasRole("VENDEDOR");
 
-                // -------------------------------------------------
-                // RESTO DE ENDPOINTS
-                // -------------------------------------------------
                 auth.anyRequest().authenticated();
             });
 
-        // Filtro JWT antes del filtro de autenticación estándar
         http.addFilterBefore(
             this.jwtAuthenticationFilter,
             UsernamePasswordAuthenticationFilter.class

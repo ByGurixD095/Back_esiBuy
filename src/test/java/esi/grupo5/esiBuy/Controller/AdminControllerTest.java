@@ -3,6 +3,7 @@ package esi.grupo5.esiBuy.Controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
+import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Service.AdminService;
 import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Service.UserService;
@@ -10,9 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -33,6 +32,7 @@ class AdminControllerTest {
     @MockitoBean private UserService userService;
     @MockitoBean private AdminService adminService;
     @MockitoBean private JwtService jwtService;
+    @MockitoBean private UsuarioRepository usuarioRepository;
 
     @Test
     void crearAdministrador_datosValidosDevuelve201YRespuestaPublica() throws Exception {
@@ -46,7 +46,7 @@ class AdminControllerTest {
                 .mensaje("Administrador creado correctamente")
                 .build();
         when(adminService.crearAdministrador(any(AdministradorRegistroDTO.class)))
-                .thenReturn(ResponseEntity.status(HttpStatus.CREATED).body(response));
+                .thenReturn(response);
 
         mockMvc.perform(post("/admin")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -64,7 +64,7 @@ class AdminControllerTest {
     @Test
     void crearAdministrador_emailInvalidoSeRechazaAntesDelServicio() throws Exception {
         AdministradorRegistroDTO dto = new AdministradorRegistroDTO(
-                "Ana", "Pérez", "email-invalido", "Clave#2026x", "Madrid");
+                "Ana", "Pérez", "email-invalido", "Clave#2026x", "Madrid", null);
 
         mockMvc.perform(post("/admin")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -77,7 +77,7 @@ class AdminControllerTest {
     @Test
     void crearAdministrador_contrasenaDebilSeRechazaAntesDelServicio() throws Exception {
         AdministradorRegistroDTO dto = new AdministradorRegistroDTO(
-                "Ana", "Pérez", "ana@esibuy.com", "weak", "Madrid");
+                "Ana", "Pérez", "ana@esibuy.com", "weak", "Madrid", null);
 
         mockMvc.perform(post("/admin")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -89,6 +89,6 @@ class AdminControllerTest {
 
     private AdministradorRegistroDTO administradorDTO() {
         return new AdministradorRegistroDTO(
-                "Ana", "Pérez", "ana@esibuy.com", "Clave#2026x", "Madrid");
+                "Ana", "Pérez", "ana@esibuy.com", "Clave#2026x", "Madrid", null);
     }
 }

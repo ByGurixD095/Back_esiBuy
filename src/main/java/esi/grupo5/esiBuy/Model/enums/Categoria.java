@@ -3,42 +3,56 @@ package esi.grupo5.esiBuy.Model.enums;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
+/** Categorías admitidas para clasificar productos en el catálogo. */
 public enum Categoria {
+    /** Tecnología y dispositivos electrónicos. */
     TECNOLOGIA("Tecnología"),
+    /** Ropa, calzado y complementos. */
     MODA("Moda"),
+    /** Productos para el hogar y la cocina. */
     HOGAR_Y_COCINA("Hogar y Cocina"),
+    /** Productos deportivos y de ocio. */
     DEPORTE_Y_OCIO("Deporte y Ocio"),
+    /** Libros y publicaciones. */
     LIBROS("Libros"),
+    /** Productos que no encajan en otra categoría. */
     OTROS("Otros"),
+    /** Papelería y material escolar. */
     PAPELERIA_Y_MATERIAL_ESCOLAR("Papelería y Material Escolar"), 
+    /** Productos de salud y cuidado personal. */
     SALUD_Y_CUIDADO_PERSONAL("Salud y Cuidado Personal"),         
+    /** Alimentos y bebidas. */
     ALIMENTACION_Y_BEBIDAS("Alimentación y Bebidas"),             
+    /** Juguetes y artículos para aficiones. */
     JUGUETES_Y_HOBBIES("Juguetes y Hobbies"),                     
+    /** Electrodomésticos para el hogar. */
     ELECTRODOMESTICOS("Electrodomésticos"),                       
+    /** Herramientas y productos de bricolaje. */
     BRICOLAJE_Y_HERRAMIENTAS("Bricolaje y Herramientas"),         
+    /** Productos para mascotas. */
     MASCOTAS("Mascotas");                          
     
 
+    /** Nombre localizado que se expone al serializar la categoría. */
     private final String nombreVisible;
 
+    /** @param nombreVisible etiqueta legible de la categoría */
     Categoria(String nombreVisible) {
         this.nombreVisible = nombreVisible;
     }
 
-    /**
-     * Devuelve el texto amigable que verá el usuario en la interfaz y que se guardará en MongoDB.
-     * La anotación @JsonValue asegura que al serializar (Java -> JSON), Jackson use el String visible (ej. "Hogar y Cocina").
-     */
+    /** @return etiqueta visible usada en la interfaz y en la serialización JSON */
     @JsonValue
     public String getNombreVisible() {
         return nombreVisible;
     }
 
     /**
-     * Mapea un String recibido desde la API/Frontend a un valor del Enum.
-     * La anotación @JsonCreator asegura que Jackson convierta correctamente un JSON que contenga
-     * tanto "TECNOLOGIA" como "Tecnología" al enum correspondiente.
-     * Si no se encuentra, dispara la IllegalArgumentException controlada en la API.
+     * Busca una categoría por su nombre técnico o por su etiqueta visible, sin distinguir mayúsculas.
+     *
+     * @param texto nombre técnico o etiqueta visible recibida
+     * @return categoría correspondiente al texto
+     * @throws IllegalArgumentException si el texto es nulo, vacío o no identifica una categoría
      */
     @JsonCreator
     public static Categoria deString(String texto) {
