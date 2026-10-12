@@ -93,6 +93,10 @@ export class ConsultarUsuarios implements OnInit {
   }
 
   verDetalleUsuario(usuario: Usuario): void {
+    if (this.cargandoDetalle()) {
+      return;
+    }
+
     this.usuarioSeleccionado.set(usuario);
     this.usuarioDetalle.set(null);
     this.errorDetalle.set('');

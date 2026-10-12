@@ -1,9 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService, LoginResponse } from '../../services/auth.service';
 import { Registro as RegistroService } from '../../services/registro-service/registro';
+import { AvatarSelector, avatarAleatorio } from '../avatar-selector/avatar-selector';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
 
 type TipoRegistro = 'cliente' | 'vendedor';
@@ -22,7 +23,7 @@ function fechaAnteriorAHoy(fecha: string): boolean {
 
 @Component({
   selector: 'app-registro',
-  imports: [ReactiveFormsModule, MarcoPagina],
+  imports: [ReactiveFormsModule, MarcoPagina, RouterLink, AvatarSelector],
   templateUrl: './registro.html',
   styleUrl: './registro.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -101,6 +102,9 @@ export class RegistroComponent {
   enviar(): void {
     if (this.enviando() || this.cuentaCreada()) {
       return;
+    }
+    if (!this.form.controls.imagenPerfil.value.trim()) {
+      this.form.controls.imagenPerfil.setValue(avatarAleatorio());
     }
     if (this.form.invalid) {
       this.form.markAllAsTouched();

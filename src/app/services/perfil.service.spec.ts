@@ -42,6 +42,31 @@ describe('PerfilService', () => {
     expect(perfil).toEqual(respuesta);
   });
 
+  it('recibe los datos específicos del perfil de administrador', () => {
+    const respuesta: PerfilUsuario = {
+      id: 'admin-1',
+      name: 'Elena',
+      apellidos: 'López',
+      email: 'elena@example.com',
+      telefono: null,
+      imagenPerfil: null,
+      rol: 'ADMINISTRADOR',
+      sede: 'Madrid',
+      fechaIncorporacion: '2025-09-01',
+    };
+    let perfil: PerfilUsuario | undefined;
+
+    service.obtenerMiPerfil().subscribe((resultado) => (perfil = resultado));
+
+    const request = http.expectOne('http://localhost:8080/users/me');
+    expect(request.request.method).toBe('GET');
+    request.flush(respuesta);
+
+    expect(perfil).toEqual(respuesta);
+    expect(perfil?.sede).toBe('Madrid');
+    expect(perfil?.fechaIncorporacion).toBe('2025-09-01');
+  });
+
   it('envía cambios con PATCH /users/me/update y no espera un cuerpo de respuesta', () => {
     const datos = {
       nombre: 'Ana María',
@@ -57,6 +82,19 @@ describe('PerfilService', () => {
     const request = http.expectOne('http://localhost:8080/users/me/update');
     expect(request.request.method).toBe('PATCH');
     expect(request.request.body).toEqual(datos);
+    expect(request.request.withCredentials).toBe(true);
+    request.flush(null, { status: 204, statusText: 'No Content' });
+
+    expect(completado).toBe(true);
+  });
+
+  it('elimina la cuenta autenticada con DELETE /users/me', () => {
+    let completado = false;
+
+    service.eliminarMiCuenta().subscribe(() => (completado = true));
+
+    const request = http.expectOne('http://localhost:8080/users/me');
+    expect(request.request.method).toBe('DELETE');
     expect(request.request.withCredentials).toBe(true);
     request.flush(null, { status: 204, statusText: 'No Content' });
 
