@@ -103,6 +103,40 @@ describe('ConsultarUsuarios', () => {
     expect(el.querySelector('.eliminado')?.textContent?.trim()).toBe('Sí');
   });
 
+  it('pagina en el frontend y vuelve a la primera página al filtrar', () => {
+    const usuariosPaginados: Usuario[] = Array.from({ length: 40 }, (_, indice) => ({
+      id: `user-page-${indice}`,
+      name: `Usuario${indice}`,
+      apellidos: 'Prueba',
+      email: `usuario${indice}@test.com`,
+      rol: 'CLIENTE',
+      activo: true,
+      bloqueado: false,
+      eliminado: false,
+    }));
+    const componente = fixture.componentInstance;
+    const el = fixture.nativeElement as HTMLElement;
+    componente.usuarios.set(usuariosPaginados);
+    fixture.detectChanges();
+
+    expect(el.querySelectorAll('tbody tr').length).toBe(componente.tamanoPagina);
+    (el.querySelector('.paginacion button:last-child') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(el.querySelector('.paginacion')?.textContent).toContain('Página 2 de 2');
+    expect(el.querySelectorAll('tbody tr').length).toBe(4);
+    expect(el.textContent).toContain('user-page-39');
+
+    const campoBusqueda = el.querySelector('#buscar-id') as HTMLInputElement;
+    campoBusqueda.value = 'user-page-0';
+    campoBusqueda.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    expect(componente.paginaActual()).toBe(0);
+    expect(el.querySelectorAll('tbody tr').length).toBe(1);
+    expect(el.querySelector('.paginacion')).toBeNull();
+  });
+
   it('filtra los usuarios por coincidencia parcial del ID', () => {
     const campoBusqueda = (fixture.nativeElement as HTMLElement).querySelector(
       '#buscar-id',
