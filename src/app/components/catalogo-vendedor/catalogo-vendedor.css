@@ -40,16 +40,27 @@ h1 em { color: var(--esi-orange-text); font-style: italic; }
 .catalog-summary p { margin: 0; color: var(--esi-soft-ink); font-size: 13px; }
 .summary-line { display: block; width: 38px; height: 1px; margin: 14px 0 9px; background: var(--esi-orange); }
 .catalog-summary small { color: var(--esi-soft-ink); font-size: 11px; }
+.demo-tools { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 24px; padding: 18px 20px; border: 1px solid var(--esi-line); background: #fffaf5; }
+.demo-tools strong { font-size: 14px; }
+.demo-tools p, .demo-result { margin: 5px 0 0; color: var(--esi-soft-ink); font-size: 13px; }
+.demo-button { min-height: 42px; padding: 0 16px; border: 1px solid var(--esi-ink); border-radius: var(--esi-radius); color: #fff; background: var(--esi-ink); cursor: pointer; font: inherit; font-weight: 700; white-space: nowrap; }
+.demo-button:hover:not(:disabled) { border-color: var(--esi-orange-hover); background: var(--esi-orange-hover); }
+.demo-button:disabled { cursor: wait; opacity: .55; }
+.demo-result { margin: -12px 0 20px; color: var(--esi-ok-text); }
 
 .results-toolbar { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 14px; color: var(--esi-soft-ink); font-size: 13px; }
 .results-toolbar p { margin: 0; }
 .table-container { overflow-x: auto; border: 1px solid var(--esi-line); background: var(--esi-card); }
-table { width: 100%; border-collapse: collapse; min-width: 850px; }
-th, td { padding: 16px 14px; border-bottom: 1px solid var(--esi-line); text-align: left; vertical-align: middle; }
-th { color: var(--esi-soft-ink); background: #f1efe8; font-size: 11px; letter-spacing: .07em; text-transform: uppercase; }
-td { color: var(--esi-ink); font-size: 14px; }
+table { width: 100%; border-collapse: collapse; table-layout: auto; }
+th, td { padding: 13px 10px; border-bottom: 1px solid var(--esi-line); text-align: left; vertical-align: middle; }
+th { color: var(--esi-soft-ink); background: #f1efe8; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+td { color: var(--esi-ink); font-size: 13px; }
 tbody tr:last-child td { border-bottom: 0; }
 tbody tr:hover { background: #fffaf5; }
+tbody tr.row-inactive { background: #e4e4e7; }
+tbody tr.row-inactive:hover { background: #d9d9de; }
+tbody tr.row-inactive .product-cell img { opacity: 0.55; filter: grayscale(1); }
+tbody tr.row-inactive td:not(:last-child):not([data-label="Estado"]) { color: #6b6b73; }
 .product-cell { display: flex; align-items: center; gap: 12px; min-width: 230px; }
 .product-cell img, .image-placeholder { display: grid; place-items: center; width: 48px; height: 48px; flex: 0 0 48px; border: 1px solid var(--esi-line); border-radius: 4px; object-fit: cover; color: var(--esi-soft-ink); background: #f1efe8; }
 .product-cell strong, .product-cell small { display: block; }
@@ -60,6 +71,26 @@ tbody tr:hover { background: #fffaf5; }
 .discount { color: var(--esi-orange-text); background: var(--esi-orange-soft); }
 .status { color: var(--esi-ok-text); background: var(--esi-ok-bg); }
 .status-inactive { color: var(--esi-error-text); background: var(--esi-error-bg); }
+.product-actions { min-width: 116px; text-align: center; vertical-align: middle; white-space: nowrap; }
+.product-actions .icon-action { vertical-align: middle; }
+.product-actions .icon-action { display: inline-grid; width: 34px; height: 34px; place-items: center; padding: 0; border: 1px solid var(--esi-line); border-radius: 6px; color: var(--esi-ink); background: #fff; cursor: pointer; text-decoration: none; transition: border-color 160ms ease, color 160ms ease, background 160ms ease; }
+.product-actions .icon-action + .icon-action { margin-left: 5px; }
+.icon-action svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.product-actions .icon-action:hover { border-color: var(--esi-orange); color: var(--esi-orange-text); background: var(--esi-orange-soft); }
+.product-actions .delete-action { color: var(--esi-error-text); }
+.product-actions .delete-action:hover:not(:disabled) { border-color: var(--esi-error-text); color: var(--esi-error-text); background: var(--esi-error-bg); }
+.product-actions .activate-action { color: var(--esi-ok-text); }
+.product-actions .activate-action:hover:not(:disabled) { border-color: var(--esi-ok-text); color: var(--esi-ok-text); background: var(--esi-ok-bg); }
+.icon-spinner { width: 15px; height: 15px; border: 2px solid var(--esi-line); border-top-color: currentColor; border-radius: 50%; animation: spin .8s linear infinite; }
+th:last-child, td:last-child { text-align: center; }
+.table-container th:nth-child(1) { width: 27%; }
+.table-container th:nth-child(2) { width: 14%; }
+.table-container th:nth-child(3) { width: 11%; }
+.table-container th:nth-child(4) { width: 7%; text-align: center; }
+.table-container th:nth-child(5), .table-container th:nth-child(6) { width: 9%; text-align: center; }
+.table-container th:nth-child(7) { width: 10%; text-align: center; }
+.table-container th:nth-child(8) { width: 13%; }
+.table-container td:nth-child(4), .table-container td:nth-child(5), .table-container td:nth-child(6), .table-container td:nth-child(7) { text-align: center; }
 .pagination { display: flex; align-items: center; justify-content: center; gap: 20px; margin-top: 24px; color: var(--esi-soft-ink); font-size: 13px; }
 .pagination button, .state-action { min-height: 42px; padding: 0 16px; border: 1px solid var(--esi-ink); border-radius: var(--esi-radius); color: #fff; background: var(--esi-ink); cursor: pointer; font: inherit; font-weight: 700; text-decoration: none; }
 .pagination button:hover:not(:disabled), .state-action:hover { background: var(--esi-orange-hover); border-color: var(--esi-orange-hover); }
@@ -86,6 +117,8 @@ button:disabled { cursor: not-allowed; opacity: .45; }
   .seller-content { width: calc(100% - 32px); padding-top: 36px; }
   .seller-intro { display: block; }
   .catalog-summary { margin-top: 28px; }
+  .demo-tools { align-items: stretch; flex-direction: column; }
+  .demo-button { width: 100%; white-space: normal; }
   .results-toolbar { align-items: start; flex-direction: column; gap: 5px; }
   .seller-footer { width: calc(100% - 32px); }
 }

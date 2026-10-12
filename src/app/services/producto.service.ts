@@ -33,12 +33,49 @@ export class ProductoService {
 
     return this.http.post<Producto>(this.apiUrl, payload, {
       headers: { 'Content-Type': 'application/json' },
+      withCredentials: true,
     }).pipe(
       catchError((error: HttpErrorResponse) => {
         return throwError(() => new ProductoApiError(error.status, mensajeParaStatus(error)));
       }),
     );
   }
+
+  obtenerProducto(id: string): Observable<Producto> {
+    return this.http.get<Producto>(`${environment.apiUrl}/products/${encodeURIComponent(id)}`, {
+      withCredentials: true,
+    }).pipe(
+      catchError((error: HttpErrorResponse) => throwError(() => new ProductoApiError(error.status, mensajeParaStatus(error)))),
+    );
+  }
+
+  actualizarProducto(id: string, producto: ProductoDTO): Observable<Producto> {
+    return this.http.put<Producto>(`${environment.apiUrl}/products/${encodeURIComponent(id)}`, normalizarProducto(producto), {
+      headers: { 'Content-Type': 'application/json' },
+      withCredentials: true,
+    }).pipe(
+      catchError((error: HttpErrorResponse) => throwError(() => new ProductoApiError(error.status, mensajeParaStatus(error)))),
+    );
+  }
+
+  eliminarProducto(id: string): Observable<void> {
+    return this.http.delete<void>(`${environment.apiUrl}/products/${encodeURIComponent(id)}`, {
+      withCredentials: true,
+    }).pipe(
+      catchError((error: HttpErrorResponse) => throwError(() => new ProductoApiError(error.status, mensajeParaStatus(error)))),
+    );
+  }
+}
+
+function normalizarProducto(producto: ProductoDTO): ProductoDTO {
+  return {
+    ...producto,
+    precioCent: toNumberOrZero(producto.precioCent),
+    descuento: toNumberOrZero(producto.descuento),
+    descuentoPremium: toNumberOrZero(producto.descuentoPremium),
+    descripcion: producto.descripcion?.trim() || null,
+    urlImagen: producto.urlImagen?.trim() || null,
+  };
 }
 
 function toNumberOrZero(value: number): number {
@@ -53,6 +90,8 @@ function mensajeParaStatus(error: HttpErrorResponse): string {
       return 'La sesión ha caducado. Inicia sesión de nuevo';
     case 403:
       return 'No tienes permisos para realizar esta acción';
+    case 404:
+      return 'No se ha encontrado el producto o ya no pertenece a tu catálogo';
     case 500:
       return 'Error interno del servidor';
     case 0:

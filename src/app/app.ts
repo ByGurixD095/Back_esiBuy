@@ -5,9 +5,11 @@ import {
   AfterViewInit,
   OnDestroy,
   NgZone,
-  ChangeDetectionStrategy
+  ChangeDetectionStrategy,
+  signal,
 } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs';
 
 interface Particle {
   x: number;
@@ -45,10 +47,20 @@ export class App implements AfterViewInit, OnDestroy {
   private targetRotY = 0;
 
   private particles: Particle[] = [];
+  readonly mostrarPortada = signal(false);
 
-  constructor(private ngZone: NgZone) {}
+  constructor(
+    private ngZone: NgZone,
+    private router: Router,
+  ) {
+    this.mostrarPortada.set(this.router.url === '/');
+    this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe((event) => this.mostrarPortada.set(event.urlAfterRedirects === '/'));
+  }
 
   ngAfterViewInit(): void {
+    if (!this.mostrarPortada()) return;
     const canvas = this.canvasRef.nativeElement;
     const context = canvas.getContext('2d');
     if (!context) return;
