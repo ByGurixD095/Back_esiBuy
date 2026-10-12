@@ -9,6 +9,7 @@ import { MarcoPagina } from '../marco-pagina/marco-pagina';
 type TipoRegistro = 'cliente' | 'vendedor';
 
 const NO_VACIO = /\S/;
+const PATRON_CONTRASENA = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).+$/;
 
 function fechaAnteriorAHoy(fecha: string): boolean {
   if (!fecha) {
@@ -56,7 +57,12 @@ export class RegistroComponent {
     }),
     contrasena: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.pattern(NO_VACIO)],
+      validators: [
+        Validators.required,
+        Validators.minLength(8),
+        Validators.maxLength(72),
+        Validators.pattern(PATRON_CONTRASENA),
+      ],
     }),
     telefono: new FormControl('', { nonNullable: true }),
     imagenPerfil: new FormControl('', { nonNullable: true }),

@@ -39,7 +39,7 @@ export class AdministradorRegistro {
       validators: [
         Validators.required,
         Validators.minLength(8),
-        Validators.maxLength(64),
+        Validators.maxLength(72),
         Validators.pattern(PATRON_CONTRASENA),
       ],
     }),

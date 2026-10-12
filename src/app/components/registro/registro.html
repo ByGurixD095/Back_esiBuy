@@ -74,9 +74,16 @@
                   formControlName="contrasena"
                   autocomplete="new-password"
                   required
+                  aria-describedby="ayuda-politica-contrasena"
                 />
+                <small id="ayuda-politica-contrasena" class="esi-ayuda">
+                  La contraseña debe tener entre 8 y 72 caracteres, con mayúsculas, minúsculas,
+                  dígitos y símbolos.
+                </small>
                 @if (esInvalido('contrasena')) {
-                  <small class="esi-ayuda esi-error">La contraseña es obligatoria.</small>
+                  <small class="esi-ayuda esi-error">
+                    Introduce una contraseña que cumpla la política indicada.
+                  </small>
                 }
               </div>
 
