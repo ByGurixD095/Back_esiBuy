@@ -169,7 +169,13 @@
                     required
                   />
                   @if (esInvalido('fechaNacimiento')) {
-                    <small class="esi-ayuda esi-error"> La fecha debe ser anterior a hoy. </small>
+                    <small class="esi-ayuda esi-error">
+                      @if (form.controls.fechaNacimiento.hasError('menorDeEdad')) {
+                        Debes ser mayor de edad para registrarte.
+                      } @else {
+                        La fecha debe ser anterior a hoy.
+                      }
+                    </small>
                   }
                 </div>
               </div>
