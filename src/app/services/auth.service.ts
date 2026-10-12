@@ -97,6 +97,7 @@ export class AuthService {
 
   refresh(): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${environment.apiUrl}/users/refresh`, {}).pipe(
+    
       tap((respuesta) => this.storeSessionIfComplete(respuesta)),
     );
   }

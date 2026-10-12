@@ -92,18 +92,10 @@
                 <input id="telefono" type="tel" formControlName="telefono" autocomplete="tel" />
               </div>
 
-              <div class="esi-campo">
-                <label for="imagenPerfil"
-                  >Imagen de perfil <span class="opcional">Opcional</span></label
-                >
-                <input
-                  id="imagenPerfil"
-                  type="url"
-                  formControlName="imagenPerfil"
-                  placeholder="https://"
-                  autocomplete="url"
-                />
-              </div>
+              <app-avatar-selector
+                [value]="form.controls.imagenPerfil.value"
+                (valueChange)="form.controls.imagenPerfil.setValue($event)"
+              />
             </div>
           </section>
 

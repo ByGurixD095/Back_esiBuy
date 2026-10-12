@@ -10,6 +10,7 @@ export interface NuevoAdministrador {
   email: string;
   contrasena: string;
   sede: string;
+  imagenPerfil: string;
 }
 
 export interface AdministradorCreado {

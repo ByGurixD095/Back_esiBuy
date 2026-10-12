@@ -3,6 +3,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
 import { Administradores } from '../../services/crear-admin-service/administradores';
+import { AvatarSelector, avatarAleatorio } from '../avatar-selector/avatar-selector';
 
 // Misma política que AdministradorRegistroDTO del back
 const PATRON_CONTRASENA = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).+$/;
@@ -10,7 +11,7 @@ const NO_VACIO = /\S/;
 
 @Component({
   selector: 'app-administrador-registro',
-  imports: [ReactiveFormsModule, MarcoPagina],
+  imports: [ReactiveFormsModule, MarcoPagina, AvatarSelector],
   templateUrl: './administrador-registro.html',
   styleUrl: './administrador-registro.css',
 })
@@ -44,12 +45,16 @@ export class AdministradorRegistro {
       ],
     }),
     sede: new FormControl('', { nonNullable: true }),
+    imagenPerfil: new FormControl('', { nonNullable: true }),
   });
 
   enviar(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
+    }
+    if (!this.form.controls.imagenPerfil.value.trim()) {
+      this.form.controls.imagenPerfil.setValue(avatarAleatorio());
     }
 
     this.mensajeExito.set('');

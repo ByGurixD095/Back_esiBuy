@@ -85,6 +85,22 @@ describe('ProductService', () => {
     expect(resultado).toEqual(respuesta);
   });
 
+  it('solicita el catálogo del vendedor ordenado por estado activo descendente', () => {
+    service.obtenerCatalogoVendedor(1, 36).subscribe();
+
+    const request = httpTesting.expectOne(
+      (req) => req.urlWithParams === 'http://localhost:8080/products/catalogo?page=1&size=36&sort=activo,desc',
+    );
+    expect(request.request.method).toBe('GET');
+    expect(request.request.withCredentials).toBe(true);
+    request.flush({
+      content: [],
+      totalElements: 0,
+      totalPages: 0,
+      number: 1,
+    });
+  });
+
   it('propaga un 403 como ProductApiError sin sustituirlo por datos falsos', () => {
     let errorRecibido: ProductApiError | undefined;
     service.obtenerDisponibles().subscribe({
