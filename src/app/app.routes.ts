@@ -24,7 +24,6 @@ export const routes: Routes = [
   { path: 'products/new', component: ProductoForm, canActivate: [roleGuard(['VENDEDOR'])] },
   { path: 'products/:id/editar', component: ProductoForm, canActivate: [roleGuard(['VENDEDOR'])] },
   { path: 'products/:id', component: ProductoDetalle, canActivate: [roleGuard(['VENDEDOR'])] },
-  { path: 'register', component: RegistroInicio },
   { path: 'register', component: RegistroInicio, canActivate: [guestGuard] },
   { path: 'register/clientes', component: RegistroComponent, data: { tipoRegistro: 'cliente' }, canActivate: [guestGuard] },
   { path: 'register/vendedor', component: RegistroComponent, data: { tipoRegistro: 'vendedor' }, canActivate: [guestGuard] },
