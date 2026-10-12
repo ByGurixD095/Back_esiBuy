@@ -203,7 +203,13 @@ describe('RegistroComponent', () => {
   it('muestra un mensaje específico si el correo ya está registrado', async () => {
     await configurar('cliente');
     servicioFalso.registrarCliente.mockReturnValue(
-      throwError(() => new HttpErrorResponse({ status: 409 })),
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 409,
+            error: { error: 'CONFLICT', message: 'El email ya está registrado' },
+          }),
+      ),
     );
     component.form.patchValue({
       nombre: 'Ana',
@@ -216,6 +222,32 @@ describe('RegistroComponent', () => {
 
     component.enviar();
 
-    expect(component.mensajeError()).toContain('Ya existe una cuenta');
+    expect(component.mensajeError()).toBe('El email ya está registrado');
+  });
+
+  it('muestra el mensaje del servidor si el nombre comercial ya está en uso', async () => {
+    await configurar('vendedor');
+    servicioFalso.registrarVendedor.mockReturnValue(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 409,
+            error: { error: 'CONFLICT', message: 'El nombre comercial ya está en uso' },
+          }),
+      ),
+    );
+    component.form.patchValue({
+      nombre: 'Ana',
+      apellidos: 'López',
+      email: 'ana@example.es',
+      contrasena: 'Clave123!',
+      nombreComercial: 'Tienda existente',
+      cifNif: 'B12345678',
+      categoriaPrincipalId: 'categoria-1',
+    });
+
+    component.enviar();
+
+    expect(component.mensajeError()).toBe('El nombre comercial ya está en uso');
   });
 });

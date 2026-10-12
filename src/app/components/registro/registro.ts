@@ -174,7 +174,10 @@ export class RegistroComponent {
       return 'No se ha podido conectar con el servidor.';
     }
     if (error.status === 409) {
-      return 'Ya existe una cuenta con ese correo electrónico o documento.';
+      const message = error.error?.message ?? error.error?.mensaje;
+      return typeof message === 'string' && message.length > 0
+        ? message
+        : 'Ya existe una cuenta con ese correo electrónico o documento.';
     }
     if (error.status === 400) {
       return 'No se ha podido crear la cuenta. Revisa los datos introducidos.';
