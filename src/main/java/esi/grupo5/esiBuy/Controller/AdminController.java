@@ -126,4 +126,9 @@ public class AdminController {
         adminService.eliminarUsuario(id, usuarioActualId);
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/activar/{id}")
+    public ResponseEntity<UsuarioResponseDTO> activarUsuario(@PathVariable String id) {
+        return ResponseEntity.ok(adminService.activarUsuario(id));
+    }
 }

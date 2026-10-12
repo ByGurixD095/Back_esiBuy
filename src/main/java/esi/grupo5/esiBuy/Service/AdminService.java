@@ -7,6 +7,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+
 import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 import esi.grupo5.esiBuy.Dto.UserPatchDTO;
@@ -162,6 +163,15 @@ public class AdminService {
         return actualizarEstadoBloqueo(id, false);
     }
 
+    public UsuarioResponseDTO activarUsuario(String id) {
+        Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND));
+
+        usuario.setActivo(true);
+        usuarioRepository.save(usuario);
+        return userService.toResponseDto(usuario);
+    }
+
     /**
      * Cambia y persiste el estado de bloqueo de una cuenta no eliminada.
      *
@@ -225,5 +235,4 @@ public class AdminService {
 
         userService.eliminarCuenta(id);
     }
-
 }
