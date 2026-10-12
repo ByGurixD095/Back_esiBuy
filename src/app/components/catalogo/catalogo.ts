@@ -17,6 +17,7 @@ export class Catalogo implements OnInit {
   readonly auth = inject(AuthService);
 
   readonly productos = signal<Producto[]>([]);
+  readonly totalCatalogo = signal<number | null>(null);
   readonly totalElementos = signal(0);
   readonly totalPaginas = signal(0);
   readonly paginaActual = signal(0);
@@ -37,6 +38,9 @@ export class Catalogo implements OnInit {
         this.productos.set(filtrarProductos(paginaProductos.content, filtros));
         this.totalPaginas.set(paginaProductos.totalPages);
         this.totalElementos.set(paginaProductos.totalElements);
+        if (paginaProductos.number === 0 && !this.hayFiltrosRestrictivos(filtros)) {
+          this.totalCatalogo.set(paginaProductos.totalElements);
+        }
         this.paginaActual.set(paginaProductos.number);
         this.cargando.set(false);
       },
@@ -45,6 +49,17 @@ export class Catalogo implements OnInit {
         this.cargando.set(false);
       },
     });
+  }
+
+  private hayFiltrosRestrictivos(filtros: FiltrosProductos): boolean {
+    return Boolean(
+      filtros.busqueda?.trim() ||
+        (filtros.categoria && filtros.categoria !== 'Todas' && filtros.categoria !== 'TODAS') ||
+        filtros.precioMinCent != null ||
+        filtros.precioMaxCent != null ||
+        filtros.soloOfertas ||
+        (filtros.estado && filtros.estado !== 'todos'),
+    );
   }
 
   aplicarFiltros(filtros: FiltrosProductos): void {
@@ -68,5 +83,8 @@ export class Catalogo implements OnInit {
   formatearPrecio(precioCent: number): string {
     return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(precioCent / 100);
   }
-}
 
+  formatearPrecioConDescuento(precioCent: number, descuento: number): string {
+    return this.formatearPrecio(Math.round(precioCent * (1 - descuento / 100)));
+  }
+}

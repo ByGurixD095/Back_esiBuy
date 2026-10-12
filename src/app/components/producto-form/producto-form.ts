@@ -1,8 +1,25 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, PLATFORM_ID, inject, signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Producto, ProductoDTO } from '../../models/producto.model';
 import { ProductoApiError, ProductoService } from '../../services/producto.service';
+
+interface BorradorProducto {
+  nombre: string;
+  referencia: string;
+  numStock: number;
+  precioEuros: number;
+  descuento: number;
+  descuentoPremium: number;
+  descripcion: string;
+  categoria: string;
+  urlImagen: string;
+  activo: boolean;
+}
+
+const CLAVE_BORRADOR_PRODUCTO = 'esiBuy.producto.borrador';
 
 @Component({
   selector: 'app-producto-form',
@@ -16,12 +33,15 @@ export class ProductoForm implements OnInit {
   private readonly productoService = inject(ProductoService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly isSubmitting = signal(false);
   readonly submitError = signal<string | null>(null);
   readonly createdProduct = signal<Producto | null>(null);
   readonly creationSuccess = signal(false);
   readonly draftSaved = signal(false);
+  readonly draftRestored = signal(false);
   readonly formSubmitted = signal(false);
   readonly editingId = signal<string | null>(null);
   readonly loadingProduct = signal(false);
@@ -42,6 +62,17 @@ export class ProductoForm implements OnInit {
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
+    if (!id) {
+      this.restaurarBorrador();
+    }
+
+    this.productoForm.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.draftSaved.set(false);
+        this.draftRestored.set(false);
+      });
+
     if (!id) return;
 
     this.editingId.set(id);
@@ -70,8 +101,20 @@ export class ProductoForm implements OnInit {
   }
 
   guardarBorrador(): void {
-    this.draftSaved.set(true);
     this.submitError.set(null);
+
+    if (!isPlatformBrowser(this.platformId)) {
+      this.submitError.set('No se puede guardar el borrador fuera del navegador.');
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(CLAVE_BORRADOR_PRODUCTO, JSON.stringify(this.productoForm.getRawValue()));
+      this.draftSaved.set(true);
+      this.draftRestored.set(false);
+    } catch {
+      this.submitError.set('No se pudo guardar el borrador en este navegador. Comprueba que el almacenamiento esté disponible.');
+    }
   }
 
   limitarPrecio(event: Event): void {
@@ -128,6 +171,7 @@ export class ProductoForm implements OnInit {
           window.setTimeout(() => void this.router.navigate(['/products/catalogo']), 800);
           return;
         }
+        this.eliminarBorradorGuardado();
         this.productoForm.reset({
           nombre: '',
           referencia: this.generatedReference,
@@ -154,4 +198,53 @@ export class ProductoForm implements OnInit {
       },
     });
   }
+
+  private restaurarBorrador(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    try {
+      const borradorGuardado = window.localStorage.getItem(CLAVE_BORRADOR_PRODUCTO);
+      if (!borradorGuardado) return;
+
+      const borrador: unknown = JSON.parse(borradorGuardado);
+      if (!esBorradorProducto(borrador)) {
+        this.submitError.set('El borrador guardado no tiene un formato válido y no se ha podido recuperar.');
+        return;
+      }
+
+      this.productoForm.patchValue(borrador);
+      this.draftSaved.set(true);
+      this.draftRestored.set(true);
+    } catch {
+      this.submitError.set('No se pudo recuperar el borrador de este navegador.');
+    }
+  }
+
+  private eliminarBorradorGuardado(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    try {
+      window.localStorage.removeItem(CLAVE_BORRADOR_PRODUCTO);
+    } catch {
+      this.submitError.set('El producto se publicó, pero no se pudo eliminar el borrador guardado en este navegador.');
+    }
+  }
+}
+
+function esBorradorProducto(valor: unknown): valor is BorradorProducto {
+  if (typeof valor !== 'object' || valor === null) return false;
+
+  const borrador = valor as Record<string, unknown>;
+  return (
+    typeof borrador['nombre'] === 'string' &&
+    typeof borrador['referencia'] === 'string' &&
+    typeof borrador['numStock'] === 'number' &&
+    typeof borrador['precioEuros'] === 'number' &&
+    typeof borrador['descuento'] === 'number' &&
+    typeof borrador['descuentoPremium'] === 'number' &&
+    typeof borrador['descripcion'] === 'string' &&
+    typeof borrador['categoria'] === 'string' &&
+    typeof borrador['urlImagen'] === 'string' &&
+    typeof borrador['activo'] === 'boolean'
+  );
 }

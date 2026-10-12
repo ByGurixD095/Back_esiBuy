@@ -31,6 +31,8 @@ type AccionUsuario = 'eliminar' | 'bloquear' | 'desbloquear';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConsultarUsuarios implements OnInit {
+  readonly tamanoPagina = 36;
+
   private readonly usuariosService = inject(Usuarios);
   private readonly authService = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
@@ -54,6 +56,7 @@ export class ConsultarUsuarios implements OnInit {
   readonly eliminandoId = signal<string | null>(null);
   readonly accionandoId = signal<string | null>(null);
   readonly accionPendiente = signal<{ usuario: Usuario; accion: AccionUsuario } | null>(null);
+  readonly paginaActual = signal(0);
   readonly usuariosFiltrados = computed(() => {
     const idBuscado = this.busquedaId().trim().toLocaleLowerCase();
     return this.usuarios().filter((usuario) => {
@@ -63,6 +66,13 @@ export class ConsultarUsuarios implements OnInit {
         usuario.eliminado === (this.filtroEliminados() === 'eliminados');
       return coincideId && coincideEliminado;
     });
+  });
+  readonly totalPaginas = computed(() =>
+    Math.ceil(this.usuariosFiltrados().length / this.tamanoPagina),
+  );
+  readonly usuariosPagina = computed(() => {
+    const inicio = this.paginaActual() * this.tamanoPagina;
+    return this.usuariosFiltrados().slice(inicio, inicio + this.tamanoPagina);
   });
 
   ngOnInit(): void {
@@ -75,6 +85,7 @@ export class ConsultarUsuarios implements OnInit {
     this.usuariosService.consultar().subscribe({
       next: (usuarios) => {
         this.usuarios.set(usuarios);
+        this.paginaActual.set(0);
         this.cargando.set(false);
       },
       error: (error: HttpErrorResponse) => {
@@ -86,10 +97,22 @@ export class ConsultarUsuarios implements OnInit {
 
   actualizarBusquedaId(event: Event): void {
     this.busquedaId.set((event.target as HTMLInputElement).value);
+    this.paginaActual.set(0);
   }
 
   actualizarFiltroEliminados(event: Event): void {
     this.filtroEliminados.set((event.target as HTMLSelectElement).value as FiltroEliminados);
+    this.paginaActual.set(0);
+  }
+
+  paginaAnterior(): void {
+    if (this.paginaActual() === 0) return;
+    this.paginaActual.update((pagina) => pagina - 1);
+  }
+
+  paginaSiguiente(): void {
+    if (this.paginaActual() + 1 >= this.totalPaginas()) return;
+    this.paginaActual.update((pagina) => pagina + 1);
   }
 
   verDetalleUsuario(usuario: Usuario): void {
@@ -178,6 +201,10 @@ export class ConsultarUsuarios implements OnInit {
               : actual,
           ),
         );
+        const ultimaPagina = Math.max(0, this.totalPaginas() - 1);
+        if (this.paginaActual() > ultimaPagina) {
+          this.paginaActual.set(ultimaPagina);
+        }
         this.mensajeAccion.set(this.textoAccionExitosa(usuario, accion));
         this.limpiarTemporizadorMensaje();
         this.temporizadorMensaje = setTimeout(() => this.mensajeAccion.set(''), 5000);
