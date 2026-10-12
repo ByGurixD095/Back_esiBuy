@@ -109,6 +109,30 @@ describe('RegistroComponent', () => {
     expect(routerFalso.navigate).toHaveBeenCalledWith(['/products']);
   });
 
+  it('avisa de que la cuenta queda pendiente de activación y no inicia sesión', async () => {
+    await configurar('cliente');
+    autenticacionFalsa.applyAuthenticationResponse.mockClear();
+    component.form.patchValue({
+      nombre: 'Ana',
+      apellidos: 'López',
+      email: 'ana@example.es',
+      contrasena: 'Clave123!',
+      dni: '12345678A',
+      fechaNacimiento: '2000-01-01',
+    });
+    servicioFalso.registrarCliente.mockReturnValue(
+      of({ ...respuestaLoginOk, mfaStatus: 'PENDING_ACTIVATION' }),
+    );
+
+    component.enviar();
+    await fixture.whenStable();
+
+    expect(component.mensajeExito()).toContain('Un administrador debe activarla');
+    expect(autenticacionFalsa.login).not.toHaveBeenCalled();
+    expect(autenticacionFalsa.applyAuthenticationResponse).not.toHaveBeenCalled();
+    expect(routerFalso.navigate).not.toHaveBeenCalled();
+  });
+
   it('valida y envía los campos obligatorios de vendedor', async () => {
     await configurar('vendedor');
     expect(component.form.valid).toBe(false);
