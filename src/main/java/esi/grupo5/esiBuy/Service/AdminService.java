@@ -3,8 +3,10 @@ package esi.grupo5.esiBuy.Service;
 import java.util.List;
 import java.util.function.Consumer;
 
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
 
 import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
@@ -13,6 +15,7 @@ import esi.grupo5.esiBuy.Dto.UsuarioResponseDTO;
 import esi.grupo5.esiBuy.Exception.*;
 import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Model.Usuario;
+import esi.grupo5.esiBuy.Model.Vendedor;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Service.strategy.UsuarioUpdateStrategy;
 
@@ -66,6 +69,7 @@ public class AdminService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND));
 
+        validarNombreComercial(usuario, dto.nombreComercial());
         actualizarDatosComunes(usuario, dto);
 
         updateStrategies.stream()
@@ -73,7 +77,31 @@ public class AdminService {
                 .findFirst()
                 .ifPresent(strategy -> strategy.actualizar(usuario, dto));
 
-        usuarioRepository.save(usuario);
+        try {
+            usuarioRepository.save(usuario);
+        } catch (DuplicateKeyException e) {
+            throw new ConflictException("El nombre comercial ya está en uso", e);
+        }
+    }
+
+    /**
+     * Comprueba que el nombre comercial modificado no pertenezca a otro vendedor.
+     *
+     * @param usuario cuenta que se está modificando
+     * @param nombreComercial nombre comercial solicitado
+     * @throws ConflictException si otro vendedor ya utiliza el nombre
+     */
+    private void validarNombreComercial(Usuario usuario, String nombreComercial) {
+        if (!(usuario instanceof Vendedor vendedor)
+                || nombreComercial == null
+                || nombreComercial.isBlank()
+                || nombreComercial.equals(vendedor.getNombreComercial())) {
+            return;
+        }
+
+        if (usuarioRepository.existsByNombreComercialAndIdNot(nombreComercial, vendedor.getId())) {
+            throw new ConflictException("El nombre comercial ya está en uso");
+        }
     }
 
     /**
@@ -135,6 +163,15 @@ public class AdminService {
         return actualizarEstadoBloqueo(id, false);
     }
 
+    public UsuarioResponseDTO activarUsuario(String id) {
+        Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND));
+
+        usuario.setActivo(true);
+        usuarioRepository.save(usuario);
+        return userService.toResponseDto(usuario);
+    }
+
     /**
      * Cambia y persiste el estado de bloqueo de una cuenta no eliminada.
      *
@@ -173,6 +210,7 @@ public class AdminService {
                 .email(dto.email())
                 .contrasena(passwordEncoder.encode(dto.contrasena()))
                 .sede(dto.sede())
+                .imagenPerfil(dto.imagenPerfil())
                 .build();
 
         Administrador guardado = usuarioRepository.save(admin);
@@ -197,5 +235,4 @@ public class AdminService {
 
         userService.eliminarCuenta(id);
     }
-
 }

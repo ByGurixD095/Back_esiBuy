@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.ArgumentCaptor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.List;
@@ -31,6 +32,8 @@ import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+  import static org.junit.jupiter.api.Assertions.assertFalse;
+  import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -185,33 +188,72 @@ class UserServiceConsultarUsuariosLecturaTest {
     }
 
     @Test
-    void registrarCliente_validaGuardaYCompletaAutenticacion() {
+    void registrarCliente_guardaInactivoYPideActivacionSinAutenticar() {
         ClienteRegistroDTO dto = new ClienteRegistroDTO(
                 "Ana", "López", "ana@test.com", "Strong#2026", "123456789",
                 null, "12345678A", LocalDate.of(2000, 1, 1), null);
-        LoginResponseDTO respuesta = new LoginResponseDTO("access", "refresh", "CLIENTE", "NORMAL");
         doReturn(false).when(usuarioRepository).existsByEmail(dto.email());
         when(usuarioRepository.save(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(authService.completarAutenticacion(any())).thenReturn(respuesta);
 
         LoginResponseDTO resultado = service.registrarCliente(dto);
 
-        assertEquals(respuesta, resultado);
+        assertEquals("PENDING_ACTIVATION", resultado.mfaStatus());
+        assertEquals("ana@test.com", resultado.email());
+        assertNull(resultado.accessToken());
+        assertNull(resultado.refreshToken());
         verify(passwordValidatorService).validateRegistrationPassword(dto.contrasena());
-        verify(usuarioRepository).save(any(Cliente.class));
-        verify(authService).completarAutenticacion(any());
+
+        ArgumentCaptor<Cliente> captor = ArgumentCaptor.forClass(Cliente.class);
+        verify(usuarioRepository).save(captor.capture());
+        assertFalse(captor.getValue().isActivo());
+        verify(authService, never()).completarAutenticacion(any());
+    }
+
+    @Test
+    void registrarVendedor_guardaInactivoYPideActivacionSinAutenticar() {
+        VendedorRegisterRequest dto = new VendedorRegisterRequest(
+                "Luis", "García", "luis@test.com", "Strong#2026", null, null,
+                "Tienda Luis", "B12345678", "electronica");
+        doReturn(false).when(usuarioRepository).existsByEmail(dto.email());
+        when(usuarioRepository.save(any(Vendedor.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        LoginResponseDTO resultado = service.registrarVendedor(dto);
+
+        assertEquals("PENDING_ACTIVATION", resultado.mfaStatus());
+        assertNull(resultado.accessToken());
+
+        ArgumentCaptor<Vendedor> captor = ArgumentCaptor.forClass(Vendedor.class);
+        verify(usuarioRepository).save(captor.capture());
+        assertFalse(captor.getValue().isActivo());
+        verify(authService, never()).completarAutenticacion(any());
     }
 
     @Test
     void registrarVendedor_emailExistenteImpideGuardar() {
-        VendedorRegisterRequest dto = new VendedorRegisterRequest(
-                "Luis", "García", "luis@test.com", "Strong#2026", null, null,
-                "Tienda Luis", "B12345678", "electronica");
+         VendedorRegisterRequest dto = new VendedorRegisterRequest(
+                        "Luis", "García", "luis@test.com", "Strong#2026", null, null,
+                        "Tienda Luis", "B12345678", "electronica");
         when(usuarioRepository.existsByEmail(dto.email())).thenReturn(true);
 
         assertThrows(ConflictException.class, () -> service.registrarVendedor(dto));
 
         verify(passwordValidatorService).validateRegistrationPassword(dto.contrasena());
+        verify(usuarioRepository, never()).save(any());
+        verify(authService, never()).completarAutenticacion(any());
+    }
+
+    @Test
+    void registrarVendedor_nombreComercialExistenteImpideGuardar() {
+        VendedorRegisterRequest dto = new VendedorRegisterRequest(
+                "Luis", "García", "luis@test.com", "Strong#2026", null, null,
+                "Tienda Luis", "B12345678", "electronica");
+        when(usuarioRepository.existsByEmail(dto.email())).thenReturn(false);
+        when(usuarioRepository.existsByNombreComercial(dto.nombreComercial())).thenReturn(true);
+
+        ConflictException exception = assertThrows(
+                ConflictException.class, () -> service.registrarVendedor(dto));
+
+        assertEquals("El nombre comercial ya está en uso", exception.getMessage());
         verify(usuarioRepository, never()).save(any());
         verify(authService, never()).completarAutenticacion(any());
     }
@@ -252,7 +294,7 @@ class UserServiceConsultarUsuariosLecturaTest {
         when(usuarioRepository.findByIdAndEliminadoFalse("cliente-1")).thenReturn(Optional.of(cliente));
 
         service.modificarMiPerfil("cliente-1", new UserSelfUpdateDTO(
-                "Eva", "Gómez", "987654321", "avatar.png", TipoCliente.PREMIUM, null, null));
+                "Eva", "Gómez", "987654321", "avatar.png", TipoCliente.PREMIUM, null, null, null));
 
         assertEquals("Eva", cliente.getNombre());
         assertEquals("Gómez", cliente.getApellidos());
@@ -264,11 +306,11 @@ class UserServiceConsultarUsuariosLecturaTest {
         doThrow(new org.springframework.dao.DuplicateKeyException("duplicate"))
                 .when(usuarioRepository).save(cliente);
         assertThrows(ConflictException.class, () -> service.modificarMiPerfil(
-                "cliente-1", new UserSelfUpdateDTO(null, null, null, null, null, null, null)));
+                "cliente-1", new UserSelfUpdateDTO(null, null, null, null, null, null, null, null)));
         doThrow(new org.springframework.dao.DataAccessResourceFailureException("database unavailable"))
                 .when(usuarioRepository).save(cliente);
         assertThrows(BusinessException.class, () -> service.modificarMiPerfil(
-                "cliente-1", new UserSelfUpdateDTO(null, null, null, null, null, null, null)));
+                "cliente-1", new UserSelfUpdateDTO(null, null, null, null, null, null, null, null)));
     }
 
     @Test
@@ -278,7 +320,7 @@ class UserServiceConsultarUsuariosLecturaTest {
         when(usuarioRepository.findByIdAndEliminadoFalse("vendedor-1")).thenReturn(Optional.of(vendedor));
 
         service.modificarMiPerfil("vendedor-1", new UserSelfUpdateDTO(
-                "Luis", null, null, null, null, "tecnologia", "Tienda Luis"));
+                "Luis", null, null, null, null, "tecnologia", "Tienda Luis", null));
 
         assertEquals("Luis", vendedor.getNombre());
         assertEquals("tecnologia", vendedor.getCategoriaPrincipalId());
@@ -287,7 +329,45 @@ class UserServiceConsultarUsuariosLecturaTest {
 
         when(usuarioRepository.findByIdAndEliminadoFalse("missing")).thenReturn(Optional.empty());
         assertThrows(NotFoundException.class, () -> service.modificarMiPerfil(
-                "missing", new UserSelfUpdateDTO(null, null, null, null, null, null, null)));
+                "missing", new UserSelfUpdateDTO(null, null, null, null, null, null, null, null)));
+    }
+
+    @Test
+    void modificarPerfilAdministrador_actualizaSede() {
+        Administrador administrador = Administrador.builder()
+                .nombre("Ana")
+                .apellidos("Pérez")
+                .email("ana-admin@test.com")
+                .contrasena("password")
+                .sede("Madrid")
+                .build();
+        administrador.setId("admin-1");
+        when(usuarioRepository.findByIdAndEliminadoFalse("admin-1"))
+                .thenReturn(Optional.of(administrador));
+
+        service.modificarMiPerfil("admin-1", new UserSelfUpdateDTO(
+                null, null, null, null, null, null, null, "Sevilla"));
+
+        assertEquals("Sevilla", administrador.getSede());
+        verify(usuarioRepository).save(administrador);
+    }
+
+    @Test
+    void modificarPerfilVendedor_nombreComercialDuplicadoImpideLaActualizacion() {
+        Vendedor vendedor = new Vendedor();
+        vendedor.setId("vendedor-1");
+        vendedor.setNombreComercial("Tienda original");
+        when(usuarioRepository.findByIdAndEliminadoFalse("vendedor-1")).thenReturn(Optional.of(vendedor));
+        when(usuarioRepository.existsByNombreComercialAndIdNot("Tienda ocupada", "vendedor-1"))
+                .thenReturn(true);
+
+        ConflictException exception = assertThrows(ConflictException.class, () -> service.modificarMiPerfil(
+                "vendedor-1",
+                new UserSelfUpdateDTO(null, null, null, null, null, null, "Tienda ocupada", null)));
+
+        assertEquals("El nombre comercial ya está en uso", exception.getMessage());
+        assertEquals("Tienda original", vendedor.getNombreComercial());
+        verify(usuarioRepository, never()).save(any());
     }
 
     @Test
@@ -300,7 +380,7 @@ class UserServiceConsultarUsuariosLecturaTest {
                 .thenReturn(Optional.of(cliente));
 
         service.modificarMiPerfil("cliente-1", new UserSelfUpdateDTO(
-                " ", "", " ", " ", null, null, null));
+                " ", "", " ", " ", null, null, null, null));
 
         assertEquals("Ana", cliente.getNombre());
         assertEquals("López", cliente.getApellidos());

@@ -13,7 +13,7 @@ public class Vendedor extends Usuario {
 
     /** Nombre comercial único del vendedor. */
     @NotBlank
-    @Indexed(unique = true)
+    @Indexed(unique = true, sparse = true)
     private String nombreComercial;
 
     /** CIF o NIF que identifica fiscalmente al vendedor. */
