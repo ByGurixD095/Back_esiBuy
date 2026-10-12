@@ -21,7 +21,7 @@ class AdministradorRegistroDTOTest {
     }
 
     private AdministradorRegistroDTO dto(String nombre, String email, String contrasena) {
-        return new AdministradorRegistroDTO(nombre, "Pérez", email, contrasena, "Madrid");
+        return new AdministradorRegistroDTO(nombre, "Pérez", email, contrasena, "Madrid", null);
     }
 
     @Test
