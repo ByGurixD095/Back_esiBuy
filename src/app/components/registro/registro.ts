@@ -1,6 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService, LoginResponse } from '../../services/auth.service';
 import { Registro as RegistroService } from '../../services/registro-service/registro';
@@ -20,6 +27,22 @@ function fechaAnteriorAHoy(fecha: string): boolean {
   const fechaLocal = new Date(`${fecha}T00:00:00`);
   hoy.setHours(0, 0, 0, 0);
   return !Number.isNaN(fechaLocal.getTime()) && fechaLocal < hoy;
+}
+
+function validarMayorDeEdad(control: AbstractControl): ValidationErrors | null {
+  if (!control.value) {
+    return null;
+  }
+
+  const fechaNacimiento = new Date(`${control.value}T00:00:00`);
+  if (Number.isNaN(fechaNacimiento.getTime())) {
+    return { fechaInvalida: true };
+  }
+
+  const fechaLimite = new Date();
+  fechaLimite.setFullYear(fechaLimite.getFullYear() - 18);
+  fechaLimite.setHours(0, 0, 0, 0);
+  return fechaNacimiento <= fechaLimite ? null : { menorDeEdad: true };
 }
 
 @Component({
@@ -95,6 +118,7 @@ export class RegistroComponent {
       this.form.controls.fechaNacimiento.addValidators([
         Validators.required,
         (control) => (fechaAnteriorAHoy(control.value) ? null : { past: true }),
+        validarMayorDeEdad,
       ]);
       this.form.controls.dni.updateValueAndValidity();
       this.form.controls.fechaNacimiento.updateValueAndValidity();
