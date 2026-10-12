@@ -45,8 +45,7 @@ class AdminServiceCrearAdministradorTest {
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
     private AdminService adminService;
 
-    private final AdministradorRegistroDTO dto = new AdministradorRegistroDTO("Ana", "Pérez", "ana@esibuy.com",
-            "Clave#2026x", "Madrid");
+    private final AdministradorRegistroDTO dto = new AdministradorRegistroDTO("Ana", "Pérez", "ana@esibuy.com", "Clave#2026x", "Madrid", null);
 
     @BeforeEach
     void setUp() {
@@ -63,10 +62,9 @@ class AdminServiceCrearAdministradorTest {
         when(userService.toAdministradorResponseDto(any(Administrador.class), eq("Administrador creado correctamente")))
                 .thenReturn(dtoRespuesta);
 
-        ResponseEntity<AdministradorResponseDTO> respuesta = adminService.crearAdministrador(dto);
+        AdministradorResponseDTO respuesta = adminService.crearAdministrador(dto);
 
-        assertEquals(201, respuesta.getStatusCode().value());
-        assertSame(dtoRespuesta, respuesta.getBody());
+        assertSame(dtoRespuesta, respuesta);
 
         ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
         verify(usuarioRepository).save(captor.capture());
@@ -93,7 +91,7 @@ class AdminServiceCrearAdministradorTest {
     void crearAdministrador_contrasenaNoValida_lanza400YNoGuarda() {
         when(usuarioRepository.findByEmail("ana@esibuy.com")).thenReturn(Optional.empty());
         doThrow(new ValidationException("demasiado débil"))
-                .when(passwordValidatorService).validatePassword(anyString(), anyList());
+        .when(passwordValidatorService).validateRegistrationPassword(anyString());
 
         BusinessException error = assertThrows(ValidationException.class,
                 () -> adminService.crearAdministrador(dto));

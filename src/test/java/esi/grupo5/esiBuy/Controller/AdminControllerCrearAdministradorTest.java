@@ -50,12 +50,15 @@ class AdminControllerCrearAdministradorTest {
     @Test
     void postAdmin_datosValidos_devuelve201ConMensajeYSinContrasena() throws Exception {
         when(adminService.crearAdministrador(any(AdministradorRegistroDTO.class)))
-                .thenReturn(ResponseEntity.status(HttpStatus.CREATED).body(
-                        AdministradorResponseDTO.builder()
-                                .id("1").name("Ana").apellidos("Perez").email("ana@esibuy.com")
-                                .sede("Madrid").rol(Rol.ADMINISTRADOR)
-                                .mensaje("Administrador creado correctamente")
-                                .build()));
+        .thenReturn(AdministradorResponseDTO.builder()
+                .id("1")
+                .name("Ana")
+                .apellidos("Pérez")
+                .email("ana@esibuy.com")
+                .sede("Madrid")
+                .rol(Rol.ADMINISTRADOR)   // el valor que ya usabas
+                .mensaje("Administrador creado correctamente")
+                .build());
 
         mockMvc.perform(post("/admin")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -19,12 +19,16 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import esi.grupo5.esiBuy.Controller.AdminController;
+import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 import esi.grupo5.esiBuy.Model.enums.Rol;
+import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Service.AdminService;
 import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Service.UserService;
 import jakarta.servlet.http.Cookie;
+
+import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 
 @WebMvcTest(AdminController.class)
 @Import({ SecurityConfig.class, JwtAuthenticationFilter.class })
@@ -47,6 +51,9 @@ class SecurityAdministradoresTest {
     @MockitoBean
     private AdminService adminService;
 
+    @MockitoBean
+    private UsuarioRepository usuarioRepository;
+
     @BeforeEach
     @AfterEach
     void limpiarContextoDeSeguridad() {
@@ -57,19 +64,22 @@ class SecurityAdministradoresTest {
         when(jwtService.isTokenValid(any())).thenReturn(true);
         when(jwtService.extractId(any())).thenReturn("1");
         when(jwtService.extractRol(any())).thenReturn(rol);
+        when(usuarioRepository.existsByIdAndActivoTrueAndBloqueadoFalseAndEliminadoFalse("1")).thenReturn(true);
     }
 
     @Test
     void administrador_puedeCrearAdministradores() throws Exception {
         simularLogin("ADMINISTRADOR");
-        when(adminService.crearAdministrador(any())).thenReturn(
-                ResponseEntity.status(HttpStatus.CREATED).body(
-                        AdministradorResponseDTO.builder()
-        .id("1").name("Ana").apellidos("Lopez").email("ana@esi.es")
-        .sede("Ciudad Real").rol(Rol.ADMINISTRADOR)
-        .mensaje("Administrador creado correctamente")
-        .build())
-        );
+        when(adminService.crearAdministrador(any(AdministradorRegistroDTO.class)))
+        .thenReturn(AdministradorResponseDTO.builder()
+                .id("1")
+                .name("Ana")
+                .apellidos("Pérez")
+                .email("ana@esibuy.com")
+                .sede("Madrid")
+                .rol(Rol.ADMINISTRADOR)   // el valor que ya usabas
+                .mensaje("Administrador creado correctamente")
+                .build());
 
         mockMvc.perform(post("/admin")
                 .cookie(new Cookie("accessToken", "token"))
