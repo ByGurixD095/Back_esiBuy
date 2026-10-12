@@ -227,9 +227,38 @@ public class UserService {
     private void actualizarDatosEspecificos(Usuario usuario, UserSelfUpdateDTO dto) {
         if (usuario instanceof Cliente cliente && dto.tipoCliente() != null) {
             cliente.setTipoCliente(dto.tipoCliente());
+        } else if (usuario instanceof Administrador administrador && dto.sede() != null) {
+            administrador.setSede(dto.sede());
         } else if (usuario instanceof Vendedor vendedor) {
+            if (dto.nombreComercial() != null && !dto.nombreComercial().isBlank()) {
+                validarNombreComercialDisponible(dto.nombreComercial(), vendedor.getId());
+            }
             actualizarSiValido(dto.categoriaPrincipalId(), vendedor::setCategoriaPrincipalId);
             actualizarSiValido(dto.nombreComercial(), vendedor::setNombreComercial);
+        }
+    }
+
+    /**
+     * Impide que dos vendedores utilicen el mismo nombre comercial.
+     *
+     * @param nombreComercial nombre que se quiere asignar
+     * @param idUsuario identificador del vendedor que se excluye, o {@code null} durante el registro
+     * @throws ConflictException si otro vendedor ya utiliza el nombre
+     * @throws BusinessException si falla la consulta de persistencia
+     */
+    private void validarNombreComercialDisponible(String nombreComercial, String idUsuario) {
+        boolean nombreEnUso;
+        try {
+            nombreEnUso = idUsuario == null
+                    ? usuarioRepository.existsByNombreComercial(nombreComercial)
+                    : usuarioRepository.existsByNombreComercialAndIdNot(nombreComercial, idUsuario);
+        } catch (DataAccessException e) {
+            throw new BusinessException(
+                    "Error interno al comprobar el nombre comercial", 500, "SERVER_ERROR", e);
+        }
+
+        if (nombreEnUso) {
+            throw new ConflictException("El nombre comercial ya está en uso");
         }
     }
 
@@ -245,7 +274,7 @@ public class UserService {
         try {
             usuarioRepository.save(usuario);
         } catch (DuplicateKeyException e) {
-            throw new ConflictException("El campo único nombre comercial ya existe");
+            throw new ConflictException("El nombre comercial ya está en uso", e);
         } catch (DataAccessException e) {
             throw new BusinessException("Error interno al actualizar el perfil", 500, "SERVER_ERROR", e);
         }
@@ -279,11 +308,20 @@ public class UserService {
             throw new ConflictException("El email ya está registrado");
         }
 
+        if (usuario instanceof Vendedor vendedor) {
+            validarNombreComercialDisponible(vendedor.getNombreComercial(), null);
+        }
+
         usuario.setActivo(false); // pendiente de activación por un administrador
         Usuario usuarioGuardado;
 
         try {
             usuarioGuardado = usuarioRepository.save(usuario);
+        } catch (DuplicateKeyException e) {
+            String mensaje = usuario instanceof Vendedor
+                    ? "El email o nombre comercial ya está en uso"
+                    : "El email ya está registrado";
+            throw new ConflictException(mensaje, e);
         } catch (DataAccessException e) {
             throw new BusinessException("Error interno al registrar el usuario", 500, "INTERNAL_ERROR", e);
         }
