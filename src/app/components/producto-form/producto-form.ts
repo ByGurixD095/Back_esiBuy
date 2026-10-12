@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Producto, ProductoDTO } from '../../models/producto.model';
 import { ProductoApiError, ProductoService } from '../../services/producto.service';
 
@@ -11,10 +11,11 @@ import { ProductoApiError, ProductoService } from '../../services/producto.servi
   styleUrl: './producto-form.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ProductoForm {
+export class ProductoForm implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
   private readonly productoService = inject(ProductoService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly isSubmitting = signal(false);
   readonly submitError = signal<string | null>(null);
@@ -22,6 +23,8 @@ export class ProductoForm {
   readonly creationSuccess = signal(false);
   readonly draftSaved = signal(false);
   readonly formSubmitted = signal(false);
+  readonly editingId = signal<string | null>(null);
+  readonly loadingProduct = signal(false);
   private readonly generatedReference = `ESI-${Date.now().toString(36).toUpperCase()}`;
 
   readonly productoForm = this.formBuilder.nonNullable.group({
@@ -36,6 +39,35 @@ export class ProductoForm {
     urlImagen: ['', [Validators.pattern(/^\s*$|^https?:\/\/.+/i)]],
     activo: [true],
   });
+
+  ngOnInit(): void {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (!id) return;
+
+    this.editingId.set(id);
+    this.loadingProduct.set(true);
+    this.productoService.obtenerProducto(id).subscribe({
+      next: (producto) => {
+        this.productoForm.patchValue({
+          nombre: producto.nombre,
+          referencia: producto.referencia,
+          numStock: producto.numStock,
+          precioEuros: producto.precioCent / 100,
+          descuento: producto.descuento,
+          descuentoPremium: producto.descuentoPremium,
+          descripcion: producto.descripcion ?? '',
+          categoria: producto.categoria,
+          urlImagen: producto.urlImagen ?? '',
+          activo: producto.activo,
+        });
+        this.loadingProduct.set(false);
+      },
+      error: (error: ProductoApiError) => {
+        this.submitError.set(error.message);
+        this.loadingProduct.set(false);
+      },
+    });
+  }
 
   guardarBorrador(): void {
     this.draftSaved.set(true);
@@ -83,10 +115,19 @@ export class ProductoForm {
     };
 
     this.isSubmitting.set(true);
-    this.productoService.crearProducto(producto).subscribe({
+    const request = this.editingId()
+      ? this.productoService.actualizarProducto(this.editingId()!, producto)
+      : this.productoService.crearProducto(producto);
+
+    request.subscribe({
       next: (createdProduct) => {
         this.createdProduct.set(createdProduct);
         this.creationSuccess.set(true);
+        if (this.editingId()) {
+          this.isSubmitting.set(false);
+          window.setTimeout(() => void this.router.navigate(['/products/catalogo']), 800);
+          return;
+        }
         this.productoForm.reset({
           nombre: '',
           referencia: this.generatedReference,

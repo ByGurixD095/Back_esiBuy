@@ -159,13 +159,13 @@ describe('ConsultarUsuarios', () => {
     );
   });
 
-  it('abre la ficha del usuario al pulsar su ID y carga sus datos completos', () => {
+  it('abre la ficha del usuario al seleccionar su fila y carga sus datos completos', () => {
     const el = fixture.nativeElement as HTMLElement;
-    const botonId = el.querySelector(
-      '[aria-label="Ver detalles de Ana López"]',
-    ) as HTMLButtonElement;
+    const filaUsuario = Array.from(el.querySelectorAll('tbody tr')).find((fila) =>
+      fila.textContent?.includes('Ana López'),
+    ) as HTMLTableRowElement;
 
-    botonId.click();
+    filaUsuario.click();
     fixture.detectChanges();
 
     expect(servicioFalso.consultarPorId).toHaveBeenCalledWith('user-db-1');

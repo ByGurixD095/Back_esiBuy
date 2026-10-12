@@ -18,19 +18,6 @@ export interface Usuario {
 export interface UsuarioDetalle extends Usuario {
   telefono?: string | null;
   imagenPerfil?: string | null;
-  dni?: string | null;
-  fechaNacimiento?: string | null;
-  tipoCliente?: 'NORMAL' | 'PREMIUM' | null;
-  nombreComercial?: string | null;
-  cifNif?: string | null;
-  categoriaPrincipalId?: string | null;
-  sede?: string | null;
-  fechaIncorporacion?: string | null;
-}
-
-export interface UsuarioDetalle extends Usuario {
-  telefono?: string | null;
-  imagenPerfil?: string | null;
   fechaAlta?: string | null;
   fechaModificacion?: string | null;
   fechaCambioContrasena?: string | null;

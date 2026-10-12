@@ -66,18 +66,19 @@
         </thead>
         <tbody>
           @for (usuario of usuariosFiltrados(); track usuario.id) {
-          <tr [class.fila-eliminada]="usuario.eliminado">
-            <td data-label="ID">
-              <button
-                type="button"
-                class="usuario-id"
-                [disabled]="cargandoDetalle()"
-                (click)="verDetalleUsuario(usuario)"
-                [attr.aria-label]="'Ver detalles de ' + usuario.name + ' ' + usuario.apellidos"
-              >
-                {{ usuario.id }}
-              </button>
-            </td>
+          <tr
+            class="fila-seleccionable"
+            [class.fila-eliminada]="usuario.eliminado"
+            [class.fila-seleccionada]="usuarioSeleccionado()?.id === usuario.id"
+            [attr.aria-selected]="usuarioSeleccionado()?.id === usuario.id"
+            [attr.aria-label]="'Ver ficha de ' + usuario.name + ' ' + usuario.apellidos"
+            [attr.aria-disabled]="cargandoDetalle()"
+            [attr.tabindex]="cargandoDetalle() ? -1 : 0"
+            (click)="verDetalleUsuario(usuario)"
+            (keydown.enter)="verDetalleUsuario(usuario)"
+            (keydown.space)="$event.preventDefault(); verDetalleUsuario(usuario)"
+          >
+            <td data-label="ID">{{ usuario.id }}</td>
             <td data-label="Nombre">{{ usuario.name }} {{ usuario.apellidos }}</td>
             <td data-label="Correo electrónico">{{ usuario.email }}</td>
             <td data-label="Rol">{{ usuario.rol }}</td>
@@ -106,7 +107,7 @@
                 {{ usuario.eliminado ? 'Sí' : 'No' }}
               </span>
             </td>
-            <td data-label="Acciones">
+            <td data-label="Acciones" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
               <div class="acciones" aria-label="Acciones de usuario">
                 @if (usuario.eliminado) {
                 <button

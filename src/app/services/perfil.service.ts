@@ -20,6 +20,8 @@ export interface PerfilUsuario {
   nombreComercial?: string | null;
   cifNif?: string | null;
   categoriaPrincipalId?: string | null;
+  sede?: string | null;
+  fechaIncorporacion?: string | null;
   dosFactorActivoCliente?: boolean;
   tresFactorActivoCliente?: boolean;
 }
@@ -45,5 +47,9 @@ export class PerfilService {
 
   actualizarMiPerfil(datos: ActualizarPerfilRequest): Observable<void> {
     return this.http.patch<void>(`${this.apiUrl}/me/update`, datos);
+  }
+
+  eliminarMiCuenta(): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/me`);
   }
 }

@@ -22,6 +22,7 @@ import {
   UsuarioDetalle,
   Usuarios,
 } from '../../services/consultar-usuarios-service/usuarios';
+import { AvatarSelector, avatarAleatorio } from '../avatar-selector/avatar-selector';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
 
 function validarMayorDeEdad(control: AbstractControl): ValidationErrors | null {
@@ -41,7 +42,7 @@ function validarMayorDeEdad(control: AbstractControl): ValidationErrors | null {
 
 @Component({
   selector: 'app-admin-editar-usuario',
-  imports: [MarcoPagina, ReactiveFormsModule, RouterLink],
+  imports: [MarcoPagina, ReactiveFormsModule, RouterLink, AvatarSelector],
   templateUrl: './admin-editar-usuario.html',
   styleUrl: './admin-editar-usuario.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -145,11 +146,13 @@ export class AdminEditarUsuario implements OnInit {
     }
 
     const valores = this.form.getRawValue();
+    const imagenPerfil = valores.imagenPerfil.trim() || avatarAleatorio();
+    this.form.controls.imagenPerfil.setValue(imagenPerfil);
     const datos: ModificarUsuarioRequest = {
       nombre: valores.nombre.trim().slice(0, this.longitudMaximaNombre),
       apellidos: valores.apellidos.trim().slice(0, this.longitudMaximaNombre),
       ...(valores.telefono.trim() ? { telefono: valores.telefono.trim() } : {}),
-      imagenPerfil: valores.imagenPerfil.trim(),
+      imagenPerfil,
       ...(usuario.rol === 'CLIENTE'
         ? {
             dni: valores.dni.trim(),
