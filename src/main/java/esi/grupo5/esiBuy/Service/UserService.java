@@ -4,12 +4,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.time.LocalDate;
+import java.time.ZoneId;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 import esi.grupo5.esiBuy.Dto.ClienteRegistroDTO;
@@ -23,6 +27,7 @@ import esi.grupo5.esiBuy.Exception.BusinessException;
 import esi.grupo5.esiBuy.Exception.ConflictException;
 import esi.grupo5.esiBuy.Exception.ForbiddenException;
 import esi.grupo5.esiBuy.Exception.NotFoundException;
+import esi.grupo5.esiBuy.Exception.ValidationException;
 import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.Usuario;
@@ -74,6 +79,7 @@ public class UserService {
     @Transactional
     public LoginResponseDTO registrarCliente(ClienteRegistroDTO dto) {
         passwordValidatorService.validateRegistrationPassword(dto.contrasena());
+        validarMayorDeEdad(dto.fechaNacimiento());
         
         Cliente cliente = Cliente.builder()
                 .nombre(dto.nombre())
@@ -89,6 +95,12 @@ public class UserService {
 
         inicializarHistorialContrasenas(cliente);
         return procesarRegistroUsuario(cliente);
+    }
+
+    private void validarMayorDeEdad(LocalDate fechaNacimiento) {
+        if (fechaNacimiento.isAfter(LocalDate.now(ZoneId.systemDefault()).minusYears(18))) {
+            throw new ValidationException("El cliente debe ser mayor de edad para registrarse");
+        }
     }
 
     /**
