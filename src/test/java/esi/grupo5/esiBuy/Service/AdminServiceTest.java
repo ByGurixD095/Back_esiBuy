@@ -7,6 +7,7 @@ import esi.grupo5.esiBuy.Exception.ValidationException;
 import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.Usuario;
+import esi.grupo5.esiBuy.Model.Vendedor;
 import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Model.enums.TipoCliente;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
@@ -164,6 +165,58 @@ class AdminServiceTest {
         assertEquals("Ciudad Real", administrador.getSede());
 
         verify(usuarioRepository).save(administrador);
+    }
+
+    @Test
+    void modificarUsuario_vendedorConNombreComercialDuplicadoLanzaConflictoYSinGuardar() {
+        String id = "vendedor-1";
+        Vendedor vendedor = Vendedor.builder()
+                .nombre("Ana")
+                .apellidos("Pérez")
+                .email("ana@example.es")
+                .contrasena("password")
+                .nombreComercial("Tienda Ana")
+                .cifNif("B12345678")
+                .categoriaPrincipalId("categoria-1")
+                .build();
+        vendedor.setId(id);
+        UserPatchDTO dto = new UserPatchDTO(
+                null, null, null, null, null, null, null,
+                "Tienda existente", null, null, null);
+        when(usuarioRepository.findById(id)).thenReturn(Optional.of(vendedor));
+        when(usuarioRepository.existsByNombreComercialAndIdNot("Tienda existente", id))
+                .thenReturn(true);
+
+        ConflictException exception = assertThrows(
+                ConflictException.class, () -> service.modificarUsuario(id, dto));
+
+        assertEquals("El nombre comercial ya está en uso", exception.getMessage());
+        assertEquals("Tienda Ana", vendedor.getNombreComercial());
+        verify(usuarioRepository, never()).save(any(Usuario.class));
+    }
+
+    @Test
+    void modificarUsuario_vendedorConservaNombreComercialActualSinComprobarDuplicados() {
+        String id = "vendedor-1";
+        Vendedor vendedor = Vendedor.builder()
+                .nombre("Ana")
+                .apellidos("Pérez")
+                .email("ana@example.es")
+                .contrasena("password")
+                .nombreComercial("Tienda Ana")
+                .cifNif("B12345678")
+                .categoriaPrincipalId("categoria-1")
+                .build();
+        vendedor.setId(id);
+        UserPatchDTO dto = new UserPatchDTO(
+                null, null, null, null, null, null, null,
+                "Tienda Ana", null, null, null);
+        when(usuarioRepository.findById(id)).thenReturn(Optional.of(vendedor));
+
+        service.modificarUsuario(id, dto);
+
+        verify(usuarioRepository, never()).existsByNombreComercialAndIdNot(any(), any());
+        verify(usuarioRepository).save(vendedor);
     }
 
     @Test
