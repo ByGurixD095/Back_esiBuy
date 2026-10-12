@@ -4,7 +4,11 @@ import { Observable, catchError, map, of, shareReplay, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export type Rol = 'ADMINISTRADOR' | 'VENDEDOR' | 'CLIENTE';
-export type MfaStatus = 'SUCCESS' | 'REQUIRES_MFA_SETUP' | 'REQUIRES_MFA_VERIFICATION';
+export type MfaStatus =
+  | 'SUCCESS'
+  | 'REQUIRES_MFA_SETUP'
+  | 'REQUIRES_MFA_VERIFICATION'
+  | 'PENDING_ACTIVATION';
 
 export interface LoginRequest {
   username: string;

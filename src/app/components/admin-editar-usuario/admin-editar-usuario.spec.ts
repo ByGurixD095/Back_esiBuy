@@ -4,6 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { afterEach, vi } from 'vitest';
 import { Usuarios } from '../../services/consultar-usuarios-service/usuarios';
+import { AVATARES_VENDEDOR } from '../avatar-selector/avatar-selector';
 import { AdminEditarUsuario } from './admin-editar-usuario';
 
 describe('AdminEditarUsuario', () => {
@@ -115,6 +116,11 @@ describe('AdminEditarUsuario', () => {
     expect(el.querySelector('#nombreComercial')).not.toBeNull();
     expect(el.querySelector('#categoriaPrincipalId')).not.toBeNull();
     expect(el.querySelector('#dni')).toBeNull();
+    expect(
+      Array.from(el.querySelectorAll('app-avatar-selector .opcion-avatar img')).map((imagen) =>
+        imagen.getAttribute('src'),
+      ),
+    ).toEqual(AVATARES_VENDEDOR.map((avatar) => avatar.ruta));
     (el.querySelector('button[type="submit"]') as HTMLButtonElement).click();
     vendedorFixture.detectChanges();
 

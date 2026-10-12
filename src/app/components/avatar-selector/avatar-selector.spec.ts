@@ -1,6 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { afterEach, vi } from 'vitest';
-import { AVATARES_PERFIL, AvatarSelector } from './avatar-selector';
+import {
+  AVATARES_PERFIL,
+  AVATARES_VENDEDOR,
+  AvatarSelector,
+  avatarAleatorio,
+} from './avatar-selector';
 
 describe('AvatarSelector', () => {
   let fixture: ComponentFixture<AvatarSelector>;
@@ -22,6 +27,29 @@ describe('AvatarSelector', () => {
     component.seleccionarAvatar(AVATARES_PERFIL[0].ruta);
 
     expect(emitido).toEqual([AVATARES_PERFIL[0].ruta]);
+  });
+
+  it('muestra avatares diferentes para vendedores y clientes', () => {
+    fixture.componentRef.setInput('esVendedor', true);
+    fixture.detectChanges();
+
+    const imagenes = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('.opcion-avatar img'),
+    );
+    expect(imagenes).toHaveLength(AVATARES_VENDEDOR.length);
+    expect(imagenes.map((imagen) => imagen.getAttribute('src'))).toEqual(
+      AVATARES_VENDEDOR.map((avatar) => avatar.ruta),
+    );
+    expect(AVATARES_VENDEDOR.map((avatar) => avatar.ruta)).not.toEqual(
+      expect.arrayContaining(AVATARES_PERFIL.map((avatar) => avatar.ruta)),
+    );
+  });
+
+  it('elige por defecto avatares aleatorios del grupo correspondiente', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+
+    expect(avatarAleatorio()).toBe(AVATARES_PERFIL[0].ruta);
+    expect(avatarAleatorio(true)).toBe(AVATARES_VENDEDOR[0].ruta);
   });
 
   it('lee y emite una foto propia como data URL', () => {

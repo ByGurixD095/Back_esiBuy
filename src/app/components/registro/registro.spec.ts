@@ -5,7 +5,7 @@ import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { AuthService } from '../../services/auth.service';
 import { Registro as RegistroService } from '../../services/registro-service/registro';
-import { AVATARES_PERFIL } from '../avatar-selector/avatar-selector';
+import { AVATARES_VENDEDOR } from '../avatar-selector/avatar-selector';
 import { RegistroComponent } from './registro';
 
 describe('RegistroComponent', () => {
@@ -109,6 +109,30 @@ describe('RegistroComponent', () => {
     expect(routerFalso.navigate).toHaveBeenCalledWith(['/products']);
   });
 
+  it('avisa de que la cuenta queda pendiente de activación y no inicia sesión', async () => {
+    await configurar('cliente');
+    autenticacionFalsa.applyAuthenticationResponse.mockClear();
+    component.form.patchValue({
+      nombre: 'Ana',
+      apellidos: 'López',
+      email: 'ana@example.es',
+      contrasena: 'Clave123!',
+      dni: '12345678A',
+      fechaNacimiento: '2000-01-01',
+    });
+    servicioFalso.registrarCliente.mockReturnValue(
+      of({ ...respuestaLoginOk, mfaStatus: 'PENDING_ACTIVATION' }),
+    );
+
+    component.enviar();
+    await fixture.whenStable();
+
+    expect(component.mensajeExito()).toContain('Un administrador debe activarla');
+    expect(autenticacionFalsa.login).not.toHaveBeenCalled();
+    expect(autenticacionFalsa.applyAuthenticationResponse).not.toHaveBeenCalled();
+    expect(routerFalso.navigate).not.toHaveBeenCalled();
+  });
+
   it('valida y envía los campos obligatorios de vendedor', async () => {
     await configurar('vendedor');
     expect(component.form.valid).toBe(false);
@@ -136,12 +160,12 @@ describe('RegistroComponent', () => {
       email: 'ana@example.es',
       contrasena: 'Clave123!',
       telefono: '',
-      imagenPerfil: expect.stringMatching(/^\/assets\/avatares\/avatar-\d{2}\.svg$/),
+      imagenPerfil: expect.stringMatching(/^\/assets\/avatares\/vendedor-\d{2}\.svg$/),
       nombreComercial: 'Tienda Ana',
       cifNif: 'B12345678',
       categoriaPrincipalId: 'categoria-1',
     });
-    expect(AVATARES_PERFIL.map((avatar) => avatar.ruta)).toContain(
+    expect(AVATARES_VENDEDOR.map((avatar) => avatar.ruta)).toContain(
       servicioFalso.registrarVendedor.mock.calls[0][0].imagenPerfil,
     );
     expect(routerFalso.navigate).toHaveBeenCalledWith(['/products']);

@@ -146,7 +146,7 @@ export class AdminEditarUsuario implements OnInit {
     }
 
     const valores = this.form.getRawValue();
-    const imagenPerfil = valores.imagenPerfil.trim() || avatarAleatorio();
+    const imagenPerfil = valores.imagenPerfil.trim() || avatarAleatorio(usuario.rol === 'VENDEDOR');
     this.form.controls.imagenPerfil.setValue(imagenPerfil);
     const datos: ModificarUsuarioRequest = {
       nombre: valores.nombre.trim().slice(0, this.longitudMaximaNombre),

@@ -125,6 +125,18 @@
                   title="Modificar usuario"
                 >✏️</a>
                 }
+                @if (!usuario.activo && !usuario.eliminado) {
+                <button
+                  type="button"
+                  class="accion-bloqueo"
+                  [disabled]="accionandoId() !== null"
+                  [attr.aria-label]="'Activar usuario ' + usuario.name + ' ' + usuario.apellidos"
+                  title="Activar usuario"
+                  (click)="activarUsuario(usuario)"
+                >
+                  {{ accionandoId() === usuario.id ? '⏳' : '✅' }}
+                </button>
+                }
                 @if (usuario.bloqueado) {
                 <button
                   type="button"
@@ -274,6 +286,13 @@
           <strong>{{ pendiente.usuario.name }} {{ pendiente.usuario.apellidos }}</strong>?
           El usuario no podrá acceder a su cuenta hasta que se desbloquee.
         </p>
+        } @else if (pendiente.accion === 'activar') {
+        <h2 id="confirmacion-titulo">¿Activar usuario?</h2>
+        <p id="confirmacion-descripcion">
+          ¿Quieres activar a
+          <strong>{{ pendiente.usuario.name }} {{ pendiente.usuario.apellidos }}</strong>?
+          Podrá iniciar sesión con su cuenta.
+        </p>
         } @else {
         <h2 id="confirmacion-titulo">¿Desbloquear usuario?</h2>
         <p id="confirmacion-descripcion">
@@ -288,7 +307,7 @@
           <button
             type="button"
             class="esi-boton confirmacion-eliminar"
-            [class.confirmacion-desbloquear]="pendiente.accion === 'desbloquear'"
+            [class.confirmacion-desbloquear]="pendiente.accion === 'desbloquear' || pendiente.accion === 'activar'"
             [disabled]="accionandoId() !== null"
             (click)="confirmarEliminacion()"
           >
@@ -296,6 +315,8 @@
             Sí, eliminar
             } @else if (pendiente.accion === 'bloquear') {
             Sí, bloquear
+            } @else if (pendiente.accion === 'activar') {
+            Sí, activar
             } @else {
             Sí, desbloquear
             }
