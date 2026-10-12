@@ -173,6 +173,7 @@ public class AdminService {
                 .email(dto.email())
                 .contrasena(passwordEncoder.encode(dto.contrasena()))
                 .sede(dto.sede())
+                .imagenPerfil(dto.imagenPerfil())
                 .build();
 
         Administrador guardado = usuarioRepository.save(admin);

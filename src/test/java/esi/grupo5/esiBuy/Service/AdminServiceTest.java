@@ -93,6 +93,7 @@ class AdminServiceTest {
         Usuario saved = captor.getValue();
         assertInstanceOf(Administrador.class, saved);
         assertEquals(Rol.ADMINISTRADOR, saved.getRol());
+        assertEquals(dto.imagenPerfil(), saved.getImagenPerfil());
         assertTrue(new BCryptPasswordEncoder().matches("Clave#2026x", saved.getContrasena()));
     }
 
@@ -120,7 +121,8 @@ class AdminServiceTest {
 
     private AdministradorRegistroDTO administradorDTO() {
         return new AdministradorRegistroDTO(
-                "Ana", "Pérez", "ana@esibuy.com", "Clave#2026x", "Madrid");
+                "Ana", "Pérez", "ana@esibuy.com", "Clave#2026x", "Madrid",
+                "/assets/avatares/avatar-01.svg");
     }
 
     @Test
