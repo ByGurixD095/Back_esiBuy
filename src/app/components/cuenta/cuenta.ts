@@ -10,13 +10,14 @@ import {
   PerfilUsuario,
   TipoCliente,
 } from '../../services/perfil.service';
+import { AvatarSelector, avatarAleatorio } from '../avatar-selector/avatar-selector';
 
 const NO_VACIO = /\S/;
 const TELEFONO_PATTERN = /^\d{9}$/;
 
 @Component({
   selector: 'app-cuenta',
-  imports: [MarcoPagina, ReactiveFormsModule],
+  imports: [MarcoPagina, ReactiveFormsModule, AvatarSelector],
   templateUrl: './cuenta.html',
   styleUrl: './cuenta.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -29,13 +30,27 @@ export class Cuenta {
   readonly rol = this.auth.rol;
   readonly esPerfilEditable = computed(() => {
     const rol = this.rol();
-    return rol === 'CLIENTE' || rol === 'VENDEDOR';
+    return rol === 'ADMINISTRADOR' || rol === 'CLIENTE' || rol === 'VENDEDOR';
   });
   readonly perfil = signal<PerfilUsuario | null>(null);
   readonly cargando = signal(false);
   readonly guardando = signal(false);
   readonly mensajeExito = signal('');
   readonly mensajeError = signal('');
+  readonly confirmandoCierreSesion = signal(false);
+  readonly cerrandoSesion = signal(false);
+  readonly confirmandoEliminacion = signal(false);
+  readonly eliminandoCuenta = signal(false);
+  readonly errorEliminacion = signal('');
+  readonly puedeEliminarCuenta = computed(() => this.rol() !== null);
+  readonly configurandoMfa = signal(false);
+  readonly mensajeMfa = signal('');
+  readonly errorMfa = signal('');
+
+  readonly mfaForm = new FormGroup({
+    enable2fa: new FormControl(false, { nonNullable: true }),
+    enable3fa: new FormControl(false, { nonNullable: true }),
+  });
 
   readonly form = new FormGroup({
     nombre: new FormControl('', {
@@ -52,6 +67,7 @@ export class Cuenta {
     }),
     imagenPerfil: new FormControl('', { nonNullable: true }),
     tipoCliente: new FormControl<TipoCliente>('NORMAL', { nonNullable: true }),
+    sede: new FormControl('', { nonNullable: true }),
     nombreComercial: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required, Validators.pattern(NO_VACIO)],
@@ -64,9 +80,12 @@ export class Cuenta {
 
   constructor() {
     if (this.esPerfilEditable()) {
-      if (this.rol() === 'CLIENTE') {
+      if (this.rol() === 'CLIENTE' || this.rol() === 'ADMINISTRADOR') {
         this.form.controls.nombreComercial.disable();
         this.form.controls.categoriaPrincipalId.disable();
+      }
+      if (this.rol() === 'ADMINISTRADOR') {
+        this.form.controls.tipoCliente.disable();
       }
       this.cargarPerfil();
     }
@@ -88,8 +107,13 @@ export class Cuenta {
           telefono: perfil.telefono ?? '',
           imagenPerfil: perfil.imagenPerfil ?? '',
           tipoCliente: perfil.tipoCliente ?? 'NORMAL',
+          sede: perfil.sede ?? '',
           nombreComercial: perfil.nombreComercial ?? '',
           categoriaPrincipalId: perfil.categoriaPrincipalId ?? '',
+        });
+        this.mfaForm.patchValue({
+          enable2fa: perfil.dosFactorActivoCliente ?? false,
+          enable3fa: perfil.tresFactorActivoCliente ?? false,
         });
         this.cargando.set(false);
       },
@@ -109,22 +133,28 @@ export class Cuenta {
     }
 
     const rol = this.rol();
-    if (rol !== 'CLIENTE' && rol !== 'VENDEDOR') {
+    if (rol !== 'ADMINISTRADOR' && rol !== 'CLIENTE' && rol !== 'VENDEDOR') {
       return;
     }
 
     const valores = this.form.getRawValue();
+    const imagenPerfil = valores.imagenPerfil.trim() || avatarAleatorio(rol === 'VENDEDOR');
+    this.form.controls.imagenPerfil.setValue(imagenPerfil);
+    const datosEspecificos: Partial<ActualizarPerfilRequest> = {};
+    if (rol === 'CLIENTE') {
+      datosEspecificos.tipoCliente = valores.tipoCliente;
+    } else if (rol === 'ADMINISTRADOR') {
+      datosEspecificos.sede = valores.sede.trim();
+    } else if (rol === 'VENDEDOR') {
+      datosEspecificos.nombreComercial = valores.nombreComercial.trim();
+      datosEspecificos.categoriaPrincipalId = valores.categoriaPrincipalId.trim();
+    }
     const datos: ActualizarPerfilRequest = {
       nombre: valores.nombre.trim(),
       apellidos: valores.apellidos.trim(),
       ...(valores.telefono.trim() ? { telefono: valores.telefono.trim() } : {}),
-      ...(valores.imagenPerfil.trim() ? { imagenPerfil: valores.imagenPerfil.trim() } : {}),
-      ...(rol === 'CLIENTE'
-        ? { tipoCliente: valores.tipoCliente }
-        : {
-            nombreComercial: valores.nombreComercial.trim(),
-            categoriaPrincipalId: valores.categoriaPrincipalId.trim(),
-          }),
+      imagenPerfil,
+      ...datosEspecificos,
     };
 
     this.guardando.set(true);
@@ -150,14 +180,100 @@ export class Cuenta {
     return control.invalid && (control.touched || control.dirty);
   }
 
+  guardarConfiguracionMfa(): void {
+    if (this.configurandoMfa()) {
+      return;
+    }
+
+    this.configurandoMfa.set(true);
+    this.mensajeMfa.set('');
+    this.errorMfa.set('');
+    this.auth.configureMfa(this.mfaForm.getRawValue()).subscribe({
+      next: () => {
+        this.configurandoMfa.set(false);
+        this.mensajeMfa.set('La configuración de factores se ha actualizado.');
+      },
+      error: (error: HttpErrorResponse) => {
+        this.configurandoMfa.set(false);
+        this.errorMfa.set(
+          this.auth.errorMessage(error, 'No se ha podido actualizar la configuración de factores.'),
+        );
+      },
+    });
+  }
+
   cerrarSesion(): void {
+    this.confirmandoCierreSesion.set(true);
+  }
+
+  cancelarCierreSesion(): void {
+    if (!this.cerrandoSesion()) {
+      this.confirmandoCierreSesion.set(false);
+    }
+  }
+
+  confirmarCierreSesion(): void {
+    if (!this.confirmandoCierreSesion() || this.cerrandoSesion()) {
+      return;
+    }
+
+    this.cerrandoSesion.set(true);
     this.auth.logout().subscribe({
-      next: () => void this.router.navigate(['/']),
-      error: () => void this.router.navigate(['/']),
+      next: () => {
+        this.confirmandoCierreSesion.set(false);
+        void this.router.navigate(['/']);
+      },
+      error: () => {
+        this.confirmandoCierreSesion.set(false);
+        void this.router.navigate(['/']);
+      },
+    });
+  }
+
+  solicitarEliminacionCuenta(): void {
+    this.errorEliminacion.set('');
+    this.confirmandoEliminacion.set(true);
+  }
+
+  cancelarEliminacionCuenta(): void {
+    if (!this.eliminandoCuenta()) {
+      this.confirmandoEliminacion.set(false);
+      this.errorEliminacion.set('');
+    }
+  }
+
+  eliminarMiCuenta(): void {
+    if (!this.confirmandoEliminacion() || this.eliminandoCuenta()) {
+      return;
+    }
+
+    this.eliminandoCuenta.set(true);
+    this.errorEliminacion.set('');
+    this.perfilService.eliminarMiCuenta().subscribe({
+      next: () => {
+        this.auth.clearSession();
+        void this.router.navigate(['/']);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.eliminandoCuenta.set(false);
+        this.errorEliminacion.set(
+          this.auth.errorMessage(error, 'No se ha podido eliminar la cuenta. Inténtalo de nuevo.'),
+        );
+      },
     });
   }
 
   private aplicarCambiosLocales(datos: ActualizarPerfilRequest, rol: Rol): void {
+    const datosEspecificos: Partial<PerfilUsuario> = {};
+    if (rol === 'CLIENTE') {
+      datosEspecificos.tipoCliente = datos.tipoCliente;
+    } else if (rol === 'ADMINISTRADOR') {
+      datosEspecificos.sede = datos.sede;
+    } else if (rol === 'VENDEDOR') {
+      datosEspecificos.nombreComercial = datos.nombreComercial;
+      datosEspecificos.categoriaPrincipalId = datos.categoriaPrincipalId;
+    }
+
     this.perfil.update((perfil) => {
       if (!perfil) {
         return perfil;
@@ -169,12 +285,7 @@ export class Cuenta {
         apellidos: datos.apellidos || perfil.apellidos,
         telefono: datos.telefono || perfil.telefono,
         imagenPerfil: datos.imagenPerfil || perfil.imagenPerfil,
-        ...(rol === 'CLIENTE'
-          ? { tipoCliente: datos.tipoCliente }
-          : {
-              nombreComercial: datos.nombreComercial || perfil.nombreComercial,
-              categoriaPrincipalId: datos.categoriaPrincipalId || perfil.categoriaPrincipalId,
-            }),
+        ...datosEspecificos,
       };
     });
   }

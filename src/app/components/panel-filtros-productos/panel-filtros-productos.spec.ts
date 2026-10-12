@@ -1,0 +1,48 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Producto } from '../../models/producto.model';
+import { PanelFiltrosProductos } from './panel-filtros-productos';
+
+describe('PanelFiltrosProductos', () => {
+  let fixture: ComponentFixture<PanelFiltrosProductos>;
+  let element: HTMLElement;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [PanelFiltrosProductos],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(PanelFiltrosProductos);
+    element = fixture.nativeElement as HTMLElement;
+  });
+
+  it('conserva todas las categorías cuando los productos pasan a estar filtrados', async () => {
+    fixture.componentRef.setInput('productos', [
+      crearProducto('1', 'Tecnología'),
+      crearProducto('2', 'Moda'),
+      crearProducto('3', 'Hogar'),
+    ]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    fixture.componentRef.setInput('productos', [crearProducto('1', 'Tecnología')]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const opciones = Array.from(element.querySelectorAll('select option')).map((opcion) => opcion.textContent?.trim());
+    expect(opciones.slice(0, 4)).toEqual(['Todas', 'Tecnología', 'Moda', 'Hogar']);
+  });
+});
+
+function crearProducto(id: string, categoria: string): Producto {
+  return {
+    id,
+    nombre: `Producto ${id}`,
+    referencia: `REF-${id}`,
+    numStock: 1,
+    precioCent: 1000,
+    categoria,
+    descuento: 0,
+    descuentoPremium: 0,
+    activo: true,
+  };
+}

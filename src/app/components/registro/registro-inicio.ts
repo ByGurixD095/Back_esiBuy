@@ -27,10 +27,15 @@ import { MarcoPagina } from '../marco-pagina/marco-pagina';
             <a class="opcion opcion-vendedor" routerLink="/register/vendedor">
               <span class="opcion-texto">
                 <span class="opcion-titulo">Vendedor</span>
-                <span class="opcion-accion">Registrar tienda <span aria-hidden="true">→</span></span>
+                <span class="opcion-accion"
+                  >Registrar tienda <span aria-hidden="true">→</span></span
+                >
               </span>
             </a>
           </div>
+          <a class="enlace-login" routerLink="/login"
+            >¿Ya tienes cuenta? Volver al inicio de sesión</a
+          >
         </section>
       </div>
     </app-marco-pagina>
@@ -69,6 +74,24 @@ import { MarcoPagina } from '../marco-pagina/marco-pagina';
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 12px;
+    }
+
+    .enlace-login {
+      display: inline-block;
+      margin-top: 22px;
+      color: var(--esi-orange-text);
+      font-size: 14px;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .enlace-login:hover {
+      color: var(--esi-orange-hover);
+    }
+
+    .enlace-login:focus-visible {
+      outline: 2px solid var(--esi-orange);
+      outline-offset: 3px;
     }
 
     .opcion {

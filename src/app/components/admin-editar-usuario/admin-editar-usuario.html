@@ -1,0 +1,229 @@
+<app-marco-pagina panel="Panel de administración" [volver]="true">
+  <section
+    class="editar-usuario esi-tarjeta"
+    aria-labelledby="editar-usuario-titulo"
+    [attr.aria-busy]="cargando()"
+  >
+    <p class="esi-eyebrow">Administradores</p>
+    <h1 id="editar-usuario-titulo" class="esi-titulo">Modificar <em>usuario.</em></h1>
+
+    @if (cargando()) {
+      <p class="estado-proceso" role="status">Cargando los datos del usuario...</p>
+    } @else if (usuario(); as actual) {
+      <header class="formulario-cabecera">
+        <h2>{{ actual.name }} {{ actual.apellidos }}</h2>
+        <p>Modifica los datos permitidos para este usuario y guarda los cambios.</p>
+      </header>
+
+      <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+        <section class="grupo-formulario" aria-labelledby="titulo-datos-cuenta">
+          <h3 id="titulo-datos-cuenta">Datos de cuenta</h3>
+          <div class="campos">
+            <div class="esi-campo">
+              <label for="usuario-id">ID</label>
+              <input id="usuario-id" type="text" [value]="actual.id" readonly />
+            </div>
+            <div class="esi-campo">
+              <label for="usuario-email">Correo electrónico</label>
+              <input id="usuario-email" type="email" [value]="actual.email" readonly />
+            </div>
+            <div class="esi-campo">
+              <label for="usuario-rol">Rol</label>
+              <input id="usuario-rol" type="text" [value]="actual.rol" readonly />
+            </div>
+            <div class="esi-campo">
+              <label for="usuario-activo">Actividad</label>
+              <input
+                id="usuario-activo"
+                type="text"
+                [value]="actual.activo ? 'Activo' : 'Inactivo'"
+                readonly
+              />
+            </div>
+            <div class="esi-campo">
+              <label for="usuario-bloqueado">Bloqueado</label>
+              <input
+                id="usuario-bloqueado"
+                type="text"
+                [value]="actual.bloqueado ? 'Sí' : 'No'"
+                readonly
+              />
+            </div>
+            <div class="esi-campo">
+              <label for="usuario-eliminado">Eliminado</label>
+              <input
+                id="usuario-eliminado"
+                type="text"
+                [value]="actual.eliminado ? 'Sí' : 'No'"
+                readonly
+              />
+            </div>
+          </div>
+        </section>
+
+        <section class="grupo-formulario" aria-labelledby="titulo-datos-personales">
+          <h3 id="titulo-datos-personales">Información personal</h3>
+          <div class="campos">
+            <div class="esi-campo">
+              <label for="nombre">Nombre</label>
+              <input
+                id="nombre"
+                type="text"
+                formControlName="nombre"
+                autocomplete="given-name"
+                maxlength="30"
+                (input)="truncarLongitud($event, 'nombre')"
+                required
+              />
+              @if (esInvalido('nombre')) {
+                <small class="esi-ayuda esi-error">El nombre es obligatorio.</small>
+              }
+            </div>
+            <div class="esi-campo">
+              <label for="apellidos">Apellidos</label>
+              <input
+                id="apellidos"
+                type="text"
+                formControlName="apellidos"
+                autocomplete="family-name"
+                maxlength="30"
+                (input)="truncarLongitud($event, 'apellidos')"
+                required
+              />
+              @if (esInvalido('apellidos')) {
+                <small class="esi-ayuda esi-error">Los apellidos son obligatorios.</small>
+              }
+            </div>
+            <div class="esi-campo">
+              <label for="telefono">Teléfono <span class="opcional">Opcional</span></label>
+              <input id="telefono" type="tel" formControlName="telefono" autocomplete="tel" />
+              @if (esInvalido('telefono')) {
+                <small class="esi-ayuda esi-error"
+                  >El teléfono debe tener exactamente 9 dígitos.</small
+                >
+              } @else {
+                <small class="esi-ayuda">Déjalo vacío para conservar el teléfono actual.</small>
+              }
+            </div>
+            <app-avatar-selector
+              [value]="form.controls.imagenPerfil.value"
+              [esVendedor]="actual.rol === 'VENDEDOR'"
+              (valueChange)="form.controls.imagenPerfil.setValue($event)"
+            />
+          </div>
+        </section>
+
+        @if (actual.rol === 'CLIENTE') {
+          <section class="grupo-formulario" aria-labelledby="titulo-datos-cliente">
+            <h3 id="titulo-datos-cliente">Información de cliente</h3>
+            <div class="campos">
+              <div class="esi-campo">
+                <label for="dni">DNI</label>
+                <input id="dni" type="text" formControlName="dni" autocomplete="off" required />
+                @if (esInvalido('dni')) {
+                  <small class="esi-ayuda esi-error">El DNI es obligatorio.</small>
+                }
+              </div>
+              <div class="esi-campo">
+                <label for="fechaNacimiento">Fecha de nacimiento</label>
+                <input
+                  id="fechaNacimiento"
+                  type="date"
+                  formControlName="fechaNacimiento"
+                  [max]="maxFechaNacimiento"
+                  required
+                />
+                @if (esInvalido('fechaNacimiento')) {
+                  <small class="esi-ayuda esi-error">
+                    La fecha debe ser válida y el cliente debe tener al menos 18 años.
+                  </small>
+                }
+              </div>
+              <div class="esi-campo">
+                <label for="tipoCliente">Tipo de cliente</label>
+                <select id="tipoCliente" formControlName="tipoCliente">
+                  <option value="NORMAL">Normal</option>
+                  <option value="PREMIUM">Premium</option>
+                </select>
+              </div>
+            </div>
+          </section>
+        } @else if (actual.rol === 'VENDEDOR') {
+          <section class="grupo-formulario" aria-labelledby="titulo-datos-vendedor">
+            <h3 id="titulo-datos-vendedor">Información comercial</h3>
+            <div class="campos">
+              <div class="esi-campo">
+                <label for="nombreComercial">Nombre comercial</label>
+                <input
+                  id="nombreComercial"
+                  type="text"
+                  formControlName="nombreComercial"
+                  required
+                />
+                @if (esInvalido('nombreComercial')) {
+                  <small class="esi-ayuda esi-error">El nombre comercial es obligatorio.</small>
+                }
+              </div>
+              <div class="esi-campo">
+                <label for="cifNif">CIF/NIF</label>
+                <input id="cifNif" type="text" formControlName="cifNif" required />
+                @if (esInvalido('cifNif')) {
+                  <small class="esi-ayuda esi-error">El CIF/NIF es obligatorio.</small>
+                }
+              </div>
+              <div class="esi-campo campo-completo">
+                <label for="categoriaPrincipalId">ID de la categoría principal</label>
+                <input
+                  id="categoriaPrincipalId"
+                  type="text"
+                  formControlName="categoriaPrincipalId"
+                  required
+                />
+                @if (esInvalido('categoriaPrincipalId')) {
+                  <small class="esi-ayuda esi-error">La categoría principal es obligatoria.</small>
+                }
+              </div>
+            </div>
+          </section>
+        } @else {
+          <section class="grupo-formulario" aria-labelledby="titulo-datos-administrador">
+            <h3 id="titulo-datos-administrador">Información de administrador</h3>
+            <div class="campos">
+              <div class="esi-campo">
+                <label for="fechaIncorporacion">Fecha de incorporación a la compañía</label>
+                <input
+                  id="fechaIncorporacion"
+                  type="date"
+                  [value]="actual.fechaIncorporacion ?? ''"
+                  readonly
+                />
+                <small class="esi-ayuda">Fecha de alta del administrador en la plataforma.</small>
+              </div>
+              <div class="esi-campo">
+                <label for="sede">Sede</label>
+                <input id="sede" type="text" formControlName="sede" />
+              </div>
+            </div>
+          </section>
+        }
+
+        @if (mensajeError()) {
+          <p class="esi-alerta esi-alerta--error" role="alert">{{ mensajeError() }}</p>
+        }
+        @if (mensajeExito()) {
+          <p class="esi-alerta esi-alerta--ok" role="status">{{ mensajeExito() }}</p>
+        }
+
+        <div class="acciones-formulario">
+          <a class="esi-boton boton-secundario" routerLink="/admin/usuarios">Volver a usuarios</a>
+          <button type="submit" class="esi-boton" [disabled]="form.invalid || guardando()">
+            {{ guardando() ? 'Guardando cambios...' : 'Guardar cambios' }}
+          </button>
+        </div>
+      </form>
+    } @else {
+      <p class="esi-alerta esi-alerta--error" role="alert">{{ mensajeError() }}</p>
+      <a class="esi-boton boton-secundario" routerLink="/admin/usuarios">Volver a usuarios</a>
+    }
+  </section>
+</app-marco-pagina>

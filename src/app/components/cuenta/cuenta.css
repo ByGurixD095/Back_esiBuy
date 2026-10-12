@@ -1,6 +1,10 @@
 .cuenta {
   max-width: 760px;
   margin: 0 auto;
+  color: var(--esi-ink);
+  font-family: var(--esi-font-body);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .cuenta .esi-titulo {
@@ -16,9 +20,10 @@
 .formulario-cabecera h2 {
   margin: 0 0 6px;
   font-family: var(--esi-font-title);
-  font-size: clamp(23px, 4vw, 28px);
+  font-size: clamp(22px, 3.5vw, 26px);
   font-weight: 400;
   letter-spacing: -0.025em;
+  line-height: 1.2;
 }
 
 .formulario-cabecera p,
@@ -40,8 +45,66 @@
 .grupo-formulario h3 {
   margin: 0;
   color: var(--esi-ink);
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 700;
+  line-height: 1.3;
+}
+
+.grupo-formulario h2 {
+  margin: 0;
+  color: var(--esi-ink);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.grupo-formulario > p {
+  margin: -8px 0 0;
+  color: var(--esi-soft-ink);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.grupo-formulario > .aviso-seguridad-admin {
+  margin: 0;
+  padding: 14px 16px;
+  background: #f5f3ed;
+  border-left: 3px solid var(--esi-orange-text);
+  border-radius: 0 6px 6px 0;
+}
+
+.factor-opcion {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--esi-line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.factor-opcion input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--esi-orange-text);
+}
+
+.factor-opcion span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.factor-opcion strong {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.factor-opcion small {
+  color: var(--esi-soft-ink);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .campos {
@@ -66,6 +129,7 @@
   width: 100%;
   border-color: #cbc9c0;
   border-radius: 8px;
+  font-size: 15px;
 }
 
 .esi-campo input[readonly] {
@@ -82,7 +146,7 @@
 
 .opcional {
   color: var(--esi-soft-ink);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
 }
 
@@ -94,7 +158,7 @@
   width: 100%;
   min-height: 52px;
   border-radius: 8px;
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .estado-proceso,
@@ -112,6 +176,103 @@
   margin-top: 16px;
 }
 
+.zona-peligro {
+  margin-top: 36px;
+  padding-top: 24px;
+  border-top: 1px solid var(--esi-line);
+}
+
+.zona-peligro h2 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.zona-peligro p {
+  margin: 0 0 16px;
+  color: var(--esi-soft-ink);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.zona-peligro > .esi-boton {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.boton-eliminar {
+  background: #a83224;
+}
+
+.boton-eliminar:hover:not(:disabled) {
+  background: #85271d;
+}
+
+.modal-fondo {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(24 28 31 / 55%);
+}
+
+.modal-confirmacion {
+  box-sizing: border-box;
+  width: min(100%, 400px);
+  padding: 30px;
+  border: 1px solid rgb(23 33 38 / 10%);
+  border-radius: 12px;
+  box-shadow: 0 18px 50px rgb(15 22 26 / 24%);
+  text-align: left;
+}
+
+.modal-confirmacion h2 {
+  margin: 0 0 12px;
+  color: var(--esi-ink);
+  font-family: var(--esi-font-title);
+  font-size: clamp(20px, 3.5vw, 23px);
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.modal-confirmacion .texto-confirmacion {
+  margin: 0;
+  color: var(--esi-soft-ink);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.acciones-modal {
+  display: flex;
+  justify-content: stretch;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.acciones-modal .esi-boton {
+  flex: 1;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 7px;
+  font-size: 15px;
+}
+
+.boton-secundario {
+  color: var(--esi-ink);
+  background: transparent;
+  border: 1px solid var(--esi-line);
+}
+
+.boton-secundario:hover:not(:disabled) {
+  background: #f1f0eb;
+}
+
 @media (max-width: 600px) {
   .campos {
     grid-template-columns: minmax(0, 1fr);
@@ -120,6 +281,18 @@
 
   .campo-completo {
     grid-column: auto;
+  }
+
+  .acciones-modal {
+    flex-direction: column-reverse;
+  }
+
+  .acciones-modal .esi-boton {
+    width: 100%;
+  }
+
+  .modal-confirmacion {
+    padding: 24px;
   }
 }
 

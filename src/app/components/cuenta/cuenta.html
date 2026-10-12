@@ -1,12 +1,10 @@
 <app-marco-pagina panel="Mi cuenta" [volver]="true">
   <section class="cuenta esi-tarjeta" aria-labelledby="cuenta-titulo">
     <p class="esi-eyebrow">Área personal</p>
-    <h1 id="cuenta-titulo" class="esi-titulo">mi cuenta.</h1>
+    <h1 id="cuenta-titulo" class="esi-titulo">Mi cuenta.</h1>
 
-    @if (!esPerfilEditable()) {
-      <p class="nota-admin" role="status">
-        La modificación del perfil de administrador se gestiona desde su área correspondiente.
-      </p>
+    @if (rol() === null) {
+      <p class="nota-admin" role="status">No se ha podido identificar el tipo de cuenta.</p>
     } @else if (cargando()) {
       <p class="estado-proceso" role="status">Cargando los datos de tu perfil…</p>
     } @else if (perfil()) {
@@ -77,19 +75,11 @@
               }
             </div>
 
-            <div class="esi-campo campo-completo">
-              <label for="imagenPerfil"
-                >Imagen de perfil <span class="opcional">Opcional</span></label
-              >
-              <input
-                id="imagenPerfil"
-                type="url"
-                formControlName="imagenPerfil"
-                placeholder="https://"
-                autocomplete="url"
-              />
-              <small class="esi-ayuda">Déjalo vacío para conservar la imagen actual.</small>
-            </div>
+            <app-avatar-selector
+              [value]="form.controls.imagenPerfil.value"
+              [esVendedor]="rol() === 'VENDEDOR'"
+              (valueChange)="form.controls.imagenPerfil.setValue($event)"
+            />
           </div>
         </section>
 
@@ -119,7 +109,7 @@
               </div>
             </div>
           </section>
-        } @else {
+        } @else if (rol() === 'VENDEDOR') {
           <section class="grupo-formulario" aria-labelledby="titulo-datos-vendedor">
             <h3 id="titulo-datos-vendedor">Información comercial</h3>
             <div class="campos">
@@ -157,6 +147,77 @@
               </div>
             </div>
           </section>
+        } @else {
+          <section class="grupo-formulario" aria-labelledby="titulo-datos-administrador">
+            <h3 id="titulo-datos-administrador">Información de administrador</h3>
+            <div class="campos">
+              <div class="esi-campo">
+                <label for="sede">Sede</label>
+                <input
+                  id="sede"
+                  type="text"
+                  formControlName="sede"
+                />
+              </div>
+              <div class="esi-campo">
+                <label for="fechaIncorporacion">Fecha de incorporación</label>
+                <input
+                  id="fechaIncorporacion"
+                  type="date"
+                  [value]="perfil()?.fechaIncorporacion ?? ''"
+                  readonly
+                />
+              </div>
+            </div>
+          </section>
+        }
+
+        @if (rol() === 'CLIENTE') {
+          <section class="grupo-formulario" aria-labelledby="titulo-factores">
+            <h2 id="titulo-factores">Factores de autenticación</h2>
+            <p>
+              Elige qué factores quieres utilizar al iniciar sesión. El autenticador TOTP es
+              necesario para utilizar el código de correo electrónico.
+            </p>
+            <div [formGroup]="mfaForm">
+              <label class="factor-opcion">
+                <input type="checkbox" formControlName="enable2fa" />
+                <span>
+                  <strong>Autenticación TOTP (2FA)</strong>
+                  <small>Usa un código de tu aplicación autenticadora.</small>
+                </span>
+              </label>
+              <label class="factor-opcion">
+                <input type="checkbox" formControlName="enable3fa" />
+                <span>
+                  <strong>Código por correo (3FA)</strong>
+                  <small>Recibe un código adicional en tu correo electrónico.</small>
+                </span>
+              </label>
+              @if (mensajeMfa()) {
+                <p class="esi-alerta esi-alerta--ok" role="status">{{ mensajeMfa() }}</p>
+              }
+              @if (errorMfa()) {
+                <p class="esi-alerta esi-alerta--error" role="alert">{{ errorMfa() }}</p>
+              }
+              <button
+                type="button"
+                class="esi-boton"
+                [disabled]="configurandoMfa()"
+                (click)="guardarConfiguracionMfa()"
+              >
+                {{ configurandoMfa() ? 'Guardando…' : 'Guardar factores' }}
+              </button>
+            </div>
+          </section>
+        } @else if (rol() === 'ADMINISTRADOR') {
+          <section class="grupo-formulario" aria-labelledby="titulo-seguridad-admin">
+            <h2 id="titulo-seguridad-admin">Seguridad de la cuenta</h2>
+            <p class="aviso-seguridad-admin">
+              Por seguridad, el acceso de administradores requiere un código de la aplicación
+              autenticadora y otro código enviado al correo electrónico.
+            </p>
+          </section>
         }
 
         @if (mensajeExito()) {
@@ -182,5 +243,92 @@
     <button type="button" class="esi-boton cerrar-sesion" (click)="cerrarSesion()">
       Cerrar sesión
     </button>
+
+    @if (puedeEliminarCuenta()) {
+      <section class="zona-peligro" aria-labelledby="eliminar-cuenta-titulo">
+        <h2 id="eliminar-cuenta-titulo">Eliminar cuenta</h2>
+        <p>Esta acción cerrará tu cuenta y no podrás volver a iniciar sesión con ella.</p>
+        @if (errorEliminacion()) {
+          <p class="esi-alerta esi-alerta--error" role="alert">{{ errorEliminacion() }}</p>
+        }
+        <button
+          type="button"
+          class="esi-boton boton-eliminar"
+          (click)="solicitarEliminacionCuenta()"
+          [disabled]="eliminandoCuenta()"
+        >
+          Eliminar mi cuenta
+        </button>
+      </section>
+    }
   </section>
 </app-marco-pagina>
+
+@if (confirmandoCierreSesion()) {
+  <div class="modal-fondo">
+    <section
+      class="modal-confirmacion esi-tarjeta"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirmar-cierre-titulo"
+    >
+      <h2 id="confirmar-cierre-titulo">¿Seguro que quiere cerrar sesión?</h2>
+      <div class="acciones-modal">
+        <button
+          type="button"
+          class="esi-boton boton-secundario"
+          (click)="cancelarCierreSesion()"
+          [disabled]="cerrandoSesion()"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="esi-boton"
+          (click)="confirmarCierreSesion()"
+          [disabled]="cerrandoSesion()"
+        >
+          {{ cerrandoSesion() ? 'Cerrando sesión…' : 'Cerrar sesión' }}
+        </button>
+      </div>
+    </section>
+  </div>
+}
+
+@if (confirmandoEliminacion()) {
+  <div class="modal-fondo">
+    <section
+      class="modal-confirmacion esi-tarjeta"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirmar-eliminacion-titulo"
+    >
+      <h2 id="confirmar-eliminacion-titulo">¿Seguro que quiere borrar su cuenta?</h2>
+      <p class="texto-confirmacion">
+        Su cuenta se desactivará y no podrá volver a iniciar sesión con ella. Esta acción no se
+        puede deshacer.
+      </p>
+      @if (errorEliminacion()) {
+        <p class="esi-alerta esi-alerta--error" role="alert">{{ errorEliminacion() }}</p>
+      }
+      <div class="acciones-modal">
+        <button
+          type="button"
+          class="esi-boton boton-secundario"
+          (click)="cancelarEliminacionCuenta()"
+          [disabled]="eliminandoCuenta()"
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          class="esi-boton boton-eliminar"
+          (click)="eliminarMiCuenta()"
+          [disabled]="eliminandoCuenta()"
+        >
+          {{ eliminandoCuenta() ? 'Borrando cuenta…' : 'Sí, borrar cuenta' }}
+        </button>
+      </div>
+    </section>
+  </div>
+}

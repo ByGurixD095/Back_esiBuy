@@ -1,10 +1,14 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
-import { Observable, catchError, of, tap } from 'rxjs';
+import { Observable, catchError, map, of, shareReplay, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export type Rol = 'ADMINISTRADOR' | 'VENDEDOR' | 'CLIENTE';
-export type MfaStatus = 'SUCCESS' | 'REQUIRES_MFA_SETUP' | 'REQUIRES_MFA_VERIFICATION';
+export type MfaStatus =
+  | 'SUCCESS'
+  | 'REQUIRES_MFA_SETUP'
+  | 'REQUIRES_MFA_VERIFICATION'
+  | 'PENDING_ACTIVATION';
 
 export interface LoginRequest {
   username: string;
@@ -43,12 +47,23 @@ export interface MfaSetupConfirmRequest {
   setupToken: string;
 }
 
+export interface MfaConfigRequest {
+  enable2fa: boolean;
+  enable3fa: boolean;
+}
+
+interface SessionProfile {
+  rol: Rol;
+  email: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly rolSignal = signal<Rol | null>(null);
   private readonly emailSignal = signal<string | null>(null);
   private readonly sessionCheckedSignal = signal(false);
+  private sessionCheck$: Observable<SessionProfile | null> | null = null;
 
   readonly rol = this.rolSignal.asReadonly();
   readonly email = this.emailSignal.asReadonly();
@@ -80,21 +95,35 @@ export class AuthService {
     );
   }
 
+  configureMfa(datos: MfaConfigRequest): Observable<void> {
+    return this.http.post<void>(`${environment.apiUrl}/mfa/config`, datos);
+  }
+
   refresh(): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${environment.apiUrl}/users/refresh`, {}).pipe(
+    
       tap((respuesta) => this.storeSessionIfComplete(respuesta)),
     );
   }
 
-  checkSessionOnLoad(): Observable<LoginResponse | null> {
-    return this.refresh().pipe(
-      tap(() => this.sessionCheckedSignal.set(true)),
+  checkSessionOnLoad(): Observable<SessionProfile | null> {
+    if (this.sessionCheck$) {
+      return this.sessionCheck$;
+    }
+
+    this.sessionCheck$ = this.http.get<SessionProfile>(`${environment.apiUrl}/users/me`).pipe(
+      tap((perfil) => {
+        this.storeSessionFromProfile(perfil);
+        this.sessionCheckedSignal.set(true);
+      }),
       catchError(() => {
         this.clearSession();
-        this.sessionCheckedSignal.set(true);
         return of(null);
       }),
+      shareReplay({ bufferSize: 1, refCount: false }),
     );
+
+    return this.sessionCheck$;
   }
 
   logout(): Observable<void> {
@@ -122,6 +151,7 @@ export class AuthService {
     if (typeof sessionStorage !== 'undefined') {
       sessionStorage.removeItem('esiBuy.rol');
       sessionStorage.removeItem('esiBuy.email');
+      sessionStorage.removeItem('esiBuy.expiresAt'); // NUEVO
     }
     this.sessionCheckedSignal.set(true);
   }
@@ -134,17 +164,52 @@ export class AuthService {
     return typeof message === 'string' && message.length > 0 ? message : fallback;
   }
 
-  private storeSessionIfComplete(respuesta: LoginResponse): void {
+  isAccessTokenExpired(): boolean {
+    if (typeof sessionStorage === 'undefined') return false;
+    const expStr = sessionStorage.getItem('esiBuy.expiresAt');
+    if (!expStr) return true;
+    // Damos un margen de seguridad de 5 segundos antes de la caducidad real
+    return Date.now() > (parseInt(expStr, 10) - 5000);
+  }
+
+  private getTokenExpiration(token: string): number {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.exp * 1000; // Convertir a milisegundos
+    } catch (e) {
+      return 0;
+    }
+  }
+
+private storeSessionIfComplete(respuesta: LoginResponse): void {
     if (respuesta.mfaStatus !== 'SUCCESS') {
       return;
     }
     this.rolSignal.set(respuesta.rol);
     this.emailSignal.set(respuesta.email);
+
     if (typeof sessionStorage !== 'undefined') {
       sessionStorage.setItem('esiBuy.rol', respuesta.rol);
       if (respuesta.email) {
         sessionStorage.setItem('esiBuy.email', respuesta.email);
       }
+      // NUEVO: Guardar la fecha exacta de caducidad del token
+      if (respuesta.accessToken) {
+        const exp = this.getTokenExpiration(respuesta.accessToken);
+        if (exp > 0) {
+          sessionStorage.setItem('esiBuy.expiresAt', exp.toString());
+        }
+      }
+    }
+  }
+
+
+  private storeSessionFromProfile(perfil: SessionProfile): void {
+    this.rolSignal.set(perfil.rol);
+    this.emailSignal.set(perfil.email);
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('esiBuy.rol', perfil.rol);
+      sessionStorage.setItem('esiBuy.email', perfil.email);
     }
   }
 

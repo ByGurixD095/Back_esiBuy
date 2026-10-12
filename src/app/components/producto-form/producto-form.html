@@ -22,7 +22,7 @@
   </header>
 
   <main class="product-page">
-    <div class="breadcrumb">Mis productos <span>/</span> Nuevo producto</div>
+    <div class="breadcrumb">Mis productos <span>/</span> {{ editingId() ? 'Editar producto' : 'Nuevo producto' }}</div>
     <form [formGroup]="productoForm" (ngSubmit)="enviarFormulario()" novalidate>
       <div class="product-grid">
         <section class="gallery-column" aria-labelledby="gallery-title">
@@ -41,9 +41,9 @@
 
         <section class="details-column" aria-labelledby="form-title">
           <div class="section-heading">
-            <p class="eyebrow">Publica algo nuevo</p>
-            <h1 id="form-title">Nuevo Producto</h1>
-            <p>Cuéntale a la comunidad qué estás vendiendo.</p>
+            <p class="eyebrow">{{ editingId() ? 'Actualiza tu publicación' : 'Publica algo nuevo' }}</p>
+            <h1 id="form-title">{{ editingId() ? 'Editar Producto' : 'Nuevo Producto' }}</h1>
+            <p>{{ editingId() ? 'Modifica la información de tu producto.' : 'Cuéntale a la comunidad qué estás vendiendo.' }}</p>
           </div>
 
           <label class="field field-wide">
@@ -162,13 +162,19 @@
             }
           }
           @if (draftSaved()) {
-            <output class="feedback feedback-success">Borrador guardado.</output>
+            <output class="feedback feedback-success">
+              {{ draftRestored() ? 'Borrador recuperado de este navegador.' : 'Borrador guardado en este navegador.' }}
+            </output>
           }
 
-          <button class="primary-action" type="submit" [disabled]="isSubmitting()">
-            {{ isSubmitting() ? 'Publicando...' : 'Publicar Producto' }}
+          <button class="primary-action" type="submit" [disabled]="isSubmitting() || loadingProduct()">
+            {{ isSubmitting() ? (editingId() ? 'Guardando...' : 'Publicando...') : (editingId() ? 'Guardar cambios' : 'Publicar Producto') }}
           </button>
-          <button class="secondary-action" type="button" (click)="guardarBorrador()">Guardar Borrador</button>
+          @if (editingId()) {
+            <a class="secondary-action cancel-action" routerLink="/products/catalogo">Volver sin guardar</a>
+          } @else {
+            <button class="secondary-action" type="button" (click)="guardarBorrador()">Guardar Borrador</button>
+          }
           <p class="secure-note">Tus datos están protegidos y solo se mostrarán a compradores verificados.</p>
         </aside>
       </div>

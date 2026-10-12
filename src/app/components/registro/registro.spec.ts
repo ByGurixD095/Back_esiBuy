@@ -5,6 +5,7 @@ import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { AuthService } from '../../services/auth.service';
 import { Registro as RegistroService } from '../../services/registro-service/registro';
+import { AVATARES_VENDEDOR } from '../avatar-selector/avatar-selector';
 import { RegistroComponent } from './registro';
 
 describe('RegistroComponent', () => {
@@ -108,6 +109,30 @@ describe('RegistroComponent', () => {
     expect(routerFalso.navigate).toHaveBeenCalledWith(['/products']);
   });
 
+  it('avisa de que la cuenta queda pendiente de activación y no inicia sesión', async () => {
+    await configurar('cliente');
+    autenticacionFalsa.applyAuthenticationResponse.mockClear();
+    component.form.patchValue({
+      nombre: 'Ana',
+      apellidos: 'López',
+      email: 'ana@example.es',
+      contrasena: 'Clave123!',
+      dni: '12345678A',
+      fechaNacimiento: '2000-01-01',
+    });
+    servicioFalso.registrarCliente.mockReturnValue(
+      of({ ...respuestaLoginOk, mfaStatus: 'PENDING_ACTIVATION' }),
+    );
+
+    component.enviar();
+    await fixture.whenStable();
+
+    expect(component.mensajeExito()).toContain('Un administrador debe activarla');
+    expect(autenticacionFalsa.login).not.toHaveBeenCalled();
+    expect(autenticacionFalsa.applyAuthenticationResponse).not.toHaveBeenCalled();
+    expect(routerFalso.navigate).not.toHaveBeenCalled();
+  });
+
   it('valida y envía los campos obligatorios de vendedor', async () => {
     await configurar('vendedor');
     expect(component.form.valid).toBe(false);
@@ -135,11 +160,14 @@ describe('RegistroComponent', () => {
       email: 'ana@example.es',
       contrasena: 'Clave123!',
       telefono: '',
-      imagenPerfil: '',
+      imagenPerfil: expect.stringMatching(/^\/assets\/avatares\/vendedor-\d{2}\.svg$/),
       nombreComercial: 'Tienda Ana',
       cifNif: 'B12345678',
       categoriaPrincipalId: 'categoria-1',
     });
+    expect(AVATARES_VENDEDOR.map((avatar) => avatar.ruta)).toContain(
+      servicioFalso.registrarVendedor.mock.calls[0][0].imagenPerfil,
+    );
     expect(routerFalso.navigate).toHaveBeenCalledWith(['/products']);
   });
 
@@ -199,7 +227,13 @@ describe('RegistroComponent', () => {
   it('muestra un mensaje específico si el correo ya está registrado', async () => {
     await configurar('cliente');
     servicioFalso.registrarCliente.mockReturnValue(
-      throwError(() => new HttpErrorResponse({ status: 409 })),
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 409,
+            error: { error: 'CONFLICT', message: 'El email ya está registrado' },
+          }),
+      ),
     );
     component.form.patchValue({
       nombre: 'Ana',
@@ -212,6 +246,32 @@ describe('RegistroComponent', () => {
 
     component.enviar();
 
-    expect(component.mensajeError()).toContain('Ya existe una cuenta');
+    expect(component.mensajeError()).toBe('El email ya está registrado');
+  });
+
+  it('muestra el mensaje del servidor si el nombre comercial ya está en uso', async () => {
+    await configurar('vendedor');
+    servicioFalso.registrarVendedor.mockReturnValue(
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 409,
+            error: { error: 'CONFLICT', message: 'El nombre comercial ya está en uso' },
+          }),
+      ),
+    );
+    component.form.patchValue({
+      nombre: 'Ana',
+      apellidos: 'López',
+      email: 'ana@example.es',
+      contrasena: 'Clave123!',
+      nombreComercial: 'Tienda existente',
+      cifNif: 'B12345678',
+      categoriaPrincipalId: 'categoria-1',
+    });
+
+    component.enviar();
+
+    expect(component.mensajeError()).toBe('El nombre comercial ya está en uso');
   });
 });

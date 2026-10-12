@@ -1,4 +1,4 @@
-<main class="catalog-shell">
+﻿<main class="catalog-shell">
   <header class="catalog-header">
     <a class="brand" routerLink="/" aria-label="EsiBuy, ir al inicio"><img src="/assets/images/svg/logo.svg" alt="EsiBuy" /></a>
     <div class="header-context">Catálogo de productos</div>
@@ -24,58 +24,25 @@
       </div>
       <aside class="catalog-summary" aria-label="Resumen del catálogo">
         <span class="summary-label">Ahora mismo</span>
-        @if (cargando()) {
+        @if (totalCatalogo() === null && cargando()) {
           <strong class="summary-number">...</strong>
           <p>Consultando disponibilidad</p>
-        } @else if (error()) {
+        } @else if (totalCatalogo() === null && error()) {
           <strong class="summary-number">!</strong>
           <p>No se pudo consultar el catálogo</p>
+        } @else if (totalCatalogo() !== null) {
+          <strong class="summary-number">{{ totalCatalogo() }}</strong>
+          <p>{{ totalCatalogo() === 1 ? 'producto disponible' : 'productos disponibles' }}</p>
         } @else {
-          <strong class="summary-number">{{ productos().length }}</strong>
-          <p>{{ productos().length === 1 ? 'producto disponible' : 'productos disponibles' }}</p>
+          <strong class="summary-number">...</strong>
+          <p>Consultando disponibilidad</p>
         }
         <span class="summary-line" aria-hidden="true"></span>
         <small>Stock actualizado desde el catálogo online</small>
       </aside>
     </div>
 
-    <section class="filters-panel" aria-label="Filtros del catálogo">
-      <label class="filter-search">
-        <span aria-hidden="true">⌕</span>
-        <span class="visually-hidden">Buscar productos</span>
-        <input type="search" placeholder="Buscar por nombre o referencia" [value]="busqueda()" (input)="actualizarBusqueda($event)" />
-      </label>
-      <label class="filter-select">
-        <span>Categoría</span>
-        <select [value]="categoriaSeleccionada()" (change)="actualizarCategoria($event)">
-          @for (categoria of categorias(); track categoria) { <option [value]="categoria">{{ categoria }}</option> }
-        </select>
-      </label>
-      <label class="filter-select">
-        <span>Ordenar por</span>
-        <select [value]="orden()" (change)="actualizarOrden($event)">
-          <option value="relevancia">Relevancia</option>
-          <option value="precioAsc">Precio menor</option>
-          <option value="precioDesc">Precio mayor</option>
-          <option value="descuento">Mayor descuento</option>
-        </select>
-      </label>
-      <fieldset class="price-filter">
-        <legend>Precio</legend>
-        <div class="price-range" [style.--price-min]="precioMinimoSlider() + 'c'" [style.--price-max]="precioMaximoSlider() + 'c'" [style.--price-scale]="precioEscalaMaxima() + 'c'">
-          <input class="range-input range-min" type="range" min="0" [max]="precioEscalaMaxima()" step="1" [value]="precioMinimoSlider()" aria-label="Precio mínimo" (input)="actualizarPrecioMinimo($event)" />
-          <input class="range-input range-max" type="range" min="0" [max]="precioEscalaMaxima()" step="1" [value]="precioMaximoSlider()" aria-label="Precio máximo" (input)="actualizarPrecioMaximo($event)" />
-        </div>
-        <div class="price-inputs">
-          <label>Desde (€)<input type="number" min="0" step="0.01" inputmode="decimal" [value]="precioMinimo() === null ? '' : precioMinimo()! / 100" placeholder="Sin mínimo" (input)="actualizarPrecioTexto($event, 'minimo')" /></label>
-          <label>Hasta (€)<input type="number" min="0" step="0.01" inputmode="decimal" [value]="precioMaximo() === null ? '' : precioMaximo()! / 100" placeholder="Sin máximo" (input)="actualizarPrecioTexto($event, 'maximo')" /></label>
-        </div>
-      </fieldset>
-      <label class="discount-filter"><input type="checkbox" [checked]="soloConDescuento()" (change)="alternarDescuento($event)" /> Solo ofertas</label>
-      @if (busqueda() || categoriaSeleccionada() !== 'Todas' || orden() !== 'relevancia' || precioMinimo() !== null || precioMaximo() !== null || soloConDescuento()) {
-        <button class="clear-filter" type="button" (click)="limpiarFiltros()"><span aria-hidden="true">↺</span> Limpiar</button>
-      }
-    </section>
+    <app-panel-filtros-productos [productos]="productos()" (filtrosChange)="aplicarFiltros($event)" />
 
     @if (cargando()) {
       <section class="state-panel loading-state" aria-live="polite" aria-busy="true">
@@ -103,8 +70,8 @@
       </section>
     } @else {
       <div class="results-toolbar" aria-live="polite">
-        <p>Mostrando <strong>{{ totalElementos() }}</strong> artículos</p>
-        <p class="success-note"><span aria-hidden="true">●</span> Catálogo actualizado · 36 por página</p>
+        <p>Mostrando <strong>{{ productos().length }}</strong> de <strong>{{ totalElementos() }}</strong> productos disponibles</p>
+        <p class="success-note"><span aria-hidden="true">●</span> Catálogo actualizado · {{ tamanoPagina }} por página</p>
       </div>
 
       <div class="product-grid">
@@ -127,7 +94,19 @@
                 @if (producto.descuentoPremium > 0) { <span class="premium-discount">Premium -{{ producto.descuentoPremium }}%</span> }
               </div>
               <div class="product-footer">
-                <strong class="price">{{ formatearPrecio(producto.precioCent) }}</strong>
+                <div class="product-pricing">
+                  @if (producto.descuento > 0) {
+                    <span class="discount-note">{{ producto.descuento }}% de descuento</span>
+                  }
+                  <div class="price-block">
+                    @if (producto.descuento > 0) {
+                      <del>{{ formatearPrecio(producto.precioCent) }}</del>
+                      <strong class="discounted-price">{{ formatearPrecioConDescuento(producto.precioCent, producto.descuento) }}</strong>
+                    } @else {
+                      <strong class="price">{{ formatearPrecio(producto.precioCent) }}</strong>
+                    }
+                  </div>
+                </div>
                 <span class="reference">{{ producto.referencia }}</span>
               </div>
             </div>

@@ -20,6 +20,10 @@ export interface PerfilUsuario {
   nombreComercial?: string | null;
   cifNif?: string | null;
   categoriaPrincipalId?: string | null;
+  sede?: string | null;
+  fechaIncorporacion?: string | null;
+  dosFactorActivoCliente?: boolean;
+  tresFactorActivoCliente?: boolean;
 }
 
 export interface ActualizarPerfilRequest {
@@ -30,6 +34,7 @@ export interface ActualizarPerfilRequest {
   tipoCliente?: TipoCliente;
   categoriaPrincipalId?: string;
   nombreComercial?: string;
+  sede?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -43,5 +48,9 @@ export class PerfilService {
 
   actualizarMiPerfil(datos: ActualizarPerfilRequest): Observable<void> {
     return this.http.patch<void>(`${this.apiUrl}/me/update`, datos);
+  }
+
+  eliminarMiCuenta(): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/me`);
   }
 }

@@ -5,6 +5,7 @@ import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { AdministradorRegistro } from './administrador-registro';
 import { Administradores } from '../../services/crear-admin-service/administradores';
+import { AVATARES_PERFIL } from '../avatar-selector/avatar-selector';
 
 describe('AdministradorRegistro', () => {
   let component: AdministradorRegistro;
@@ -16,6 +17,7 @@ describe('AdministradorRegistro', () => {
     email: 'ana.lopez@esi.es',
     contrasena: 'Admin123!x',
     sede: 'Ciudad Real',
+    imagenPerfil: '',
   };
 
   const respuestaOk = {
@@ -82,6 +84,7 @@ describe('AdministradorRegistro', () => {
     for (const campo of ['nombre', 'apellidos', 'email', 'contrasena', 'sede']) {
       expect(el.querySelector(`[formControlName="${campo}"]`)).not.toBeNull();
     }
+    expect(el.querySelector('app-avatar-selector')).not.toBeNull();
   });
 
   it('el botón de enviar está deshabilitado mientras el formulario sea inválido', () => {
@@ -105,7 +108,13 @@ describe('AdministradorRegistro', () => {
 
       component.enviar();
 
-      expect(servicioFalso.crear).toHaveBeenCalledWith(datosValidos);
+      expect(servicioFalso.crear).toHaveBeenCalledWith({
+        ...datosValidos,
+        imagenPerfil: expect.stringMatching(/^\/assets\/avatares\/avatar-\d{2}\.svg$/),
+      });
+      expect(AVATARES_PERFIL.map((avatar) => avatar.ruta)).toContain(
+        servicioFalso.crear.mock.calls[0][0].imagenPerfil,
+      );
     });
 
     it('muestra el mensaje de éxito del back y vacía el formulario', async () => {

@@ -1,7 +1,7 @@
 <app-marco-pagina panel="Gestionar" [volver]="true">
   <section class="gestionar" aria-labelledby="gestionar-titulo">
     <p class="esi-eyebrow">Área de trabajo</p>
-    <h1 id="gestionar-titulo" class="esi-titulo">gestionar.</h1>
+    <h1 id="gestionar-titulo" class="esi-titulo">Gestionar.</h1>
     <p class="descripcion">Selecciona el área que quieres administrar.</p>
 
     <div class="opciones">
@@ -10,9 +10,13 @@
         <strong>Administradores</strong>
         <span>Crear y gestionar administradores.</span>
       </a>
+      <a class="opcion esi-tarjeta" routerLink="/admin/usuarios">
+        <strong>Gestionar usuarios</strong>
+        <span>Consultar cuentas y ver una propuesta de acciones.</span>
+      </a>
       }
       @if (auth.hasRole(['VENDEDOR'])) {
-      <a class="opcion esi-tarjeta" routerLink="/products/new">
+      <a class="opcion esi-tarjeta" routerLink="/products/catalogo">
         <strong>Productos</strong>
         <span>Gestionar los productos de tu catálogo.</span>
       </a>

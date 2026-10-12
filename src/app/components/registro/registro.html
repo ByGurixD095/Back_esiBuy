@@ -2,164 +2,213 @@
   <div class="pagina">
     <p class="esi-eyebrow">{{ esVendedor ? 'Vendedores' : 'Clientes' }}</p>
     <h1 class="esi-titulo">
-      {{ esVendedor ? 'registra ' : 'crea ' }}<em>{{ esVendedor ? 'tu tienda.' : 'tu cuenta.' }}</em>
+      {{ esVendedor ? 'Registra ' : 'Crea '
+      }}<em>{{ esVendedor ? 'tu tienda.' : 'tu cuenta.' }}</em>
     </h1>
 
     <section class="registro esi-tarjeta" [attr.aria-labelledby]="'titulo-formulario'">
       @if (!cuentaCreada()) {
-      <form [formGroup]="form" (ngSubmit)="enviar()" novalidate>
-        <header class="formulario-cabecera">
-          <h2 id="titulo-formulario">{{ esVendedor ? 'Datos de tu tienda' : 'Tus datos' }}</h2>
-          <p>Completa la información para {{ esVendedor ? 'empezar a vender' : 'crear tu cuenta' }}.</p>
-        </header>
+        <form [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+          <header class="formulario-cabecera">
+            <h2 id="titulo-formulario">{{ esVendedor ? 'Datos de tu tienda' : 'Tus datos' }}</h2>
+            <p>
+              Completa la información para
+              {{ esVendedor ? 'empezar a vender' : 'crear tu cuenta' }}.
+            </p>
+          </header>
 
-        <section class="grupo-formulario" aria-labelledby="titulo-datos-personales">
-          <h3 id="titulo-datos-personales">Información personal</h3>
-          <div class="campos">
-            <div class="esi-campo">
-              <label for="nombre">Nombre <span class="requerido">Obligatorio</span></label>
-              <input id="nombre" type="text" formControlName="nombre" autocomplete="given-name" required />
-              @if (esInvalido('nombre')) {
-                <small class="esi-ayuda esi-error">El nombre es obligatorio.</small>
-              }
-            </div>
-
-            <div class="esi-campo">
-              <label for="apellidos">Apellidos <span class="requerido">Obligatorio</span></label>
-              <input id="apellidos" type="text" formControlName="apellidos" autocomplete="family-name" required />
-              @if (esInvalido('apellidos')) {
-                <small class="esi-ayuda esi-error">Los apellidos son obligatorios.</small>
-              }
-            </div>
-
-            <div class="esi-campo">
-              <label for="email">Correo electrónico <span class="requerido">Obligatorio</span></label>
-              <input id="email" type="email" formControlName="email" autocomplete="email" required />
-              @if (esInvalido('email')) {
-                <small class="esi-ayuda esi-error">Introduce un correo electrónico válido.</small>
-              }
-            </div>
-
-            <div class="esi-campo">
-              <label for="contrasena">Contraseña <span class="requerido">Obligatorio</span></label>
-              <input
-                id="contrasena"
-                type="password"
-                formControlName="contrasena"
-                autocomplete="new-password"
-                required
-              />
-              @if (esInvalido('contrasena')) {
-                <small class="esi-ayuda esi-error">La contraseña es obligatoria.</small>
-              }
-            </div>
-
-            <div class="esi-campo">
-              <label for="telefono">Teléfono <span class="opcional">Opcional</span></label>
-              <input id="telefono" type="tel" formControlName="telefono" autocomplete="tel" />
-            </div>
-
-            <div class="esi-campo">
-              <label for="imagenPerfil">Imagen de perfil <span class="opcional">Opcional</span></label>
-              <input
-                id="imagenPerfil"
-                type="url"
-                formControlName="imagenPerfil"
-                placeholder="https://"
-                autocomplete="url"
-              />
-            </div>
-          </div>
-        </section>
-
-        @if (esVendedor) {
-          <section class="grupo-formulario" aria-labelledby="titulo-datos-tienda">
-            <h3 id="titulo-datos-tienda">Información comercial</h3>
+          <section class="grupo-formulario" aria-labelledby="titulo-datos-personales">
+            <h3 id="titulo-datos-personales">Información personal</h3>
             <div class="campos">
               <div class="esi-campo">
-                <label for="nombreComercial">Nombre comercial <span class="requerido">Obligatorio</span></label>
-                <input id="nombreComercial" type="text" formControlName="nombreComercial" required />
-                @if (esInvalido('nombreComercial')) {
-                  <small class="esi-ayuda esi-error">El nombre comercial es obligatorio.</small>
-                }
-              </div>
-
-              <div class="esi-campo">
-                <label for="cifNif">CIF/NIF <span class="requerido">Obligatorio</span></label>
-                <input id="cifNif" type="text" formControlName="cifNif" required />
-                @if (esInvalido('cifNif')) {
-                  <small class="esi-ayuda esi-error">El CIF/NIF es obligatorio.</small>
-                }
-              </div>
-
-              <div class="esi-campo campo-completo">
-                <label for="categoriaPrincipalId">
-                  ID de la categoría principal <span class="requerido">Obligatorio</span>
-                </label>
+                <label for="nombre">Nombre <span class="requerido">Obligatorio</span></label>
                 <input
-                  id="categoriaPrincipalId"
+                  id="nombre"
                   type="text"
-                  formControlName="categoriaPrincipalId"
+                  formControlName="nombre"
+                  autocomplete="given-name"
                   required
                 />
-                @if (esInvalido('categoriaPrincipalId')) {
-                  <small class="esi-ayuda esi-error">La categoría principal es obligatoria.</small>
-                }
-              </div>
-            </div>
-          </section>
-        } @else {
-          <section class="grupo-formulario" aria-labelledby="titulo-datos-cliente">
-            <h3 id="titulo-datos-cliente">Verificación de identidad</h3>
-            <div class="campos">
-              <div class="esi-campo">
-                <label for="dni">DNI <span class="requerido">Obligatorio</span></label>
-                <input id="dni" type="text" formControlName="dni" autocomplete="off" required />
-                @if (esInvalido('dni')) {
-                  <small class="esi-ayuda esi-error">El DNI es obligatorio.</small>
+                @if (esInvalido('nombre')) {
+                  <small class="esi-ayuda esi-error">El nombre es obligatorio.</small>
                 }
               </div>
 
               <div class="esi-campo">
-                <label for="fechaNacimiento">
-                  Fecha de nacimiento <span class="requerido">Obligatorio</span>
-                </label>
+                <label for="apellidos">Apellidos <span class="requerido">Obligatorio</span></label>
                 <input
-                  id="fechaNacimiento"
-                  type="date"
-                  formControlName="fechaNacimiento"
-                  [attr.max]="fechaMaxima"
-                  autocomplete="bday"
+                  id="apellidos"
+                  type="text"
+                  formControlName="apellidos"
+                  autocomplete="family-name"
                   required
                 />
-                @if (esInvalido('fechaNacimiento')) {
+                @if (esInvalido('apellidos')) {
+                  <small class="esi-ayuda esi-error">Los apellidos son obligatorios.</small>
+                }
+              </div>
+
+              <div class="esi-campo">
+                <label for="email"
+                  >Correo electrónico <span class="requerido">Obligatorio</span></label
+                >
+                <input
+                  id="email"
+                  type="email"
+                  formControlName="email"
+                  autocomplete="email"
+                  required
+                />
+                @if (esInvalido('email')) {
+                  <small class="esi-ayuda esi-error">Introduce un correo electrónico válido.</small>
+                }
+              </div>
+
+              <div class="esi-campo">
+                <label for="contrasena"
+                  >Contraseña <span class="requerido">Obligatorio</span></label
+                >
+                <input
+                  id="contrasena"
+                  type="password"
+                  formControlName="contrasena"
+                  autocomplete="new-password"
+                  required
+                  aria-describedby="ayuda-politica-contrasena"
+                />
+                <small id="ayuda-politica-contrasena" class="esi-ayuda">
+                  La contraseña debe tener entre 8 y 72 caracteres, con mayúsculas, minúsculas,
+                  dígitos y símbolos.
+                </small>
+                @if (esInvalido('contrasena')) {
                   <small class="esi-ayuda esi-error">
-                    La fecha debe ser anterior a hoy.
+                    Introduce una contraseña que cumpla la política indicada.
                   </small>
                 }
               </div>
+
+              <div class="esi-campo">
+                <label for="telefono">Teléfono <span class="opcional">Opcional</span></label>
+                <input id="telefono" type="tel" formControlName="telefono" autocomplete="tel" />
+              </div>
+
+              <app-avatar-selector
+                [value]="form.controls.imagenPerfil.value"
+                [esVendedor]="esVendedor"
+                (valueChange)="form.controls.imagenPerfil.setValue($event)"
+              />
             </div>
           </section>
-        }
 
-        @if (mensajeExito()) {
-          <p class="exito esi-alerta esi-alerta--ok" role="status">{{ mensajeExito() }}</p>
-        }
-        @if (mensajeError()) {
-          <p class="error-general esi-alerta esi-alerta--error" role="alert">{{ mensajeError() }}</p>
-        }
+          @if (esVendedor) {
+            <section class="grupo-formulario" aria-labelledby="titulo-datos-tienda">
+              <h3 id="titulo-datos-tienda">Información comercial</h3>
+              <div class="campos">
+                <div class="esi-campo">
+                  <label for="nombreComercial"
+                    >Nombre comercial <span class="requerido">Obligatorio</span></label
+                  >
+                  <input
+                    id="nombreComercial"
+                    type="text"
+                    formControlName="nombreComercial"
+                    required
+                  />
+                  @if (esInvalido('nombreComercial')) {
+                    <small class="esi-ayuda esi-error">El nombre comercial es obligatorio.</small>
+                  }
+                </div>
 
-        <button type="submit" class="esi-boton" [disabled]="form.invalid || enviando()">
-          {{ enviando() ? 'Creando cuenta…' : 'Crear cuenta' }}
-        </button>
-      </form>
+                <div class="esi-campo">
+                  <label for="cifNif">CIF/NIF <span class="requerido">Obligatorio</span></label>
+                  <input id="cifNif" type="text" formControlName="cifNif" required />
+                  @if (esInvalido('cifNif')) {
+                    <small class="esi-ayuda esi-error">El CIF/NIF es obligatorio.</small>
+                  }
+                </div>
+
+                <div class="esi-campo campo-completo">
+                  <label for="categoriaPrincipalId">
+                    ID de la categoría principal <span class="requerido">Obligatorio</span>
+                  </label>
+                  <input
+                    id="categoriaPrincipalId"
+                    type="text"
+                    formControlName="categoriaPrincipalId"
+                    required
+                  />
+                  @if (esInvalido('categoriaPrincipalId')) {
+                    <small class="esi-ayuda esi-error"
+                      >La categoría principal es obligatoria.</small
+                    >
+                  }
+                </div>
+              </div>
+            </section>
+          } @else {
+            <section class="grupo-formulario" aria-labelledby="titulo-datos-cliente">
+              <h3 id="titulo-datos-cliente">Verificación de identidad</h3>
+              <div class="campos">
+                <div class="esi-campo">
+                  <label for="dni">DNI <span class="requerido">Obligatorio</span></label>
+                  <input id="dni" type="text" formControlName="dni" autocomplete="off" required />
+                  @if (esInvalido('dni')) {
+                    <small class="esi-ayuda esi-error">El DNI es obligatorio.</small>
+                  }
+                </div>
+
+                <div class="esi-campo">
+                  <label for="fechaNacimiento">
+                    Fecha de nacimiento <span class="requerido">Obligatorio</span>
+                  </label>
+                  <input
+                    id="fechaNacimiento"
+                    type="date"
+                    formControlName="fechaNacimiento"
+                    [attr.max]="fechaMaxima"
+                    autocomplete="bday"
+                    required
+                  />
+                  @if (esInvalido('fechaNacimiento')) {
+                    <small class="esi-ayuda esi-error">
+                      @if (form.controls.fechaNacimiento.hasError('menorDeEdad')) {
+                        Debes ser mayor de edad para registrarte.
+                      } @else {
+                        La fecha debe ser anterior a hoy.
+                      }
+                    </small>
+                  }
+                </div>
+              </div>
+            </section>
+          }
+
+          @if (mensajeExito()) {
+            <p class="exito esi-alerta esi-alerta--ok" role="status">{{ mensajeExito() }}</p>
+          }
+          @if (mensajeError()) {
+            <p class="error-general esi-alerta esi-alerta--error" role="alert">
+              {{ mensajeError() }}
+            </p>
+          }
+
+          <button type="submit" class="esi-boton" [disabled]="form.invalid || enviando()">
+            {{ enviando() ? 'Creando cuenta…' : 'Crear cuenta' }}
+          </button>
+
+          <a class="enlace-login" routerLink="/login"
+            >¿Ya tienes cuenta? Volver al inicio de sesión</a
+          >
+        </form>
       } @else {
         <div class="resultado-registro" aria-live="polite">
           @if (mensajeExito()) {
             <p class="exito esi-alerta esi-alerta--ok" role="status">{{ mensajeExito() }}</p>
           }
           @if (mensajeError()) {
-            <p class="error-general esi-alerta esi-alerta--error" role="alert">{{ mensajeError() }}</p>
+            <p class="error-general esi-alerta esi-alerta--error" role="alert">
+              {{ mensajeError() }}
+            </p>
           }
           @if (enviando()) {
             <p class="estado-proceso">Iniciando sesión con tu nueva cuenta…</p>
@@ -174,6 +223,7 @@
               {{ enviando() ? 'Intentando…' : 'Reintentar inicio de sesión' }}
             </button>
           }
+          <a class="enlace-login" routerLink="/login">Volver al inicio de sesión</a>
         </div>
       }
     </section>
