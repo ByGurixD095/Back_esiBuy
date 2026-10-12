@@ -86,6 +86,14 @@ export class Usuarios {
     );
   }
 
+  activar(id: string): Observable<Usuario> {
+    return this.http.patch<Usuario>(
+      `${environment.apiUrl}/admin/activar/${encodeURIComponent(id)}`,
+      {},
+      { withCredentials: true },
+    );
+  }
+
   eliminar(id: string): Observable<void> {
     return this.http.delete<void>(`${environment.apiUrl}/admin/${encodeURIComponent(id)}`, {
       withCredentials: true,

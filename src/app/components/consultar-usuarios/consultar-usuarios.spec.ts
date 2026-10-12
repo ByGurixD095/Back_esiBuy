@@ -16,6 +16,7 @@ describe('ConsultarUsuarios', () => {
     eliminar: vi.fn(),
     bloquear: vi.fn(),
     desbloquear: vi.fn(),
+    activar: vi.fn(),
   };
   const authServiceFalso = { email: signal<string | null>('admin@test.com') };
   const usuarios: Usuario[] = [
@@ -70,6 +71,8 @@ describe('ConsultarUsuarios', () => {
     servicioFalso.bloquear.mockReturnValue(of({ bloqueado: true }));
     servicioFalso.desbloquear.mockReset();
     servicioFalso.desbloquear.mockReturnValue(of({ bloqueado: false }));
+    servicioFalso.activar.mockReset();
+    servicioFalso.activar.mockReturnValue(of({ activo: true }));
     authServiceFalso.email.set('admin@test.com');
     await TestBed.configureTestingModule({
       imports: [ConsultarUsuarios],
@@ -276,6 +279,30 @@ describe('ConsultarUsuarios', () => {
     expect(servicioFalso.desbloquear).toHaveBeenCalledWith('user-db-2');
     expect(el.textContent).toContain('Se ha desbloqueado a Luis Pérez.');
     expect(el.querySelector('[aria-label="Bloquear usuario Luis Pérez"]')).not.toBeNull();
+  });
+
+  it('confirma la activación de un usuario inactivo y actualiza su estado', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    fixture.componentInstance.usuarios.update((lista) =>
+      lista.map((usuario) =>
+        usuario.id === 'user-db-2'
+          ? { ...usuario, eliminado: false, bloqueado: false, activo: false }
+          : usuario,
+      ),
+    );
+    fixture.detectChanges();
+    expect(el.querySelector('[aria-label="Activar usuario Ana López"]')).toBeNull();
+    (el.querySelector('[aria-label="Activar usuario Luis Pérez"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(el.textContent).toContain('¿Quieres activar a Luis Pérez?');
+    expect(servicioFalso.activar).not.toHaveBeenCalled();
+    (el.querySelector('.confirmacion-eliminar') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(servicioFalso.activar).toHaveBeenCalledWith('user-db-2');
+    expect(el.textContent).toContain('Se ha activado a Luis Pérez.');
+    expect(el.querySelector('[aria-label="Activar usuario Luis Pérez"]')).toBeNull();
   });
 
   it('no abre confirmación ni envía la petición para la cuenta de la sesión', () => {

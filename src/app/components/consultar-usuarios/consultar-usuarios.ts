@@ -21,7 +21,7 @@ import {
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
 
 type FiltroEliminados = 'todos' | 'eliminados' | 'no-eliminados';
-type AccionUsuario = 'eliminar' | 'bloquear' | 'desbloquear';
+type AccionUsuario = 'eliminar' | 'bloquear' | 'desbloquear' | 'activar';
 
 @Component({
   selector: 'app-consultar-usuarios',
@@ -159,6 +159,14 @@ export class ConsultarUsuarios implements OnInit {
     });
   }
 
+  activarUsuario(usuario: Usuario): void {
+    if (usuario.eliminado || usuario.activo || this.hayAccionEnCurso()) {
+      return;
+    }
+
+    this.accionPendiente.set({ usuario, accion: 'activar' });
+  }
+
   cancelarEliminacion(): void {
     this.accionPendiente.set(null);
   }
@@ -188,7 +196,9 @@ export class ConsultarUsuarios implements OnInit {
         ? this.usuariosService.bloquear(usuario.id).pipe(map(() => undefined))
         : accion === 'desbloquear'
           ? this.usuariosService.desbloquear(usuario.id).pipe(map(() => undefined))
-          : this.usuariosService.eliminar(usuario.id);
+          : accion === 'activar'
+            ? this.usuariosService.activar(usuario.id).pipe(map(() => undefined))
+            : this.usuariosService.eliminar(usuario.id);
 
     peticion.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
@@ -197,7 +207,9 @@ export class ConsultarUsuarios implements OnInit {
             actual.id === usuario.id
               ? accion === 'eliminar'
                 ? { ...actual, eliminado: true }
-                : { ...actual, bloqueado: accion === 'bloquear' }
+                : accion === 'activar'
+                  ? { ...actual, activo: true }
+                  : { ...actual, bloqueado: accion === 'bloquear' }
               : actual,
           ),
         );
@@ -298,7 +310,9 @@ export class ConsultarUsuarios implements OnInit {
       error,
       accion === 'bloquear'
         ? 'No se ha podido bloquear el usuario. Inténtalo de nuevo.'
-        : 'No se ha podido desbloquear el usuario. Inténtalo de nuevo.',
+        : accion === 'activar'
+          ? 'No se ha podido activar el usuario. Inténtalo de nuevo.'
+          : 'No se ha podido desbloquear el usuario. Inténtalo de nuevo.',
     );
   }
 
@@ -306,6 +320,9 @@ export class ConsultarUsuarios implements OnInit {
     const nombre = `${usuario.name} ${usuario.apellidos}`;
     if (accion === 'eliminar') {
       return `Se ha eliminado a ${nombre}.`;
+    }
+    if (accion === 'activar') {
+      return `Se ha activado a ${nombre}.`;
     }
     return accion === 'bloquear'
       ? `Se ha bloqueado a ${nombre}.`

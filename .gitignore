@@ -48,3 +48,4 @@ Thumbs.db
 sonar-project.properties
 sonar-scanner.properties
 .scannerwork/
+.scannerwork/report-task.txt

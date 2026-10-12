@@ -230,6 +230,12 @@ export class RegistroComponent {
 
   private procesarRespuestaRegistro(respuesta: LoginResponse): void {
     this.enviando.set(false);
+    if (respuesta.mfaStatus === 'PENDING_ACTIVATION') {
+      this.mensajeExito.set(
+        'Cuenta creada. Un administrador debe activarla antes de que puedas iniciar sesión.',
+      );
+      return;
+    }
     if (respuesta.mfaStatus === 'SUCCESS') {
       this.authService.applyAuthenticationResponse(respuesta);
       this.mensajeExito.set('Cuenta creada e inicio de sesión completado.');
