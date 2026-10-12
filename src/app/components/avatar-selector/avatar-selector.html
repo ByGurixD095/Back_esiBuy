@@ -21,7 +21,7 @@
   <small id="imagen-perfil-ayuda" class="ayuda-archivo">JPG, PNG o WebP. Máximo 2 MB.</small>
 
   <div class="avatares" role="group" aria-label="Avatares disponibles">
-    @for (avatar of avatares; track avatar.ruta) {
+    @for (avatar of avatares(); track avatar.ruta) {
       <button
         type="button"
         class="opcion-avatar"

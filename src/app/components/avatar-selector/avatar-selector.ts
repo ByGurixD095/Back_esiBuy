@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 
 export const AVATARES_PERFIL = [
   { nombre: 'Coral', ruta: '/assets/avatares/avatar-01.svg' },
@@ -9,11 +9,21 @@ export const AVATARES_PERFIL = [
   { nombre: 'Uva', ruta: '/assets/avatares/avatar-06.svg' },
 ] as const;
 
+export const AVATARES_VENDEDOR = [
+  { nombre: 'Vendedor oliva', ruta: '/assets/avatares/vendedor-01.svg' },
+  { nombre: 'Vendedora coral', ruta: '/assets/avatares/vendedor-02.svg' },
+  { nombre: 'Vendedora violeta', ruta: '/assets/avatares/vendedor-03.svg' },
+  { nombre: 'Vendedor mostaza', ruta: '/assets/avatares/vendedor-04.svg' },
+  { nombre: 'Vendedora azul', ruta: '/assets/avatares/vendedor-05.svg' },
+  { nombre: 'Vendedor turquesa', ruta: '/assets/avatares/vendedor-06.svg' },
+] as const;
+
 const TAMANO_MAXIMO_FOTO = 2 * 1024 * 1024;
 
-export function avatarAleatorio(): string {
-  const indice = Math.floor(Math.random() * AVATARES_PERFIL.length);
-  return AVATARES_PERFIL[indice].ruta;
+export function avatarAleatorio(esVendedor = false): string {
+  const opciones = esVendedor ? AVATARES_VENDEDOR : AVATARES_PERFIL;
+  const indice = Math.floor(Math.random() * opciones.length);
+  return opciones[indice].ruta;
 }
 
 @Component({
@@ -25,8 +35,9 @@ export function avatarAleatorio(): string {
 })
 export class AvatarSelector {
   readonly value = input('');
+  readonly esVendedor = input(false);
   readonly valueChange = output<string>();
-  readonly avatares = AVATARES_PERFIL;
+  readonly avatares = computed(() => (this.esVendedor() ? AVATARES_VENDEDOR : AVATARES_PERFIL));
   readonly error = signal('');
 
   seleccionarAvatar(ruta: string): void {

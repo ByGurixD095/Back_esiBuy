@@ -134,7 +134,7 @@ export class RegistroComponent {
       return;
     }
     if (!this.form.controls.imagenPerfil.value.trim()) {
-      this.form.controls.imagenPerfil.setValue(avatarAleatorio());
+      this.form.controls.imagenPerfil.setValue(avatarAleatorio(this.esVendedor));
     }
     if (this.form.invalid) {
       this.form.markAllAsTouched();

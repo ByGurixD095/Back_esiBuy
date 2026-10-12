@@ -138,7 +138,7 @@ export class Cuenta {
     }
 
     const valores = this.form.getRawValue();
-    const imagenPerfil = valores.imagenPerfil.trim() || avatarAleatorio();
+    const imagenPerfil = valores.imagenPerfil.trim() || avatarAleatorio(rol === 'VENDEDOR');
     this.form.controls.imagenPerfil.setValue(imagenPerfil);
     const datosEspecificos: Partial<ActualizarPerfilRequest> = {};
     if (rol === 'CLIENTE') {

@@ -5,7 +5,7 @@ import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { AuthService } from '../../services/auth.service';
 import { Registro as RegistroService } from '../../services/registro-service/registro';
-import { AVATARES_PERFIL } from '../avatar-selector/avatar-selector';
+import { AVATARES_VENDEDOR } from '../avatar-selector/avatar-selector';
 import { RegistroComponent } from './registro';
 
 describe('RegistroComponent', () => {
@@ -136,12 +136,12 @@ describe('RegistroComponent', () => {
       email: 'ana@example.es',
       contrasena: 'Clave123!',
       telefono: '',
-      imagenPerfil: expect.stringMatching(/^\/assets\/avatares\/avatar-\d{2}\.svg$/),
+      imagenPerfil: expect.stringMatching(/^\/assets\/avatares\/vendedor-\d{2}\.svg$/),
       nombreComercial: 'Tienda Ana',
       cifNif: 'B12345678',
       categoriaPrincipalId: 'categoria-1',
     });
-    expect(AVATARES_PERFIL.map((avatar) => avatar.ruta)).toContain(
+    expect(AVATARES_VENDEDOR.map((avatar) => avatar.ruta)).toContain(
       servicioFalso.registrarVendedor.mock.calls[0][0].imagenPerfil,
     );
     expect(routerFalso.navigate).toHaveBeenCalledWith(['/products']);

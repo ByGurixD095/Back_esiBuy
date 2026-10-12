@@ -107,6 +107,7 @@
             </div>
             <app-avatar-selector
               [value]="form.controls.imagenPerfil.value"
+              [esVendedor]="actual.rol === 'VENDEDOR'"
               (valueChange)="form.controls.imagenPerfil.setValue($event)"
             />
           </div>
