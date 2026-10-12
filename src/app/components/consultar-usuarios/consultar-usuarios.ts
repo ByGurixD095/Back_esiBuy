@@ -278,7 +278,7 @@ export class ConsultarUsuarios implements OnInit {
   private textoAccionExitosa(usuario: Usuario, accion: AccionUsuario): string {
     const nombre = `${usuario.name} ${usuario.apellidos}`;
     if (accion === 'eliminar') {
-      return `Se ha marcado como eliminado a ${nombre}.`;
+      return `Se ha eliminado a ${nombre}.`;
     }
     return accion === 'bloquear'
       ? `Se ha bloqueado a ${nombre}.`
