@@ -26,8 +26,7 @@ public class Vendedor extends Usuario {
 
     /** Crea un vendedor con el rol correspondiente. */
     public Vendedor() {
-        super();
-        this.setRol(Rol.VENDEDOR);
+        super(Rol.VENDEDOR, false);
     }
 
     /**
@@ -42,8 +41,7 @@ public class Vendedor extends Usuario {
      */
     public Vendedor(String nombre, String apellidos, String email, 
                     String contrasena, String nombreComercial, String cifNif) {
-        super(nombre, apellidos, email, contrasena, null, null);
-        this.setRol(Rol.VENDEDOR);
+        super(nombre, apellidos, email, contrasena, null, null, Rol.VENDEDOR, false);
         this.nombreComercial = nombreComercial;
         this.cifNif = cifNif;
     }

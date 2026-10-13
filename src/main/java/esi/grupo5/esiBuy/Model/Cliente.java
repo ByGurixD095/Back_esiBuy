@@ -30,8 +30,7 @@ public class Cliente extends Usuario {
 
     /** Crea un cliente con rol y tipo de cliente predeterminados. */
     public Cliente() {
-        super();
-        this.setRol(Rol.CLIENTE);
+        super(Rol.CLIENTE, false);
         this.tipoCliente = TipoCliente.NORMAL;
     }
 
@@ -47,8 +46,7 @@ public class Cliente extends Usuario {
      */
     public Cliente(String nombre, String apellidos, String email, 
                    String contrasena, String dni, LocalDate fechaNacimiento) {
-        super(nombre, apellidos, email, contrasena, null, null);
-        this.setRol(Rol.CLIENTE);
+        super(nombre, apellidos, email, contrasena, null, null, Rol.CLIENTE, false);
         this.dni = dni;
         this.fechaNacimiento = fechaNacimiento;
         this.tipoCliente = TipoCliente.NORMAL;

@@ -9,11 +9,9 @@ import java.time.ZoneId;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 import esi.grupo5.esiBuy.Dto.ClienteRegistroDTO;
@@ -165,7 +163,7 @@ public class UserService {
     public UsuarioResponseDTO getAdminUserById(String id) {
         return usuarioRepository.findById(id)
                 .map(this::toResponseDto)
-                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND_MESSAGE));
     }
 
     /**
@@ -239,9 +237,11 @@ public class UserService {
     private void actualizarDatosEspecificos(Usuario usuario, UserSelfUpdateDTO dto) {
         if (usuario instanceof Cliente cliente && dto.tipoCliente() != null) {
             cliente.setTipoCliente(dto.tipoCliente());
-        } else if (usuario instanceof Administrador administrador && dto.sede() != null) {
+        }
+        if (usuario instanceof Administrador administrador && dto.sede() != null) {
             administrador.setSede(dto.sede());
-        } else if (usuario instanceof Vendedor vendedor) {
+        }
+        if (usuario instanceof Vendedor vendedor) {
             if (dto.nombreComercial() != null && !dto.nombreComercial().isBlank()) {
                 validarNombreComercialDisponible(dto.nombreComercial(), vendedor.getId());
             }

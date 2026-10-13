@@ -30,6 +30,7 @@ public class RefreshToken {
 
     /** Constructor requerido por MongoDB para materializar el documento. */
     public RefreshToken() {
+        // MongoDB necesita un constructor sin argumentos para hidratar los campos persistidos.
     }
     /** @return identificador persistido */
     public String getId() { return id; }
