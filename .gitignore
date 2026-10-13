@@ -90,4 +90,5 @@ target/
 *.class
 
 sonar*
+!sonar-project.properties
 .scannerwork/*

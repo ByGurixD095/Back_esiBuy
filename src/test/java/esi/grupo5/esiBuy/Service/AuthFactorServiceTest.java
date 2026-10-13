@@ -9,7 +9,6 @@ import esi.grupo5.esiBuy.Exception.NotFoundException;
 import esi.grupo5.esiBuy.Exception.ValidationException;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.Vendedor;
-import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import jakarta.mail.MessagingException;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,14 +55,12 @@ class AuthFactorServiceTest {
     @Test
     void vendedor_requiereMfa() {
         Vendedor usuario = new Vendedor();
-        usuario.setRol(Rol.VENDEDOR);
         assertTrue(service.requiereMfaObligatorio(usuario));
     }
 
     @Test
     void clienteSinFactores_noRequiereMfa() {
         Cliente usuario = new Cliente();
-        usuario.setRol(Rol.CLIENTE);
         assertFalse(service.requiereMfaObligatorio(usuario));
     }
 
@@ -257,7 +254,6 @@ class AuthFactorServiceTest {
     @Test
     void requiereMfaObligatorio_consideraElSegundoFactorDeCliente() {
         Cliente cliente = new Cliente();
-        cliente.setRol(Rol.CLIENTE);
         cliente.setIs2faActivoCliente(true);
 
         assertTrue(service.requiereMfaObligatorio(cliente));
@@ -266,7 +262,6 @@ class AuthFactorServiceTest {
     private Vendedor vendedor(String email) {
         Vendedor vendedor = new Vendedor();
         vendedor.setEmail(email);
-        vendedor.setRol(Rol.VENDEDOR);
         return vendedor;
     }
 }

@@ -108,7 +108,13 @@ public abstract class Usuario {
 
     /** Constructor para que las subclases creen cuentas con valores iniciales comunes. */
     protected Usuario() {
-        this.activo = false;
+        this(null, false);
+    }
+
+    /** Inicializa el rol y el estado propios del tipo concreto de cuenta. */
+    protected Usuario(Rol rol, boolean activo) {
+        this.rol = rol;
+        this.activo = activo;
         this.bloqueado = false;
         this.eliminado = false;
         this.fechaCambioContrasena = LocalDateTime.now().plusDays(30);
@@ -127,7 +133,25 @@ public abstract class Usuario {
      */
     protected Usuario(String nombre, String apellidos, String email, 
                       String contrasena, String telefono, String imagenPerfil) {
-        this();
+        this(nombre, apellidos, email, contrasena, telefono, imagenPerfil, null, false);
+    }
+
+    /**
+     * Inicializa los datos personales y el rol de una cuenta.
+     *
+     * @param nombre nombre de la persona titular
+     * @param apellidos apellidos de la persona titular
+     * @param email dirección de correo
+     * @param contrasena contraseña
+     * @param telefono teléfono de contacto
+     * @param imagenPerfil URL o referencia de la imagen de perfil
+     * @param rol rol asignado a la cuenta
+     * @param activo estado inicial de la cuenta
+     */
+    protected Usuario(String nombre, String apellidos, String email,
+                      String contrasena, String telefono, String imagenPerfil,
+                      Rol rol, boolean activo) {
+        this(rol, activo);
         this.nombre = nombre;
         this.apellidos = apellidos;
         this.email = email;
@@ -173,8 +197,6 @@ public abstract class Usuario {
 
     /** @return rol asignado */
     public Rol getRol() { return rol; }
-    /** @param rol rol asignado */
-    public void setRol(Rol rol) { this.rol = rol; }
 
     /** @return {@code true} si la cuenta está activa */
     public boolean isActivo() { return activo; }
