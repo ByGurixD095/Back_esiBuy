@@ -46,7 +46,6 @@ class UserServiceEliminarCuentaTest {
     @Test
     void eliminarCuenta_clienteSeMarcaEliminadoInactivoYRevocaRefreshTokens() {
         Cliente cliente = new Cliente();
-        cliente.setRol(Rol.CLIENTE);
         cliente.setActivo(true);
         when(usuarioRepository.findByIdAndEliminadoFalse("cliente-1"))
                 .thenReturn(Optional.of(cliente));
@@ -63,7 +62,6 @@ class UserServiceEliminarCuentaTest {
     @Test
     void eliminarCuenta_noEliminaElUltimoAdministradorActivo() {
         Administrador administrador = new Administrador();
-        administrador.setRol(Rol.ADMINISTRADOR);
         administrador.setActivo(true);
         when(usuarioRepository.findByIdAndEliminadoFalse("admin-1"))
                 .thenReturn(Optional.of(administrador));
@@ -80,7 +78,6 @@ class UserServiceEliminarCuentaTest {
     @Test
     void eliminarCuenta_permiteEliminarAdministradorSiQuedaOtroActivo() {
         Administrador administrador = new Administrador();
-        administrador.setRol(Rol.ADMINISTRADOR);
         administrador.setActivo(true);
         when(usuarioRepository.findByIdAndEliminadoFalse("admin-2"))
                 .thenReturn(Optional.of(administrador));

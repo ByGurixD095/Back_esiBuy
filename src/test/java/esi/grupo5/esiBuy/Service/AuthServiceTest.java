@@ -9,7 +9,6 @@ import esi.grupo5.esiBuy.Exception.ForbiddenException;
 import esi.grupo5.esiBuy.Exception.PasswordExpiredException;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.Vendedor;
-import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Model.enums.TipoCliente;
 import esi.grupo5.esiBuy.Repository.RefreshTokenRepository;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
@@ -161,7 +160,6 @@ class AuthServiceTest {
         vendedor.setId("seller-1");
         vendedor.setEmail("seller@test.com");
         vendedor.setContrasena("hash");
-        vendedor.setRol(Rol.VENDEDOR);
         vendedor.setActivo(true);
         vendedor.setMfaConfigurado(true);
         vendedor.setFechaCambioContrasena(LocalDateTime.now().plusDays(1));

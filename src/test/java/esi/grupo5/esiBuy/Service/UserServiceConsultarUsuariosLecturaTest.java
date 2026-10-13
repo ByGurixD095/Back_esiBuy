@@ -395,7 +395,6 @@ class UserServiceConsultarUsuariosLecturaTest {
         cliente.setNombre(nombre);
         cliente.setApellidos("López");
         cliente.setEmail(email);
-        cliente.setRol(Rol.CLIENTE);
         cliente.setDni("12345678A");
         return cliente;
     }

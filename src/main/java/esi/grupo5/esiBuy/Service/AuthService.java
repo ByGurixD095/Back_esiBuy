@@ -13,8 +13,18 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import esi.grupo5.esiBuy.Dto.*;
-import esi.grupo5.esiBuy.Exception.*;
+import esi.grupo5.esiBuy.Dto.LoginRequestDTO;
+import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
+import esi.grupo5.esiBuy.Dto.MfaVerifyRequestDTO;
+import esi.grupo5.esiBuy.Dto.PasswordResetConfirmDTO;
+import esi.grupo5.esiBuy.Dto.PasswordResetRequestDTO;
+import esi.grupo5.esiBuy.Exception.AuthException;
+import esi.grupo5.esiBuy.Exception.BusinessException;
+import esi.grupo5.esiBuy.Exception.ExpiredTokenException;
+import esi.grupo5.esiBuy.Exception.ForbiddenException;
+import esi.grupo5.esiBuy.Exception.NotFoundException;
+import esi.grupo5.esiBuy.Exception.PasswordExpiredException;
+import esi.grupo5.esiBuy.Exception.ValidationException;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.RefreshToken;
 import esi.grupo5.esiBuy.Model.Usuario;
@@ -254,7 +264,7 @@ public class AuthService {
         try {
             emailService.sendRecoveryEmail(email, usuario.getNombre(), passwordResetUrl + resetToken);
         } catch (MessagingException e) {
-            throw new BusinessException("No se ha podido enviar el email de recuperación", 500, "INTERNAL_ERROR", e);
+            throw new BusinessException("No se ha podido enviar el email de recuperación", 500, SERVER_ERROR_MESSAGE, e);
         }
     }
 

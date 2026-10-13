@@ -22,9 +22,7 @@ public class Administrador extends Usuario {
 
     /** Crea un administrador con rol y fecha de incorporación predeterminados. */
     public Administrador() {
-        super();
-        this.setRol(Rol.ADMINISTRADOR);
-        this.setActivo(true);
+        super(Rol.ADMINISTRADOR, true);
         this.fechaIncorporacion = LocalDate.now(ZoneId.systemDefault());
     }
 
@@ -39,9 +37,7 @@ public class Administrador extends Usuario {
      */
     public Administrador(String nombre, String apellidos, String email, 
                          String contrasena, String sede) {
-        super(nombre, apellidos, email, contrasena, null, null);
-        this.setRol(Rol.ADMINISTRADOR);
-        this.setActivo(true);
+        super(nombre, apellidos, email, contrasena, null, null, Rol.ADMINISTRADOR, true);
         this.sede = sede;
         this.fechaIncorporacion = LocalDate.now(ZoneId.systemDefault());
     }
@@ -104,6 +100,4 @@ public class Administrador extends Usuario {
 
     /** @return fecha de incorporación */
     public LocalDate getFechaIncorporacion() { return fechaIncorporacion; }
-    /** @param fechaIncorporacion fecha de incorporación */
-    public void setFechaIncorporacion(LocalDate fechaIncorporacion) { this.fechaIncorporacion = fechaIncorporacion; }
 }

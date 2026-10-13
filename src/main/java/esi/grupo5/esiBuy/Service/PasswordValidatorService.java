@@ -1,6 +1,8 @@
 package esi.grupo5.esiBuy.Service;
 
-import esi.grupo5.esiBuy.Exception.*;
+import esi.grupo5.esiBuy.Exception.AuthException;
+import esi.grupo5.esiBuy.Exception.BusinessException;
+import esi.grupo5.esiBuy.Exception.ValidationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +16,8 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class PasswordValidatorService {
 
+    /** Código común para errores internos del servidor. */
+    private static final String INTERNAL_ERROR_CODE = "INTERNAL_ERROR";
     /** Longitud mínima de contraseña. */
     private static final int MIN_LENGTH = 8;
     /** Longitud máxima aceptada por el codificador utilizado. */
@@ -158,7 +162,7 @@ public class PasswordValidatorService {
         try {
             return passwordEncoder.encode(rawPassword);
         } catch (IllegalArgumentException | IllegalStateException e) {
-            throw new BusinessException("Error al encriptar la contraseña", 500, "INTERNAL_ERROR", e);
+            throw new BusinessException("Error al encriptar la contraseña", 500, INTERNAL_ERROR_CODE, e);
         }
     }
 
@@ -174,7 +178,7 @@ public class PasswordValidatorService {
         try {
             return passwordEncoder.matches(rawPassword, hashedPassword);
         } catch (IllegalArgumentException | IllegalStateException e) {
-            throw new BusinessException("Error verificando la contraseña", 500, "INTERNAL_ERROR", e);
+            throw new BusinessException("Error verificando la contraseña", 500, INTERNAL_ERROR_CODE, e);
         }
     }
 
@@ -256,7 +260,7 @@ public class PasswordValidatorService {
         try {
             return passwordEncoder.matches(token, hashedToken);
         } catch (IllegalArgumentException | IllegalStateException e) {
-            throw new BusinessException("Error verificando el token de recuperación", 500, "INTERNAL_ERROR", e);
+            throw new BusinessException("Error verificando el token de recuperación", 500, INTERNAL_ERROR_CODE, e);
         }
     }
 

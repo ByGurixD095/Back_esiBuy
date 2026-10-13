@@ -61,6 +61,8 @@ public class AuthFactorService {
     private static final int GCM_IV_LENGTH_BYTES = 12;
     /** Longitud de la etiqueta de autenticación AES-GCM, en bits. */
     private static final int GCM_TAG_LENGTH_BITS = 128;
+    /** Código común para errores internos del servidor. */
+    private static final String INTERNAL_ERROR_CODE = "INTERNAL_ERROR";
 
     /** Clave configurada para cifrar y descifrar secretos TOTP. */
     @Value("${mfa.encryption.key:1234567890123456}")
@@ -130,8 +132,10 @@ public class AuthFactorService {
         Usuario usuario = buscarUsuarioPorEmail(email);
 
         if (setupToken == null || usuario.getMfaSetupTokenHash() == null
-                || usuario.getMfaSetupTokenExpiracion() == null
-                || usuario.getMfaSetupTokenExpiracion().isBefore(LocalDateTime.now())
+                || usuario.getMfaSetupTokenExpiracion() == null) {
+            throw new ExpiredTokenException("Token de configuración MFA inválido o expirado");
+        }
+        if (usuario.getMfaSetupTokenExpiracion().isBefore(LocalDateTime.now())
                 || !MessageDigest.isEqual(usuario.getMfaSetupTokenHash().getBytes(StandardCharsets.UTF_8),
                         hash(setupToken).getBytes(StandardCharsets.UTF_8))) {
             throw new ExpiredTokenException("Token de configuración MFA inválido o expirado");
@@ -274,7 +278,7 @@ public class AuthFactorService {
             byte[] imageData = new ZxingPngQrGenerator().generate(data);
             return "data:image/png;base64," + Base64.getEncoder().encodeToString(imageData);
         } catch (QrGenerationException e) {
-            throw new BusinessException("Error generando QR", 500, "INTERNAL_ERROR", e);
+            throw new BusinessException("Error generando QR", 500, INTERNAL_ERROR_CODE, e);
         }
     }
 
@@ -341,7 +345,7 @@ public class AuthFactorService {
         try {
             emailService.sendHtmlEmail(usuario.getEmail(), "Código de acceso esiBuy", html);
         } catch (MessagingException e) {
-            throw new BusinessException("Error enviando email MFA", 500, "INTERNAL_ERROR", e);
+            throw new BusinessException("Error enviando email MFA", 500, INTERNAL_ERROR_CODE, e);
         }
     }
 
@@ -383,7 +387,7 @@ public class AuthFactorService {
             
             return Base64.getEncoder().encodeToString(ivYCifrado);
         } catch (GeneralSecurityException | IllegalArgumentException | NegativeArraySizeException e) {
-            throw new BusinessException("Error cifrando", 500, "INTERNAL_ERROR", e);
+            throw new BusinessException("Error cifrando", 500, INTERNAL_ERROR_CODE, e);
         }
     }
 
@@ -410,7 +414,7 @@ public class AuthFactorService {
             
             return new String(cipher.doFinal(cifrado));
         } catch (GeneralSecurityException | IllegalArgumentException | NegativeArraySizeException e) {
-            throw new BusinessException("Error descifrando", 500, "INTERNAL_ERROR", e);
+            throw new BusinessException("Error descifrando", 500, INTERNAL_ERROR_CODE, e);
         }
     }
 
@@ -427,7 +431,7 @@ public class AuthFactorService {
                     MessageDigest.getInstance("SHA-256")
                             .digest(value.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException exception) {
-            throw new BusinessException("No se pudo generar el hash del desafío MFA", 500, "INTERNAL_ERROR", exception);
+            throw new BusinessException("No se pudo generar el hash del desafío MFA", 500, INTERNAL_ERROR_CODE, exception);
         }
     }
 }

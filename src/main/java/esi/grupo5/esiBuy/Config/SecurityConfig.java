@@ -21,6 +21,8 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    private static final String ROL_ADMINISTRADOR = "ADMINISTRADOR";
+
     /** Filtro que establece la identidad y el rol a partir de la cookie JWT. */
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
@@ -103,15 +105,15 @@ public class SecurityConfig {
                 auth.requestMatchers(HttpMethod.GET, "/products/disponibles").permitAll();
 
                 auth.requestMatchers(HttpMethod.POST, "/users/administradores")
-                    .hasRole("ADMINISTRADOR");
+                    .hasRole(ROL_ADMINISTRADOR);
                 auth.requestMatchers(HttpMethod.PATCH, "/users/*")
-                    .hasRole("ADMINISTRADOR");
+                    .hasRole(ROL_ADMINISTRADOR);
                 auth.requestMatchers("/api/admin/usuarios/**")
-                    .hasRole("ADMINISTRADOR");
+                    .hasRole(ROL_ADMINISTRADOR);
                 auth.requestMatchers("/mfa/config").authenticated();
 
                 auth.requestMatchers("/admin/**")
-                    .hasRole("ADMINISTRADOR");
+                    .hasRole(ROL_ADMINISTRADOR);
 
                 auth.requestMatchers("/products/**")
                     .hasRole("VENDEDOR");

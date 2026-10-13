@@ -202,6 +202,8 @@ public class ProductoService {
             query.with(Sort.by(Sort.Direction.ASC, PRECIO_CENT_FIELD));
         } else if ("Precio Descendente".equalsIgnoreCase(orden)) {
             query.with(Sort.by(Sort.Direction.DESC, PRECIO_CENT_FIELD));
+        } else {
+            query.with(Sort.unsorted());
         }
     }
 
