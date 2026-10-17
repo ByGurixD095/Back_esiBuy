@@ -205,7 +205,7 @@ public class AdminService {
             throw new ConflictException("El email ya está registrado");
         }
 
-        passwordValidatorService.validateRegistrationPassword(dto.contrasena());
+        passwordValidatorService.validatePassword(dto.contrasena(), dto.confirmarContrasena(), null);
 
         Administrador admin = Administrador.builder()
                 .nombre(dto.nombre())

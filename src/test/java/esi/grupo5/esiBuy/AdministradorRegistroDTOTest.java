@@ -20,28 +20,28 @@ class AdministradorRegistroDTOTest {
         validator = Validation.buildDefaultValidatorFactory().getValidator();
     }
 
-    private AdministradorRegistroDTO dto(String nombre, String email, String contrasena) {
-        return new AdministradorRegistroDTO(nombre, "Pérez", email, contrasena, "Madrid", null);
+    private AdministradorRegistroDTO dto(String nombre, String email, String contrasena, String confirmarContrasena) {
+        return new AdministradorRegistroDTO(nombre, "Pérez", email, contrasena, confirmarContrasena, "Madrid", null);
     }
 
     @Test
     void datosValidos_noHayErrores() {
-        assertTrue(validator.validate(dto("Ana", "ana@esibuy.com", "Clave#2026x")).isEmpty());
+        assertTrue(validator.validate(dto("Ana", "ana@esibuy.com", "Clave#2026x", "Clave#2026x")).isEmpty());
     }
 
     @Test
     void nombreVacio_esInvalido() {
-        assertFalse(validator.validate(dto("", "ana@esibuy.com", "Clave#2026x")).isEmpty());
+        assertFalse(validator.validate(dto("", "ana@esibuy.com", "Clave#2026x", "Clave#2026x")).isEmpty());
     }
 
     @Test
     void emailMalFormado_esInvalido() {
-        assertFalse(validator.validate(dto("Ana", "esto-no-es-un-email", "Clave#2026x")).isEmpty());
+        assertFalse(validator.validate(dto("Ana", "esto-no-es-un-email", "Clave#2026x", "Clave#2026x")).isEmpty());
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"Ab1#", "sinmayusculas1#", "SINMINUSCULAS1#", "SinNumeros##", "SinEspeciales12"})
     void contrasenaQueNoCumplePolitica_esInvalida(String contrasena) {
-        assertFalse(validator.validate(dto("Ana", "ana@esibuy.com", contrasena)).isEmpty());
+        assertFalse(validator.validate(dto("Ana", "ana@esibuy.com", contrasena, contrasena)).isEmpty());
     }
 }

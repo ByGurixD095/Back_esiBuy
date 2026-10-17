@@ -26,35 +26,36 @@ class PasswordValidatorServiceTest {
 
     @Test
     void validaContrasenaFuerte() {
-        assertDoesNotThrow(() -> service.validatePassword("Strong#2026", List.of()));
+        assertDoesNotThrow(() -> service.validatePassword("Strong#2026", "Strong#2026", List.of()));
     }
 
     @Test
     void rechazaContrasenaDebil() {
         assertThrows(ValidationException.class,
-                () -> service.validatePassword("weak", List.of()));
+                () -> service.validatePassword("weak", "weak", List.of()));
     }
 
     @Test
-    void validatePassword_rechazaCadaRequisitoDeSeguridad() {
-        assertThrows(ValidationException.class, () -> service.validatePassword(null, null));
-        assertThrows(ValidationException.class, () -> service.validatePassword("   ", null));
-        assertThrows(ValidationException.class, () -> service.validatePassword("Ab1!xyz", null));
+        void validatePassword_rechazaCadaRequisitoDeSeguridad() {
+        assertThrows(ValidationException.class, () -> service.validatePassword("Strong#2026", "Diferente#2026", null));
+        assertThrows(ValidationException.class, () -> service.validatePassword(null, null, null));
+        assertThrows(ValidationException.class, () -> service.validatePassword("   ", "   ", null));
+        assertThrows(ValidationException.class, () -> service.validatePassword("Ab1!xyz", "Ab1!xyz", null));
         assertThrows(ValidationException.class, () -> service.validatePassword(
-                "A".repeat(73) + "a1!", null));
-        assertThrows(ValidationException.class, () -> service.validatePassword("Strong #2026", null));
-        assertThrows(ValidationException.class, () -> service.validatePassword("strong#2026", null));
-        assertThrows(ValidationException.class, () -> service.validatePassword("STRONG#2026", null));
-        assertThrows(ValidationException.class, () -> service.validatePassword("Strong#abcd", null));
-        assertDoesNotThrow(() -> service.validatePassword("Password123!", null));
+                "A".repeat(73) + "a1!", "A".repeat(73) + "a1!", null));
+        assertThrows(ValidationException.class, () -> service.validatePassword("Strong #2026", "Strong #2026", null));
+        assertThrows(ValidationException.class, () -> service.validatePassword("strong#2026", "strong#2026", null));
+        assertThrows(ValidationException.class, () -> service.validatePassword("STRONG#2026", "STRONG#2026", null));
+        assertThrows(ValidationException.class, () -> service.validatePassword("Strong#abcd", "Strong#abcd", null));
+        assertDoesNotThrow(() -> service.validatePassword("Password123!", "Password123!", null));
         assertThrows(ValidationException.class, () -> service.validatePassword(
-                "Strong#2026", List.of(new BCryptPasswordEncoder().encode("Strong#2026"))));
-        assertDoesNotThrow(() -> service.validatePassword("Strong#2026", null));
+                "Strong#2026", "Strong#2026", List.of(new BCryptPasswordEncoder().encode("Strong#2026"))));
+        assertDoesNotThrow(() -> service.validatePassword("Strong#2026", "Strong#2026", null));
     }
 
     @Test
     void validatePassword_permiteUnHistorialSinCoincidencias() {
-        assertDoesNotThrow(() -> service.validatePassword("Strong#2026", List.of(
+        assertDoesNotThrow(() -> service.validatePassword("Strong#2026", "Strong#2026", List.of(
                 new BCryptPasswordEncoder().encode("Different#2026"))));
     }
 
@@ -62,10 +63,10 @@ class PasswordValidatorServiceTest {
     void validateRegistrationPassword_convierteErroresDeValidacionDelFramework() {
         PasswordValidatorService validator = spy(new PasswordValidatorService(new BCryptPasswordEncoder()));
         doThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "password policy"))
-                .when(validator).validatePassword("Weak#2026", List.of());
+                .when(validator).validatePassword("Weak#2026", "Weak#2026", List.of());
 
         assertThrows(ValidationException.class,
-                () -> validator.validateRegistrationPassword("Weak#2026"));
+                () -> validator.validatePassword("Weak#2026", "Weak#2026", List.of()));
     }
 
     @Test

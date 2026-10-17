@@ -50,9 +50,11 @@ public class PasswordValidatorService {
      *
      * @param password contraseña en texto plano
      * @param historialHashes hashes anteriores que no pueden reutilizarse; puede ser nulo
+     * @param confirmPassword contraseña de confirmación
      * @throws ValidationException si falla un requisito o se reutiliza una contraseña
      */
-    public void validatePassword(String password, Collection<String> historialHashes) {
+    public void validatePassword(String password, String confirmPassword, Collection<String> historialHashes) {
+        validateMatch(password, confirmPassword);
         validateNotNull(password);
         validateLength(password);
         validateNoWhitespace(password);
@@ -64,18 +66,11 @@ public class PasswordValidatorService {
         validatePasswordHistory(password, historialHashes);
     }
 
-    /**
-     * Valida la contraseña de registro y presenta sus fallos como errores de validación.
-     *
-     * @param password contraseña que se validará
-     * @throws ValidationException si no cumple los requisitos
-     */
-    public void validateRegistrationPassword(String password) {
-        try {
-            validatePassword(password, List.of());
-        } catch (ResponseStatusException e) {
-            throw new ValidationException(
-                    "La contraseña no cumple con los requisitos de seguridad: " + e.getReason());
+
+    /** Comprueba que las contraseñas coincidan. */
+    private void validateMatch(String password, String confirmPassword) {
+        if (password == null || !password.equals(confirmPassword)) {
+            throw new ValidationException("Las contraseñas no coinciden.");
         }
     }
 
@@ -206,7 +201,7 @@ public class PasswordValidatorService {
             throw new ValidationException("La contraseña actual es requerida");
         }
         validateNotNull(newPassword);
-        validatePassword(newPassword, null);
+        validatePassword(newPassword, newPassword, null);
     }
 
     /**
@@ -245,7 +240,7 @@ public class PasswordValidatorService {
             throw new ValidationException("Token de recuperación es requerido");
         }
         validateNotNull(newPassword);
-        validatePassword(newPassword, null);
+        validatePassword(newPassword, newPassword, null);
     }
 
     /**

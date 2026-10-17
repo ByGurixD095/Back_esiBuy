@@ -62,7 +62,7 @@ class AuthServiceLoginNuevoAdministradorTest {
         when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
 
         adminService.crearAdministrador(
-                new AdministradorRegistroDTO("Ana", "Pérez", EMAIL, CONTRASENA, "Madrid", null));
+                new AdministradorRegistroDTO("Ana", "Pérez", EMAIL, CONTRASENA, CONTRASENA, "Madrid", null));
 
         ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
         verify(usuarioRepository).save(captor.capture());
