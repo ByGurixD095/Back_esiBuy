@@ -78,11 +78,21 @@
                 />
                 <small id="ayuda-politica-contrasena" class="esi-ayuda">
                   La contraseña debe tener entre 8 y 72 caracteres, con mayúsculas, minúsculas,
-                  dígitos y símbolos.
+                  números y símbolos.
                 </small>
                 @if (esInvalido('contrasena')) {
                   <small class="esi-ayuda esi-error">
                     Introduce una contraseña que cumpla la política indicada.
+                  </small>
+                }
+                @if (form.controls.contrasena.hasError('contieneNombre')) {
+                  <small class="esi-ayuda esi-error">
+                    La contraseña no puede contener tu nombre.
+                  </small>
+                }
+                @if (form.controls.contrasena.hasError('contieneEmail')) {
+                  <small class="esi-ayuda esi-error">
+                    La contraseña no puede contener tu correo electrónico.
                   </small>
                 }
               </div>
