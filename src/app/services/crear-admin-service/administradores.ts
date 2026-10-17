@@ -9,6 +9,7 @@ export interface NuevoAdministrador {
   apellidos: string;
   email: string;
   contrasena: string;
+  confirmarContrasena: string;
   sede: string;
   imagenPerfil: string;
 }

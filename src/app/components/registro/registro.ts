@@ -45,6 +45,31 @@ function validarMayorDeEdad(control: AbstractControl): ValidationErrors | null {
   return fechaNacimiento <= fechaLimite ? null : { menorDeEdad: true };
 }
 
+function validarDatosPersonales(control: AbstractControl): ValidationErrors | null {
+  const form = control.parent;
+  if (!form) return null;
+
+  const contrasena = control.value?.toLowerCase() || '';
+  if (!contrasena) return null;
+
+  const nombre = form.get('nombre')?.value?.toLowerCase();
+  const email = form.get('email')?.value?.toLowerCase();
+
+  // Comprueba que no incluya el nombre (mínimo 3 letras para evitar falsos positivos)
+  if (nombre && nombre.length > 2 && contrasena.includes(nombre)) {
+    return { contieneNombre: true };
+  }
+  
+  // Comprueba que no incluya la parte local del correo
+  if (email) {
+    const parteLocal = email.split('@')[0];
+    if (parteLocal.length > 2 && contrasena.includes(parteLocal)) {
+      return { contieneEmail: true };
+    }
+  }
+  return null;
+}
+
 @Component({
   selector: 'app-registro',
   imports: [ReactiveFormsModule, MarcoPagina, RouterLink, AvatarSelector],
@@ -86,7 +111,12 @@ export class RegistroComponent {
         Validators.minLength(8),
         Validators.maxLength(72),
         Validators.pattern(PATRON_CONTRASENA),
+        validarDatosPersonales
       ],
+    }),
+    confirmarContrasena: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required],
     }),
     telefono: new FormControl('', { nonNullable: true }),
     imagenPerfil: new FormControl('', { nonNullable: true }),
@@ -133,6 +163,13 @@ export class RegistroComponent {
     if (this.enviando() || this.cuentaCreada()) {
       return;
     }
+
+    this.form.controls.confirmarContrasena.setErrors(
+      this.form.controls.contrasena.value === this.form.controls.confirmarContrasena.value
+        ? null
+        : { noCoinciden: true },
+    );
+
     if (!this.form.controls.imagenPerfil.value.trim()) {
       this.form.controls.imagenPerfil.setValue(avatarAleatorio(this.esVendedor));
     }
@@ -152,6 +189,7 @@ export class RegistroComponent {
           apellidos: datos.apellidos,
           email: datos.email,
           contrasena: datos.contrasena,
+          confirmarContrasena: datos.confirmarContrasena,
           telefono: datos.telefono,
           imagenPerfil: datos.imagenPerfil,
           nombreComercial: datos.nombreComercial,
@@ -163,6 +201,7 @@ export class RegistroComponent {
           apellidos: datos.apellidos,
           email: datos.email,
           contrasena: datos.contrasena,
+          confirmarContrasena: datos.confirmarContrasena,
           telefono: datos.telefono,
           imagenPerfil: datos.imagenPerfil,
           dni: datos.dni,

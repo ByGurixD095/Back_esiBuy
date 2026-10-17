@@ -1,6 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, 
+         FormControl, FormGroup, 
+         ReactiveFormsModule,
+         ValidationErrors, Validators } from '@angular/forms';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
 import { Administradores } from '../../services/crear-admin-service/administradores';
 import { AvatarSelector, avatarAleatorio } from '../avatar-selector/avatar-selector';
@@ -8,6 +11,31 @@ import { AvatarSelector, avatarAleatorio } from '../avatar-selector/avatar-selec
 // Misma política que AdministradorRegistroDTO del back
 const PATRON_CONTRASENA = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).+$/;
 const NO_VACIO = /\S/;
+
+function validarDatosPersonales(control: AbstractControl): ValidationErrors | null {
+  const form = control.parent;
+  if (!form) return null;
+
+  const contrasena = control.value?.toLowerCase() || '';
+  if (!contrasena) return null;
+
+  const nombre = form.get('nombre')?.value?.toLowerCase();
+  const email = form.get('email')?.value?.toLowerCase();
+
+  // Comprueba que no incluya el nombre (mínimo 3 letras para evitar falsos positivos)
+  if (nombre && nombre.length > 2 && contrasena.includes(nombre)) {
+    return { contieneNombre: true };
+  }
+  
+  // Comprueba que no incluya la parte local del correo
+  if (email) {
+    const parteLocal = email.split('@')[0];
+    if (parteLocal.length > 2 && contrasena.includes(parteLocal)) {
+      return { contieneEmail: true };
+    }
+  }
+  return null;
+}
 
 @Component({
   selector: 'app-administrador-registro',
@@ -42,13 +70,25 @@ export class AdministradorRegistro {
         Validators.minLength(8),
         Validators.maxLength(72),
         Validators.pattern(PATRON_CONTRASENA),
+        validarDatosPersonales
       ],
+    }),
+    confirmarContrasena: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required],
     }),
     sede: new FormControl('', { nonNullable: true }),
     imagenPerfil: new FormControl('', { nonNullable: true }),
   });
 
   enviar(): void {
+    
+    this.form.controls.confirmarContrasena.setErrors(
+      this.form.controls.contrasena.value === this.form.controls.confirmarContrasena.value
+        ? null
+        : { noCoinciden: true },
+    );
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
