@@ -201,7 +201,7 @@ class UserServiceConsultarUsuariosLecturaTest {
         assertEquals("ana@test.com", resultado.email());
         assertNull(resultado.accessToken());
         assertNull(resultado.refreshToken());
-        verify(passwordValidatorService).validatePassword(dto.contrasena(), dto.confirmarContrasena(), null);
+        verify(passwordValidatorService).validatePassword(dto.contrasena(), dto.confirmarContrasena(), dto.nombre(), dto.email(), null);
 
         ArgumentCaptor<Cliente> captor = ArgumentCaptor.forClass(Cliente.class);
         verify(usuarioRepository).save(captor.capture());
@@ -237,7 +237,7 @@ class UserServiceConsultarUsuariosLecturaTest {
 
         assertThrows(ConflictException.class, () -> service.registrarVendedor(dto));
 
-        verify(passwordValidatorService).validatePassword(dto.contrasena(), dto.confirmarContrasena(), null);
+        verify(passwordValidatorService).validatePassword(dto.contrasena(), dto.confirmarContrasena(), dto.nombre(), dto.email(), null);
         verify(usuarioRepository, never()).save(any());
         verify(authService, never()).completarAutenticacion(any());
     }
@@ -280,7 +280,7 @@ class UserServiceConsultarUsuariosLecturaTest {
                 "Ana", "López", "ana@test.com", "weak", "weak", null, null,
                 "12345678A", LocalDate.of(2000, 1, 1), TipoCliente.NORMAL);
         doThrow(new esi.grupo5.esiBuy.Exception.ValidationException("password policy"))
-                .when(passwordValidatorService).validatePassword(dto.contrasena(), dto.confirmarContrasena(), null);
+                .when(passwordValidatorService).validatePassword(dto.contrasena(), dto.confirmarContrasena(), dto.nombre(), dto.email(), null);
 
         assertThrows(esi.grupo5.esiBuy.Exception.ValidationException.class,
                 () -> service.registrarCliente(dto));

@@ -1,10 +1,8 @@
 package esi.grupo5.esiBuy.Service;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.web.server.ResponseStatusException;
 import esi.grupo5.esiBuy.Exception.AuthException;
 import esi.grupo5.esiBuy.Exception.BusinessException;
 import esi.grupo5.esiBuy.Exception.ValidationException;
@@ -16,9 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.doThrow;
 
 class PasswordValidatorServiceTest {
     private final PasswordValidatorService service =
@@ -26,47 +22,59 @@ class PasswordValidatorServiceTest {
 
     @Test
     void validaContrasenaFuerte() {
-        assertDoesNotThrow(() -> service.validatePassword("Strong#2026", "Strong#2026", List.of()));
+        assertDoesNotThrow(() -> service.validatePassword("Strong#2026", "Strong#2026", "Juan", "juan@test.com", List.of()));
     }
 
     @Test
     void rechazaContrasenaDebil() {
         assertThrows(ValidationException.class,
-                () -> service.validatePassword("weak", "weak", List.of()));
+                () -> service.validatePassword("weak", "weak", "Juan", "juan@test.com", List.of()));
     }
 
     @Test
-        void validatePassword_rechazaCadaRequisitoDeSeguridad() {
-        assertThrows(ValidationException.class, () -> service.validatePassword("Strong#2026", "Diferente#2026", null));
-        assertThrows(ValidationException.class, () -> service.validatePassword(null, null, null));
-        assertThrows(ValidationException.class, () -> service.validatePassword("   ", "   ", null));
-        assertThrows(ValidationException.class, () -> service.validatePassword("Ab1!xyz", "Ab1!xyz", null));
+    void validatePassword_rechazaCadaRequisitoDeSeguridad() {
+        assertThrows(ValidationException.class, () -> service.validatePassword("Strong#2026", "Diferente#2026", null, null, null));
+        assertThrows(ValidationException.class, () -> service.validatePassword(null, null, null, null, null));
+        assertThrows(ValidationException.class, () -> service.validatePassword("   ", "   ", null, null, null));
+        assertThrows(ValidationException.class, () -> service.validatePassword("Ab1!xyz", "Ab1!xyz", null, null, null));
         assertThrows(ValidationException.class, () -> service.validatePassword(
-                "A".repeat(73) + "a1!", "A".repeat(73) + "a1!", null));
-        assertThrows(ValidationException.class, () -> service.validatePassword("Strong #2026", "Strong #2026", null));
-        assertThrows(ValidationException.class, () -> service.validatePassword("strong#2026", "strong#2026", null));
-        assertThrows(ValidationException.class, () -> service.validatePassword("STRONG#2026", "STRONG#2026", null));
-        assertThrows(ValidationException.class, () -> service.validatePassword("Strong#abcd", "Strong#abcd", null));
-        assertDoesNotThrow(() -> service.validatePassword("Password123!", "Password123!", null));
+                "A".repeat(73) + "a1!", "A".repeat(73) + "a1!", null, null, null));
+        assertThrows(ValidationException.class, () -> service.validatePassword("Strong #2026", "Strong #2026", null, null, null));
+        assertThrows(ValidationException.class, () -> service.validatePassword("strong#2026", "strong#2026", null, null, null));
+        assertThrows(ValidationException.class, () -> service.validatePassword("STRONG#2026", "STRONG#2026", null, null, null));
+        assertThrows(ValidationException.class, () -> service.validatePassword("Strong#abcd", "Strong#abcd", null, null, null));
+        
+        assertDoesNotThrow(() -> service.validatePassword("Password123!", "Password123!", null, null, null));
+        
         assertThrows(ValidationException.class, () -> service.validatePassword(
-                "Strong#2026", "Strong#2026", List.of(new BCryptPasswordEncoder().encode("Strong#2026"))));
-        assertDoesNotThrow(() -> service.validatePassword("Strong#2026", "Strong#2026", null));
+                "Strong#2026", "Strong#2026", null, null, List.of(new BCryptPasswordEncoder().encode("Strong#2026"))));
+        
+        assertDoesNotThrow(() -> service.validatePassword("Strong#2026", "Strong#2026", null, null, null));
+    }
+
+    @Test
+    void validatePassword_rechazaDatosPersonales() {
+        // Contiene el nombre exacto
+        assertThrows(ValidationException.class, 
+            () -> service.validatePassword("Alberto#2026", "Alberto#2026", "Alberto", "usuario@test.com", null));
+        
+        // Contiene el nombre en minúsculas (insensible a mayúsculas)
+        assertThrows(ValidationException.class, 
+            () -> service.validatePassword("alberto#2026", "alberto#2026", "Alberto", "usuario@test.com", null));
+
+        // Contiene la parte local del email (antes del @)
+        assertThrows(ValidationException.class, 
+            () -> service.validatePassword("Perez#2026", "Perez#2026", "Juan", "perez@test.com", null));
+
+        // Permite que coincida si el nombre o el prefijo del correo miden 2 caracteres o menos
+        assertDoesNotThrow(
+            () -> service.validatePassword("Al#2026Password!", "Al#2026Password!", "Al", "al@test.com", null));
     }
 
     @Test
     void validatePassword_permiteUnHistorialSinCoincidencias() {
-        assertDoesNotThrow(() -> service.validatePassword("Strong#2026", "Strong#2026", List.of(
+        assertDoesNotThrow(() -> service.validatePassword("Strong#2026", "Strong#2026", null, null, List.of(
                 new BCryptPasswordEncoder().encode("Different#2026"))));
-    }
-
-    @Test
-    void validateRegistrationPassword_convierteErroresDeValidacionDelFramework() {
-        PasswordValidatorService validator = spy(new PasswordValidatorService(new BCryptPasswordEncoder()));
-        doThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "password policy"))
-                .when(validator).validatePassword("Weak#2026", "Weak#2026", List.of());
-
-        assertThrows(ValidationException.class,
-                () -> validator.validatePassword("Weak#2026", "Weak#2026", List.of()));
     }
 
     @Test

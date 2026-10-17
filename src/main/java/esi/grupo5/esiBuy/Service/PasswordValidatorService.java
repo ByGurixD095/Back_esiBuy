@@ -51,13 +51,17 @@ public class PasswordValidatorService {
      * @param password contraseña en texto plano
      * @param historialHashes hashes anteriores que no pueden reutilizarse; puede ser nulo
      * @param confirmPassword contraseña de confirmación
+     * @param nombre nombre del usuario
+     * @param email correo electrónico del usuario
+     * @param historialHashes hashes anteriores que no pueden reutilizarse; puede ser nulo
      * @throws ValidationException si falla un requisito o se reutiliza una contraseña
      */
-    public void validatePassword(String password, String confirmPassword, Collection<String> historialHashes) {
+    public void validatePassword(String password, String confirmPassword,String nombre, String email, Collection<String> historialHashes) {
         validateMatch(password, confirmPassword);
         validateNotNull(password);
         validateLength(password);
         validateNoWhitespace(password);
+        validatePersonalData(password, nombre, email); 
         validateUppercase(password);
         validateLowercase(password);
         validateDigit(password);
@@ -66,6 +70,21 @@ public class PasswordValidatorService {
         validatePasswordHistory(password, historialHashes);
     }
 
+    /** Valida que la contraseña no contenga datos personales. */
+    private void validatePersonalData(String password, String nombre, String email) {
+        String passLower = password.toLowerCase();
+        
+        if (nombre != null && nombre.length() > 2 && passLower.contains(nombre.toLowerCase())) {
+            throw new ValidationException("La contraseña no puede contener tu nombre.");
+        }
+        
+        if (email != null && email.contains("@")) {
+            String emailPart = email.split("@")[0].toLowerCase();
+            if (emailPart.length() > 2 && passLower.contains(emailPart)) {
+                throw new ValidationException("La contraseña no puede contener tu correo electrónico.");
+            }
+        }
+    }
 
     /** Comprueba que las contraseñas coincidan. */
     private void validateMatch(String password, String confirmPassword) {
@@ -161,6 +180,7 @@ public class PasswordValidatorService {
         }
     }
 
+    //TODO: No se usa en código, solo en test
     /**
      * Compara una contraseña en claro con un hash almacenado.
      *
@@ -177,6 +197,7 @@ public class PasswordValidatorService {
         }
     }
 
+    //TODO: No se usa en código, solo en test
     /**
      * Comprueba que la contraseña actual coincida con su hash almacenado.
      *
@@ -190,6 +211,7 @@ public class PasswordValidatorService {
         }
     }
 
+    //TODO: No se usa en código, solo en test
     /**
      * Valida la presencia de la contraseña actual y los requisitos de la nueva.
      *
@@ -201,9 +223,10 @@ public class PasswordValidatorService {
             throw new ValidationException("La contraseña actual es requerida");
         }
         validateNotNull(newPassword);
-        validatePassword(newPassword, newPassword, null);
+        validatePassword(newPassword, newPassword, null, null, null);
     }
 
+    //TODO: No se usa en código, solo en test
     /**
      * Comprueba el correo y valida las contraseñas para una solicitud de cambio.
      *
@@ -218,6 +241,7 @@ public class PasswordValidatorService {
         validatePasswordChange(currentPassword, newPassword);
     }
 
+    //TODO: No se usa en código, solo en test
     /**
      * Comprueba que se haya proporcionado el correo de recuperación.
      *
@@ -229,6 +253,7 @@ public class PasswordValidatorService {
         }
     }
 
+    //TODO: No se usa en código, solo en test
     /**
      * Valida la presencia del token de recuperación y los requisitos de la nueva contraseña.
      *
@@ -240,7 +265,7 @@ public class PasswordValidatorService {
             throw new ValidationException("Token de recuperación es requerido");
         }
         validateNotNull(newPassword);
-        validatePassword(newPassword, newPassword, null);
+        validatePassword(newPassword, newPassword, null, null, null);
     }
 
     /**

@@ -87,7 +87,7 @@ class AdminServiceCrearAdministradorTest {
     void crearAdministrador_contrasenaNoValida_lanza400YNoGuarda() {
         when(usuarioRepository.findByEmail("ana@esibuy.com")).thenReturn(Optional.empty());
         doThrow(new ValidationException("demasiado débil"))
-                .when(passwordValidatorService).validatePassword(anyString(), anyString(), any());
+                .when(passwordValidatorService).validatePassword(anyString(), anyString(), anyString(), anyString(), any());
 
         BusinessException error = assertThrows(ValidationException.class,
                 () -> adminService.crearAdministrador(dto));

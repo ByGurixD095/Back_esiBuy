@@ -292,7 +292,7 @@ public class AuthService {
             throw new ValidationException("Token de recuperación expirado");
         }
         
-        passwordValidatorService.validatePassword(request.pwd1(), request.pwd2(), usuario.getHistorialContrasenas());
+        passwordValidatorService.validatePassword(request.pwd1(), request.pwd2(), usuario.getNombre(), usuario.getEmail(), usuario.getHistorialContrasenas());
         usuario.setContrasena(passwordEncoder.encode(request.pwd1()));
         usuario.setFechaCambioContrasena(LocalDateTime.now().plusDays(PASSWORD_VALIDITY_DAYS));
         usuario.getHistorialContrasenas().add(0, usuario.getContrasena());

@@ -113,7 +113,7 @@ class AdminServiceTest {
         AdministradorRegistroDTO dto = administradorDTO();
         when(usuarioRepository.findByEmail(dto.email())).thenReturn(Optional.empty());
         doThrow(new ValidationException("Contraseña débil"))
-                .when(passwordValidatorService).validatePassword(dto.contrasena(), dto.confirmarContrasena(),null);
+                .when(passwordValidatorService).validatePassword(dto.contrasena(), dto.confirmarContrasena(), dto.nombre(), dto.email(),null);
 
         assertThrows(ValidationException.class, () -> service.crearAdministrador(dto));
 
