@@ -98,7 +98,7 @@ class AuthServicePasswordRecoveryTest {
 
         service.resetPassword(new PasswordResetConfirmDTO(token, "NuevaClave1!", "NuevaClave1!"));
 
-        verify(passwordValidatorService).validatePassword("NuevaClave1!", usuario.getHistorialContrasenas());
+        verify(passwordValidatorService).validatePassword("NuevaClave1!", "NuevaClave1!", usuario.getNombre(), usuario.getEmail(), usuario.getHistorialContrasenas());
         assertEquals("encoded-new-password", usuario.getContrasena());
         assertEquals(java.util.List.of("encoded-new-password"), usuario.getHistorialContrasenas());
         assertTrue(usuario.getFechaCambioContrasena().isAfter(LocalDateTime.now()));

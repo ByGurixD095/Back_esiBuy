@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotBlank;
  * @param apellidos apellidos del titular
  * @param email correo de la cuenta
  * @param contrasena contraseña inicial
+ * @param confirmarContrasena confirmación de la contraseña
  * @param telefono teléfono de contacto opcional
  * @param imagenPerfil URL o referencia de la imagen de perfil
  * @param nombreComercial nombre público del comercio
@@ -21,6 +22,7 @@ public record VendedorRegisterRequest(
         @NotBlank String apellidos,
         @NotBlank @Email String email,
         @NotBlank String contrasena,
+        @NotBlank String confirmarContrasena,
         String telefono,
         String imagenPerfil,
         @NotBlank String nombreComercial,

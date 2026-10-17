@@ -190,7 +190,7 @@ class UserServiceConsultarUsuariosLecturaTest {
     @Test
     void registrarCliente_guardaInactivoYPideActivacionSinAutenticar() {
         ClienteRegistroDTO dto = new ClienteRegistroDTO(
-                "Ana", "López", "ana@test.com", "Strong#2026", "123456789",
+                "Ana", "López", "ana@test.com", "Strong#2026", "Strong#2026", "123456789",
                 null, "12345678A", LocalDate.of(2000, 1, 1), null);
         doReturn(false).when(usuarioRepository).existsByEmail(dto.email());
         when(usuarioRepository.save(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -201,7 +201,7 @@ class UserServiceConsultarUsuariosLecturaTest {
         assertEquals("ana@test.com", resultado.email());
         assertNull(resultado.accessToken());
         assertNull(resultado.refreshToken());
-        verify(passwordValidatorService).validateRegistrationPassword(dto.contrasena());
+        verify(passwordValidatorService).validatePassword(dto.contrasena(), dto.confirmarContrasena(), dto.nombre(), dto.email(), null);
 
         ArgumentCaptor<Cliente> captor = ArgumentCaptor.forClass(Cliente.class);
         verify(usuarioRepository).save(captor.capture());
@@ -212,7 +212,7 @@ class UserServiceConsultarUsuariosLecturaTest {
     @Test
     void registrarVendedor_guardaInactivoYPideActivacionSinAutenticar() {
         VendedorRegisterRequest dto = new VendedorRegisterRequest(
-                "Luis", "García", "luis@test.com", "Strong#2026", null, null,
+                "Luis", "García", "luis@test.com", "Strong#2026", "Strong#2026", null, null,
                 "Tienda Luis", "B12345678", "electronica");
         doReturn(false).when(usuarioRepository).existsByEmail(dto.email());
         when(usuarioRepository.save(any(Vendedor.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -231,13 +231,13 @@ class UserServiceConsultarUsuariosLecturaTest {
     @Test
     void registrarVendedor_emailExistenteImpideGuardar() {
          VendedorRegisterRequest dto = new VendedorRegisterRequest(
-                        "Luis", "García", "luis@test.com", "Strong#2026", null, null,
+                        "Luis", "García", "luis@test.com", "Strong#2026", "Strong#2026", null, null,
                         "Tienda Luis", "B12345678", "electronica");
         when(usuarioRepository.existsByEmail(dto.email())).thenReturn(true);
 
         assertThrows(ConflictException.class, () -> service.registrarVendedor(dto));
 
-        verify(passwordValidatorService).validateRegistrationPassword(dto.contrasena());
+        verify(passwordValidatorService).validatePassword(dto.contrasena(), dto.confirmarContrasena(), dto.nombre(), dto.email(), null);
         verify(usuarioRepository, never()).save(any());
         verify(authService, never()).completarAutenticacion(any());
     }
@@ -245,7 +245,7 @@ class UserServiceConsultarUsuariosLecturaTest {
     @Test
     void registrarVendedor_nombreComercialExistenteImpideGuardar() {
         VendedorRegisterRequest dto = new VendedorRegisterRequest(
-                "Luis", "García", "luis@test.com", "Strong#2026", null, null,
+                "Luis", "García", "luis@test.com", "Strong#2026", "Strong#2026", null, null,
                 "Tienda Luis", "B12345678", "electronica");
         when(usuarioRepository.existsByEmail(dto.email())).thenReturn(false);
         when(usuarioRepository.existsByNombreComercial(dto.nombreComercial())).thenReturn(true);
@@ -261,7 +261,7 @@ class UserServiceConsultarUsuariosLecturaTest {
     @Test
     void registrarCliente_erroresDeRepositorioSeTraducenAErrorDeNegocio() {
         ClienteRegistroDTO dto = new ClienteRegistroDTO(
-                "Ana", "López", "ana@test.com", "Strong#2026", null, null,
+                "Ana", "López", "ana@test.com", "Strong#2026", "Strong#2026", null, null,
                 "12345678A", LocalDate.of(2000, 1, 1), TipoCliente.NORMAL);
         when(usuarioRepository.existsByEmail(dto.email())).thenThrow(
                 new org.springframework.dao.DataAccessResourceFailureException("database unavailable"));
@@ -277,10 +277,10 @@ class UserServiceConsultarUsuariosLecturaTest {
     @Test
     void registrarCliente_errorDeValidacionDePasswordSeTraduce() {
         ClienteRegistroDTO dto = new ClienteRegistroDTO(
-                "Ana", "López", "ana@test.com", "weak", null, null,
+                "Ana", "López", "ana@test.com", "weak", "weak", null, null,
                 "12345678A", LocalDate.of(2000, 1, 1), TipoCliente.NORMAL);
         doThrow(new esi.grupo5.esiBuy.Exception.ValidationException("password policy"))
-                .when(passwordValidatorService).validateRegistrationPassword(dto.contrasena());
+                .when(passwordValidatorService).validatePassword(dto.contrasena(), dto.confirmarContrasena(), dto.nombre(), dto.email(), null);
 
         assertThrows(esi.grupo5.esiBuy.Exception.ValidationException.class,
                 () -> service.registrarCliente(dto));

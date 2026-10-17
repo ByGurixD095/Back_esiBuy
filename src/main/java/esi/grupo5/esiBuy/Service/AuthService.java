@@ -285,9 +285,6 @@ public class AuthService {
      * @throws NotFoundException si el token no corresponde a una cuenta
      */
     public void resetPassword(PasswordResetConfirmDTO request) {
-        if (!request.pwd1().equals(request.pwd2())) {
-            throw new ValidationException("Las contraseñas no coinciden");
-        }
         Usuario usuario = usuarioRepository.findByTokenRecuperacionContrasena(hashToken(request.token()))
             .orElseThrow(() -> new NotFoundException("Token de recuperación inválido"));
 
@@ -295,7 +292,7 @@ public class AuthService {
             throw new ValidationException("Token de recuperación expirado");
         }
         
-        passwordValidatorService.validatePassword(request.pwd1(), usuario.getHistorialContrasenas());
+        passwordValidatorService.validatePassword(request.pwd1(), request.pwd2(), usuario.getNombre(), usuario.getEmail(), usuario.getHistorialContrasenas());
         usuario.setContrasena(passwordEncoder.encode(request.pwd1()));
         usuario.setFechaCambioContrasena(LocalDateTime.now().plusDays(PASSWORD_VALIDITY_DAYS));
         usuario.getHistorialContrasenas().add(0, usuario.getContrasena());

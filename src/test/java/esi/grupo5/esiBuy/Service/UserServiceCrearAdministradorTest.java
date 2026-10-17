@@ -41,7 +41,7 @@ class AdminServiceCrearAdministradorTest {
     private AdminService adminService;
 
     private final AdministradorRegistroDTO dto = new AdministradorRegistroDTO("Ana", "Pérez", "ana@esibuy.com",
-            "Clave#2026x", "Madrid", null);
+            "Clave#2026x", "Clave#2026x", "Madrid", null);
 
     @BeforeEach
     void setUp() {
@@ -87,7 +87,7 @@ class AdminServiceCrearAdministradorTest {
     void crearAdministrador_contrasenaNoValida_lanza400YNoGuarda() {
         when(usuarioRepository.findByEmail("ana@esibuy.com")).thenReturn(Optional.empty());
         doThrow(new ValidationException("demasiado débil"))
-                .when(passwordValidatorService).validateRegistrationPassword(anyString());
+                .when(passwordValidatorService).validatePassword(anyString(), anyString(), anyString(), anyString(), any());
 
         BusinessException error = assertThrows(ValidationException.class,
                 () -> adminService.crearAdministrador(dto));

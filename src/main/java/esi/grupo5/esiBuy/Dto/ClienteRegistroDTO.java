@@ -15,6 +15,7 @@ import java.time.LocalDate;
  * @param apellidos apellidos del cliente
  * @param email correo asociado a la cuenta
  * @param contrasena contraseña inicial
+ * @param confirmarContrasena confirmación de la contraseña
  * @param telefono teléfono de contacto opcional
  * @param imagenPerfil URL o referencia de la imagen de perfil
  * @param dni documento de identidad
@@ -26,6 +27,7 @@ public record ClienteRegistroDTO(
         @NotBlank String apellidos,
         @NotBlank @Email String email,
         @NotBlank String contrasena,
+        @NotBlank String confirmarContrasena,
         String telefono,
         String imagenPerfil,
         @NotBlank String dni,

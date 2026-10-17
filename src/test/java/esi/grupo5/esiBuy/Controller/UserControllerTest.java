@@ -152,10 +152,10 @@ class UserControllerTest {
         LoginResponseDTO withToken = new LoginResponseDTO("access", "refresh", "CLIENTE", "NORMAL");
         LoginResponseDTO withoutToken = new LoginResponseDTO(null, null, "CLIENTE", "NORMAL");
         ClienteRegistroDTO cliente = new ClienteRegistroDTO(
-                "Ana", "López", "ana@test.com", "Strong#2026", null, null,
+                "Ana", "López", "ana@test.com", "Strong#2026", "Strong#2026", null, null,
                 "12345678A", java.time.LocalDate.of(2000, 1, 1), null);
         VendedorRegisterRequest vendedor = new VendedorRegisterRequest(
-                "Luis", "García", "luis@test.com", "Strong#2026", null, null,
+                "Luis", "García", "luis@test.com", "Strong#2026", "Strong#2026", null, null,
                 "Tienda", "B12345678", "electronica");
         when(userService.registrarCliente(cliente)).thenReturn(withToken);
         when(userService.registrarVendedor(vendedor)).thenReturn(withoutToken);
@@ -236,10 +236,10 @@ class UserControllerTest {
     void registroConservaErroresDeValidacionYReenvuelveErroresInternos() {
         HttpServletResponse response = mock(HttpServletResponse.class);
         ClienteRegistroDTO cliente = new ClienteRegistroDTO(
-                "Ana", "López", "ana@test.com", "Strong#2026", null, null,
+                "Ana", "López", "ana@test.com", "Strong#2026", "Strong#2026", null, null,
                 "12345678A", java.time.LocalDate.of(2000, 1, 1), null);
         VendedorRegisterRequest vendedor = new VendedorRegisterRequest(
-                "Luis", "García", "luis@test.com", "Strong#2026", null, null,
+                "Luis", "García", "luis@test.com", "Strong#2026", "Strong#2026", null, null,
                 "Tienda", "B12345678", "electronica");
 
         when(userService.registrarCliente(cliente)).thenThrow(new ConflictException("email exists"));

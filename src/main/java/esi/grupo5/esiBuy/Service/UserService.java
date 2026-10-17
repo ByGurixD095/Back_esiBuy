@@ -76,7 +76,7 @@ public class UserService {
      */
     @Transactional
     public LoginResponseDTO registrarCliente(ClienteRegistroDTO dto) {
-        passwordValidatorService.validateRegistrationPassword(dto.contrasena());
+        passwordValidatorService.validatePassword(dto.contrasena(), dto.confirmarContrasena(), dto.nombre(), dto.email() ,null);
         validarMayorDeEdad(dto.fechaNacimiento());
         
         Cliente cliente = Cliente.builder()
@@ -111,7 +111,7 @@ public class UserService {
      */
     @Transactional
     public LoginResponseDTO registrarVendedor(VendedorRegisterRequest dto) {
-        passwordValidatorService.validateRegistrationPassword(dto.contrasena());
+        passwordValidatorService.validatePassword(dto.contrasena(), dto.confirmarContrasena(), dto.nombre(), dto.email() ,null);
 
         Vendedor vendedor = Vendedor.builder()
                 .nombre(dto.nombre())
