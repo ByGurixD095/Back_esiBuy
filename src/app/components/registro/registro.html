@@ -86,17 +86,25 @@
                   </small>
                 }
               </div>
+              <div class="esi-campo">
+                <label for="confirmarContrasena">Repetir contraseña <span class="requerido">Obligatorio</span></label>
+                <input
+                  id="confirmarContrasena"
+                  type="password"
+                  formControlName="confirmarContrasena"
+                  autocomplete="new-password"
+                  required
+                />
+                @if (esInvalido('confirmarContrasena')) {
+                  <small class="esi-ayuda esi-error">Las contraseñas no coinciden.</small>
+                }
+              </div>
 
               <div class="esi-campo">
                 <label for="telefono">Teléfono <span class="opcional">Opcional</span></label>
                 <input id="telefono" type="tel" formControlName="telefono" autocomplete="tel" />
               </div>
 
-              <app-avatar-selector
-                [value]="form.controls.imagenPerfil.value"
-                [esVendedor]="esVendedor"
-                (valueChange)="form.controls.imagenPerfil.setValue($event)"
-              />
             </div>
           </section>
 
@@ -191,6 +199,12 @@
               {{ mensajeError() }}
             </p>
           }
+
+            <app-avatar-selector
+              [value]="form.controls.imagenPerfil.value"
+              [esVendedor]="esVendedor"
+              (valueChange)="form.controls.imagenPerfil.setValue($event)"
+            />
 
           <button type="submit" class="esi-boton" [disabled]="form.invalid || enviando()">
             {{ enviando() ? 'Creando cuenta…' : 'Crear cuenta' }}

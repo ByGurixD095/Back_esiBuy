@@ -88,6 +88,10 @@ export class RegistroComponent {
         Validators.pattern(PATRON_CONTRASENA),
       ],
     }),
+    confirmarContrasena: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
     telefono: new FormControl('', { nonNullable: true }),
     imagenPerfil: new FormControl('', { nonNullable: true }),
     dni: new FormControl('', { nonNullable: true }),
@@ -133,6 +137,13 @@ export class RegistroComponent {
     if (this.enviando() || this.cuentaCreada()) {
       return;
     }
+
+    this.form.controls.confirmarContrasena.setErrors(
+      this.form.controls.contrasena.value === this.form.controls.confirmarContrasena.value
+        ? null
+        : { noCoinciden: true },
+    );
+
     if (!this.form.controls.imagenPerfil.value.trim()) {
       this.form.controls.imagenPerfil.setValue(avatarAleatorio(this.esVendedor));
     }
@@ -152,6 +163,7 @@ export class RegistroComponent {
           apellidos: datos.apellidos,
           email: datos.email,
           contrasena: datos.contrasena,
+          confirmarContrasena: datos.confirmarContrasena,
           telefono: datos.telefono,
           imagenPerfil: datos.imagenPerfil,
           nombreComercial: datos.nombreComercial,
@@ -163,6 +175,7 @@ export class RegistroComponent {
           apellidos: datos.apellidos,
           email: datos.email,
           contrasena: datos.contrasena,
+          confirmarContrasena: datos.confirmarContrasena,
           telefono: datos.telefono,
           imagenPerfil: datos.imagenPerfil,
           dni: datos.dni,

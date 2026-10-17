@@ -44,11 +44,22 @@ export class AdministradorRegistro {
         Validators.pattern(PATRON_CONTRASENA),
       ],
     }),
+    confirmarContrasena: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required],
+    }),
     sede: new FormControl('', { nonNullable: true }),
     imagenPerfil: new FormControl('', { nonNullable: true }),
   });
 
   enviar(): void {
+    
+    this.form.controls.confirmarContrasena.setErrors(
+      this.form.controls.contrasena.value === this.form.controls.confirmarContrasena.value
+        ? null
+        : { noCoinciden: true },
+    );
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;

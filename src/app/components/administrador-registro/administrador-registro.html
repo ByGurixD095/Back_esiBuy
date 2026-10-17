@@ -48,6 +48,14 @@
         </div>
 
         <div class="esi-campo">
+          <label for="confirmarContrasena">Repetir contraseña</label>
+          <input id="confirmarContrasena" type="password" formControlName="confirmarContrasena" autocomplete="new-password" />
+          @if (esInvalido('confirmarContrasena')) {
+          <small class="esi-ayuda esi-error">Las contraseñas no coinciden.</small>
+          }
+        </div>
+        
+        <div class="esi-campo">
           <label for="sede">Sede (opcional)</label>
           <input id="sede" type="text" formControlName="sede" />
         </div>
