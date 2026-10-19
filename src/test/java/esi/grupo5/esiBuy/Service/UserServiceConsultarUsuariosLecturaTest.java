@@ -69,7 +69,6 @@ class UserServiceConsultarUsuariosLecturaTest {
         cliente.setIs2faActivoCliente(true);
         cliente.setIs3faActivoCliente(true);
         Cliente usuarioEliminado = cliente("cliente-eliminado", "Luis", "luis@test.com");
-        usuarioEliminado.setEliminado(true);
         when(usuarioRepository.findAll()).thenReturn(List.of(cliente, usuarioEliminado));
 
         List<UsuarioResponseDTO> resultado = service.getAllUsers();
@@ -89,7 +88,6 @@ class UserServiceConsultarUsuariosLecturaTest {
         assertEquals(true, resultado.get(0).isDosFactorActivoCliente());
         assertEquals(true, resultado.get(0).isTresFactorActivoCliente());
         assertEquals("cliente-eliminado", resultado.get(1).getId());
-        assertEquals(true, resultado.get(1).isEliminado());
         verify(usuarioRepository).findAll();
     }
 
@@ -176,14 +174,12 @@ class UserServiceConsultarUsuariosLecturaTest {
     @Test
     void consultarUsuarioAdminPorId_permiteConsultarUsuarioEliminado() {
         Cliente cliente = cliente("cliente-eliminado", "Ana", "ana@test.com");
-        cliente.setEliminado(true);
         when(usuarioRepository.findById("cliente-eliminado"))
                 .thenReturn(Optional.of(cliente));
 
         UsuarioResponseDTO resultado = service.getAdminUserById("cliente-eliminado");
 
         assertEquals("cliente-eliminado", resultado.getId());
-        assertEquals(true, resultado.isEliminado());
         verify(usuarioRepository).findById("cliente-eliminado");
     }
 

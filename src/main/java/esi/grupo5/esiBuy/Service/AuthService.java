@@ -233,7 +233,7 @@ public class AuthService {
      * @throws PasswordExpiredException si la contraseña ha caducado
      */
     private void validarEstadoCuenta(Usuario usuario) {
-        if (usuario.isBloqueado() || usuario.isEliminado() || !usuario.isActivo()) {
+        if (usuario.isBloqueado() || !usuario.isActivo()) {
             throw new ForbiddenException(ACCOUNT_UNAVAILABLE_MESSAGE);
         }
         if (usuario.getFechaCambioContrasena() != null

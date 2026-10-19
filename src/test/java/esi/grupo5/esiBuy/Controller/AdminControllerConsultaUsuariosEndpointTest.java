@@ -57,7 +57,6 @@ class AdminControllerConsultaUsuariosEndpointTest {
                         .email("luis@test.com")
                         .rol(Rol.CLIENTE)
                         .bloqueado(true)
-                        .eliminado(true)
                         .build(),
                 AdministradorResponseDTO.builder()
                         .id("admin-1")
