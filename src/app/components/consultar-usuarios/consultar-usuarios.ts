@@ -44,7 +44,6 @@ export class ConsultarUsuarios implements OnInit {
 
   readonly usuarios = signal<Usuario[]>([]);
   readonly busquedaId = signal('');
-  readonly filtroEliminados = signal<FiltroEliminados>('todos');
   readonly cargando = signal(true);
   readonly mensajeError = signal('');
   readonly mensajeErrorAccion = signal('');
@@ -59,13 +58,11 @@ export class ConsultarUsuarios implements OnInit {
   readonly paginaActual = signal(0);
   readonly usuariosFiltrados = computed(() => {
     const idBuscado = this.busquedaId().trim().toLocaleLowerCase();
-    return this.usuarios().filter((usuario) => {
-      const coincideId = !idBuscado || usuario.id.toLocaleLowerCase().includes(idBuscado);
-      const coincideEliminado =
-        this.filtroEliminados() === 'todos' ||
-        usuario.eliminado === (this.filtroEliminados() === 'eliminados');
-      return coincideId && coincideEliminado;
-    });
+    if (!idBuscado) return this.usuarios();
+    
+    return this.usuarios().filter((usuario) => 
+      usuario.id.toLocaleLowerCase().includes(idBuscado)
+    );
   });
   readonly totalPaginas = computed(() =>
     Math.ceil(this.usuariosFiltrados().length / this.tamanoPagina),
@@ -100,10 +97,6 @@ export class ConsultarUsuarios implements OnInit {
     this.paginaActual.set(0);
   }
 
-  actualizarFiltroEliminados(event: Event): void {
-    this.filtroEliminados.set((event.target as HTMLSelectElement).value as FiltroEliminados);
-    this.paginaActual.set(0);
-  }
 
   paginaAnterior(): void {
     if (this.paginaActual() === 0) return;
@@ -141,10 +134,9 @@ export class ConsultarUsuarios implements OnInit {
   }
 
   eliminarUsuario(usuario: Usuario): void {
-    if (usuario.eliminado || this.esUsuarioActual(usuario) || this.hayAccionEnCurso()) {
+    if (usuario.rol !== 'ADMINISTRADOR' || this.esUsuarioActual(usuario) || this.hayAccionEnCurso()) {
       return;
     }
-
     this.accionPendiente.set({ usuario, accion: 'eliminar' });
   }
 
@@ -202,17 +194,18 @@ export class ConsultarUsuarios implements OnInit {
 
     peticion.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
-        this.usuarios.update((usuarios) =>
-          usuarios.map((actual) =>
+        this.usuarios.update((usuarios) => {
+          if (accion === 'eliminar') {
+            return usuarios.filter((actual) => actual.id !== usuario.id);
+          }
+          return usuarios.map((actual) =>
             actual.id === usuario.id
-              ? accion === 'eliminar'
-                ? { ...actual, eliminado: true }
-                : accion === 'activar'
-                  ? { ...actual, activo: true }
-                  : { ...actual, bloqueado: accion === 'bloquear' }
-              : actual,
-          ),
-        );
+              ? accion === 'activar'
+                ? { ...actual, activo: true }
+                : { ...actual, bloqueado: accion === 'bloquear' }
+              : actual
+          );
+        });
         const ultimaPagina = Math.max(0, this.totalPaginas() - 1);
         if (this.paginaActual() > ultimaPagina) {
           this.paginaActual.set(ultimaPagina);
