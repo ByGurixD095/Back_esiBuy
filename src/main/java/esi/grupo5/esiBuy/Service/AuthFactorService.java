@@ -189,7 +189,7 @@ public class AuthFactorService {
      * @throws NotFoundException si no existe una cuenta no eliminada con ese identificador
      */
     public void configureMfa(String userId, boolean enable2fa, boolean enable3fa) {
-        Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(userId)
+        Usuario usuario = usuarioRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException(MSG_USUARIO_NO_ENCONTRADO));
         usuario.setIs2faActivoCliente(enable2fa);
         usuario.setIs3faActivoCliente(enable3fa);

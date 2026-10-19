@@ -81,7 +81,7 @@ class UserControllerEliminarCuentaTest {
     void cuentaEliminadaNoPuedeReutilizarSuTokenDeAcceso() throws Exception {
         when(jwtService.isTokenValid(any())).thenReturn(true);
         when(jwtService.extractId(any())).thenReturn("cliente-eliminado");
-        when(usuarioRepository.existsByIdAndActivoTrueAndBloqueadoFalseAndEliminadoFalse("cliente-eliminado"))
+        when(usuarioRepository.existsByIdAndActivoTrueAndBloqueadoFalse("cliente-eliminado"))
                 .thenReturn(false);
 
         mockMvc.perform(delete("/users/me")
@@ -95,7 +95,7 @@ class UserControllerEliminarCuentaTest {
         when(jwtService.isTokenValid(any())).thenReturn(true);
         when(jwtService.extractId(any())).thenReturn(id);
         when(jwtService.extractRol(any())).thenReturn(role);
-        when(usuarioRepository.existsByIdAndActivoTrueAndBloqueadoFalseAndEliminadoFalse(id))
+        when(usuarioRepository.existsByIdAndActivoTrueAndBloqueadoFalse(id))
                 .thenReturn(true);
     }
 }

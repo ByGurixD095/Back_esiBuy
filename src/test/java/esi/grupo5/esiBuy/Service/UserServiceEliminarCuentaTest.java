@@ -47,7 +47,7 @@ class UserServiceEliminarCuentaTest {
     void eliminarCuenta_clienteSeMarcaEliminadoInactivoYRevocaRefreshTokens() {
         Cliente cliente = new Cliente();
         cliente.setActivo(true);
-        when(usuarioRepository.findByIdAndEliminadoFalse("cliente-1"))
+        when(usuarioRepository.findById("cliente-1"))
                 .thenReturn(Optional.of(cliente));
 
         userService.eliminarCuenta("cliente-1");
@@ -63,9 +63,9 @@ class UserServiceEliminarCuentaTest {
     void eliminarCuenta_noEliminaElUltimoAdministradorActivo() {
         Administrador administrador = new Administrador();
         administrador.setActivo(true);
-        when(usuarioRepository.findByIdAndEliminadoFalse("admin-1"))
+        when(usuarioRepository.findById("admin-1"))
                 .thenReturn(Optional.of(administrador));
-        when(usuarioRepository.countByRolAndActivoTrueAndBloqueadoFalseAndEliminadoFalse(Rol.ADMINISTRADOR))
+        when(usuarioRepository.countByRolAndActivoTrueAndBloqueadoFalse(Rol.ADMINISTRADOR))
                 .thenReturn(1L);
 
         assertThrows(ForbiddenException.class, () -> userService.eliminarCuenta("admin-1"));
@@ -79,9 +79,9 @@ class UserServiceEliminarCuentaTest {
     void eliminarCuenta_permiteEliminarAdministradorSiQuedaOtroActivo() {
         Administrador administrador = new Administrador();
         administrador.setActivo(true);
-        when(usuarioRepository.findByIdAndEliminadoFalse("admin-2"))
+        when(usuarioRepository.findById("admin-2"))
                 .thenReturn(Optional.of(administrador));
-        when(usuarioRepository.countByRolAndActivoTrueAndBloqueadoFalseAndEliminadoFalse(Rol.ADMINISTRADOR))
+        when(usuarioRepository.countByRolAndActivoTrueAndBloqueadoFalse(Rol.ADMINISTRADOR))
                 .thenReturn(2L);
 
         userService.eliminarCuenta("admin-2");
@@ -94,7 +94,7 @@ class UserServiceEliminarCuentaTest {
 
     @Test
     void eliminarCuenta_usuarioNoEncontradoLanzaNotFound() {
-        when(usuarioRepository.findByIdAndEliminadoFalse("no-existe")).thenReturn(Optional.empty());
+        when(usuarioRepository.findById("no-existe")).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> userService.eliminarCuenta("no-existe"));
 

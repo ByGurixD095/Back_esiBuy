@@ -114,7 +114,7 @@ class SecurityAdminAuthorizationTest {
         when(jwtService.isTokenValid(any())).thenReturn(true);
         when(jwtService.extractId(any())).thenReturn("user-1");
         when(jwtService.extractRol(any())).thenReturn(role);
-        when(usuarioRepository.existsByIdAndActivoTrueAndBloqueadoFalseAndEliminadoFalse("user-1"))
+        when(usuarioRepository.existsByIdAndActivoTrueAndBloqueadoFalse("user-1"))
                 .thenReturn(true);
     }
 

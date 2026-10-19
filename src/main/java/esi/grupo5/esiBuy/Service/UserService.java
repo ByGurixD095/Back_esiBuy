@@ -148,7 +148,7 @@ public class UserService {
      * @throws NotFoundException si no existe o está eliminada
      */
     public UsuarioResponseDTO getUserById(String id) {
-        return usuarioRepository.findByIdAndEliminadoFalse(id)
+        return usuarioRepository.findById(id)
                 .map(this::toResponseDto)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND_MESSAGE));
     }
@@ -175,18 +175,16 @@ public class UserService {
      * @throws ForbiddenException si es el último administrador activo y desbloqueado
      */
     public void eliminarCuenta(String id) {
-        Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
+        Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND_MESSAGE));
 
         if (esAdministradorDisponible(usuario)
-                && usuarioRepository.countByRolAndActivoTrueAndBloqueadoFalseAndEliminadoFalse(
+                && usuarioRepository.countByRolAndActivoTrueAndBloqueadoFalse(
                         Rol.ADMINISTRADOR) <= 1) {
             throw new ForbiddenException("No se puede eliminar su cuenta.");
         }
 
-        usuario.setEliminado(true);
-        usuario.setActivo(false);
-        usuarioRepository.save(usuario);
+        usuarioRepository.delete(usuario);
         authService.revocarRefreshTokens(id);
     }
 
@@ -207,7 +205,7 @@ public class UserService {
      */
     @Transactional
     public void modificarMiPerfil(String id, UserSelfUpdateDTO dto) {
-        Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
+        Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND_MESSAGE));
 
         actualizarDatosComunes(usuario, dto);

@@ -58,7 +58,7 @@ class SecurityAdministradoresTest {
         when(jwtService.isTokenValid(any())).thenReturn(true);
         when(jwtService.extractId(any())).thenReturn("1");
         when(jwtService.extractRol(any())).thenReturn(rol);
-        when(usuarioRepository.existsByIdAndActivoTrueAndBloqueadoFalseAndEliminadoFalse("1")).thenReturn(true);
+        when(usuarioRepository.existsByIdAndActivoTrueAndBloqueadoFalse("1")).thenReturn(true);
     }
 
     @Test
