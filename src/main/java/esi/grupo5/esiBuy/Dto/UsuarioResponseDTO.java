@@ -24,8 +24,6 @@ public class UsuarioResponseDTO {
     private final boolean activo;
     /** Indica si la cuenta está bloqueada. */
     private final boolean bloqueado;
-    /** Indica si la cuenta está eliminada lógicamente. */
-    private final boolean eliminado;
     /** Fecha de alta de la cuenta. */
     private final LocalDateTime fechaAlta;
     /** Fecha de la última modificación de la cuenta. */
@@ -54,7 +52,6 @@ public class UsuarioResponseDTO {
         this.rol = fields.rol;
         this.activo = fields.activo;
         this.bloqueado = fields.bloqueado;
-        this.eliminado = fields.eliminado;
         this.fechaAlta = fields.fechaAlta;
         this.fechaModificacion = fields.fechaModificacion;
         this.fechaCambioContrasena = fields.fechaCambioContrasena;
@@ -86,8 +83,6 @@ public class UsuarioResponseDTO {
     public boolean isActivo() { return activo; }
     /** @return {@code true} si la cuenta está bloqueada */
     public boolean isBloqueado() { return bloqueado; }
-    /** @return {@code true} si la cuenta está eliminada lógicamente */
-    public boolean isEliminado() { return eliminado; }
     /** @return fecha de alta */
     public LocalDateTime getFechaAlta() { return fechaAlta; }
     /** @return fecha de última modificación */
@@ -121,8 +116,6 @@ public class UsuarioResponseDTO {
         private final boolean activo;
         /** Estado de bloqueo de la cuenta. */
         private final boolean bloqueado;
-        /** Estado de eliminación lógica de la cuenta. */
-        private final boolean eliminado;
         /** Fecha de alta de la cuenta. */
         private final LocalDateTime fechaAlta;
         /** Fecha de última modificación de la cuenta. */
@@ -147,7 +140,6 @@ public class UsuarioResponseDTO {
             this.rol = builder.rol;
             this.activo = builder.activo;
             this.bloqueado = builder.bloqueado;
-            this.eliminado = builder.eliminado;
             this.fechaAlta = builder.fechaAlta;
             this.fechaModificacion = builder.fechaModificacion;
             this.fechaCambioContrasena = builder.fechaCambioContrasena;
@@ -177,8 +169,6 @@ public class UsuarioResponseDTO {
         protected boolean activo;
         /** Estado de bloqueo que se incluirá en la respuesta. */
         protected boolean bloqueado;
-        /** Estado de eliminación lógica que se incluirá en la respuesta. */
-        protected boolean eliminado;
         /** Fecha de alta que se incluirá en la respuesta. */
         protected LocalDateTime fechaAlta;
         /** Fecha de última modificación que se incluirá en la respuesta. */
@@ -244,11 +234,6 @@ public class UsuarioResponseDTO {
          * @return este builder
          */
         public T bloqueado(boolean bloqueado) { this.bloqueado = bloqueado; return self(); }
-        /**
-         * @param eliminado estado de eliminación lógica
-         * @return este builder
-         */
-        public T eliminado(boolean eliminado) { this.eliminado = eliminado; return self(); }
         /**
          * @param fechaAlta fecha de alta
          * @return este builder

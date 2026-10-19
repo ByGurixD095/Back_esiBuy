@@ -409,7 +409,6 @@ public class UserService {
                 .rol(usuario.getRol())
                 .activo(usuario.isActivo())
                 .bloqueado(usuario.isBloqueado())
-                .eliminado(usuario.isEliminado())
                 .fechaAlta(usuario.getFechaAlta())
                 .fechaModificacion(usuario.getFechaModificacion())
                 .fechaCambioContrasena(usuario.getFechaCambioContrasena())

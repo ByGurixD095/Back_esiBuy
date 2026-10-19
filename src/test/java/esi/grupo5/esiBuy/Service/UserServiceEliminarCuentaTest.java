@@ -54,7 +54,6 @@ class UserServiceEliminarCuentaTest {
 
         ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
         verify(usuarioRepository).save(captor.capture());
-        assertTrue(captor.getValue().isEliminado());
         assertFalse(captor.getValue().isActivo());
         verify(authService).revocarRefreshTokens("cliente-1");
     }
@@ -70,7 +69,6 @@ class UserServiceEliminarCuentaTest {
 
         assertThrows(ForbiddenException.class, () -> userService.eliminarCuenta("admin-1"));
 
-        assertFalse(administrador.isEliminado());
         verify(usuarioRepository, never()).save(any(Usuario.class));
         verify(authService, never()).revocarRefreshTokens("admin-1");
     }
@@ -86,7 +84,6 @@ class UserServiceEliminarCuentaTest {
 
         userService.eliminarCuenta("admin-2");
 
-        assertTrue(administrador.isEliminado());
         assertFalse(administrador.isActivo());
         verify(usuarioRepository).save(administrador);
         verify(authService).revocarRefreshTokens("admin-2");

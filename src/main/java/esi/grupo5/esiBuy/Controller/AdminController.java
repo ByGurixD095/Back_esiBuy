@@ -100,7 +100,7 @@ public class AdminController {
      *
      * @param id identificador del usuario que se bloqueará
      * @return usuario actualizado con estado HTTP 200
-     * @throws esi.grupo5.esiBuy.Exception.NotFoundException si el usuario no existe o está eliminado
+     * @throws esi.grupo5.esiBuy.Exception.NotFoundException si el usuario no existe
      */
     @PatchMapping("/bloquear/{id}")
     public ResponseEntity<UsuarioResponseDTO> bloquearUsuario(@PathVariable String id) {
@@ -112,7 +112,7 @@ public class AdminController {
      *
      * @param id identificador del usuario que se desbloqueará
      * @return usuario actualizado con estado HTTP 200
-     * @throws esi.grupo5.esiBuy.Exception.NotFoundException si el usuario no existe o está eliminado
+     * @throws esi.grupo5.esiBuy.Exception.NotFoundException si el usuario no existe
      */
     @PatchMapping("/desbloquear/{id}")
     public ResponseEntity<UsuarioResponseDTO> desbloquearUsuario(@PathVariable String id) {
@@ -120,13 +120,13 @@ public class AdminController {
     }
 
     /**
-     * Elimina lógicamente a un usuario.
+     * Elimina físicamente a un usuario.
      *
      * @param id identificador del usuario que se eliminará
      * @param usuarioActualId identificador del administrador autenticado
      * @return respuesta sin cuerpo con estado HTTP 204
      * @throws esi.grupo5.esiBuy.Exception.ForbiddenException si se intenta eliminar la propia cuenta
-     * @throws esi.grupo5.esiBuy.Exception.NotFoundException si el usuario no existe o está eliminado
+     * @throws esi.grupo5.esiBuy.Exception.NotFoundException si el usuario no existe
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable String id, @AuthenticationPrincipal String usuarioActualId) {
