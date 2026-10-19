@@ -19,6 +19,7 @@ import esi.grupo5.esiBuy.Exception.ValidationException;
 import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Model.Usuario;
 import esi.grupo5.esiBuy.Model.Vendedor;
+import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Service.strategy.UsuarioUpdateStrategy;
 
@@ -167,7 +168,7 @@ public class AdminService {
     }
 
     public UsuarioResponseDTO activarUsuario(String id) {
-        Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
+        Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND));
 
         usuario.setActivo(true);
@@ -184,7 +185,7 @@ public class AdminService {
      * @throws NotFoundException si no existe una cuenta no eliminada
      */
     private UsuarioResponseDTO actualizarEstadoBloqueo(String id, boolean bloqueado) {
-        Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
+        Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND));
 
         usuario.setBloqueado(bloqueado);
@@ -234,6 +235,13 @@ public class AdminService {
     public void eliminarUsuario(String id, String usuarioActualId) {
         if (id.equals(usuarioActualId)) {
             throw new ForbiddenException("No puedes eliminar tu propia cuenta");
+        }
+
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND));
+                
+        if (usuario.getRol() != Rol.ADMINISTRADOR) {
+            throw new ForbiddenException("Solo puedes eliminar a otros administradores.");
         }
 
         userService.eliminarCuenta(id);

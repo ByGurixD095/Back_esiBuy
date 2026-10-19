@@ -42,7 +42,7 @@ class AdminServiceBloquearDesbloquearTest {
         usuario.setBloqueado(false);
 
         UsuarioResponseDTO dto = mock(UsuarioResponseDTO.class);
-        when(usuarioRepository.findByIdAndEliminadoFalse(id)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findById(id)).thenReturn(Optional.of(usuario));
         when(userService.toResponseDto(usuario)).thenReturn(dto);
 
         UsuarioResponseDTO result = adminService.bloquearUsuario(id);
@@ -60,7 +60,7 @@ class AdminServiceBloquearDesbloquearTest {
         usuario.setBloqueado(true);
 
         UsuarioResponseDTO dto = mock(UsuarioResponseDTO.class);
-        when(usuarioRepository.findByIdAndEliminadoFalse(id)).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findById(id)).thenReturn(Optional.of(usuario));
         when(userService.toResponseDto(usuario)).thenReturn(dto);
 
         UsuarioResponseDTO result = adminService.desbloquearUsuario(id);
@@ -74,7 +74,7 @@ class AdminServiceBloquearDesbloquearTest {
 
     @Test
     void bloquearUsuario_noExiste() {
-        when(usuarioRepository.findByIdAndEliminadoFalse(id)).thenReturn(Optional.empty());
+        when(usuarioRepository.findById(id)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> adminService.bloquearUsuario(id));
 
@@ -83,7 +83,7 @@ class AdminServiceBloquearDesbloquearTest {
 
     @Test
     void desbloquearUsuario_noExiste() {
-        when(usuarioRepository.findByIdAndEliminadoFalse(id)).thenReturn(Optional.empty());
+        when(usuarioRepository.findById(id)).thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> adminService.desbloquearUsuario(id));
 

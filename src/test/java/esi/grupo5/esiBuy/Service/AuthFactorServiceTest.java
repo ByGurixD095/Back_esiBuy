@@ -152,7 +152,7 @@ class AuthFactorServiceTest {
     @Test
     void configureMfa_actualizaAmbosFactoresYRechazaUsuarioInexistente() {
         Cliente cliente = new Cliente();
-        when(usuarioRepository.findByIdAndEliminadoFalse("cliente-1")).thenReturn(Optional.of(cliente));
+        when(usuarioRepository.findById("cliente-1")).thenReturn(Optional.of(cliente));
 
         service.configureMfa("cliente-1", true, true);
 
@@ -160,7 +160,7 @@ class AuthFactorServiceTest {
         assertTrue(cliente.is3faActivoCliente());
         verify(usuarioRepository).save(cliente);
 
-        when(usuarioRepository.findByIdAndEliminadoFalse("missing")).thenReturn(Optional.empty());
+        when(usuarioRepository.findById("missing")).thenReturn(Optional.empty());
         assertThrows(NotFoundException.class, () -> service.configureMfa("missing", false, false));
     }
 

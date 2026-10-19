@@ -7,7 +7,6 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 
 /** Acceso persistente a usuarios y consultas por atributos de cuenta. */
@@ -45,29 +44,27 @@ public interface UsuarioRepository extends MongoRepository<Usuario, String> {
      * @return usuario encontrado, o vacío si no existe
      */
     Optional<Usuario> findByEmail(String email);
-    /** @return usuarios que no han sido eliminados lógicamente */
-    List<Usuario> findAllByEliminadoFalse();
     /**
-     * Busca una cuenta no eliminada por identificador.
+     * Busca una cuenta por identificador.
      *
      * @param id identificador de usuario
-     * @return usuario encontrado, o vacío si no existe o fue eliminado
+     * @return usuario encontrado, o vacío si no existe 
      */
-    Optional<Usuario> findByIdAndEliminadoFalse(String id);
+    Optional<Usuario> findById(String id);
     /**
-     * Comprueba que una cuenta siga activa, desbloqueada y no eliminada.
+     * Comprueba que una cuenta siga activa y desbloqueada .
      *
      * @param id identificador de la cuenta
      * @return {@code true} si la cuenta puede autenticarse
      */
-    boolean existsByIdAndActivoTrueAndBloqueadoFalseAndEliminadoFalse(String id);
+    boolean existsByIdAndActivoTrueAndBloqueadoFalse(String id);
     /**
-     * Cuenta las cuentas no bloqueadas, activas y no eliminadas con el rol indicado.
+     * Cuenta las cuentas no bloqueadas y activas con el rol indicado.
      *
      * @param rol rol de las cuentas que se contarán
      * @return número de cuentas que cumplen todos los criterios
      */
-    long countByRolAndActivoTrueAndBloqueadoFalseAndEliminadoFalse(Rol rol);
+    long countByRolAndActivoTrueAndBloqueadoFalse(Rol rol);
     /**
      * Busca la cuenta asociada al hash de un token de recuperación.
      *
