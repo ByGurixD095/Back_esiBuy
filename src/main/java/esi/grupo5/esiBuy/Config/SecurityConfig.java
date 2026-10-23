@@ -2,7 +2,9 @@ package esi.grupo5.esiBuy.Config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
 import org.springframework.http.HttpMethod;
+
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -22,6 +24,7 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 public class SecurityConfig {
 
     private static final String ROL_ADMINISTRADOR = "ADMINISTRADOR";
+    private static final String ROL_CLIENTE = "CLIENTE";
 
     /** Filtro que establece la identidad y el rol a partir de la cookie JWT. */
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -115,6 +118,9 @@ public class SecurityConfig {
                 auth.requestMatchers("/admin/**")
                     .hasRole(ROL_ADMINISTRADOR);
 
+                auth.requestMatchers("/favoritos/**")
+                    .hasRole(ROL_CLIENTE);
+                    
                 auth.requestMatchers("/products/**")
                     .hasRole("VENDEDOR");
 
