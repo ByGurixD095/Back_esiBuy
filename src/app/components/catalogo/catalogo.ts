@@ -2,6 +2,7 @@
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { PaginaProducto, Producto } from '../../models/producto.model';
+import { Favoritos, FavoritosApiError } from '../../services/favoritos-service/favoritos';
 import { PanelFiltrosProductos } from '../panel-filtros-productos/panel-filtros-productos';
 import { FiltrosProductos, ProductApiError, ProductService, filtrarProductos } from '../../services/product.service';
 
@@ -14,6 +15,7 @@ import { FiltrosProductos, ProductApiError, ProductService, filtrarProductos } f
 })
 export class Catalogo implements OnInit {
   private readonly productService = inject(ProductService);
+  private readonly favoritosService = inject(Favoritos);
   readonly auth = inject(AuthService);
 
   readonly productos = signal<Producto[]>([]);
@@ -26,8 +28,71 @@ export class Catalogo implements OnInit {
   readonly error = signal<{ status: number; message: string } | null>(null);
   private readonly filtros = signal<FiltrosProductos>({});
 
+  // HU 15: favoritos del cliente (solo se usan si el rol es CLIENTE)
+  readonly favoritosIds = signal<ReadonlySet<string>>(new Set());
+  readonly favoritosProcesando = signal<ReadonlySet<string>>(new Set());
+  readonly errorFavorito = signal<string | null>(null);
+
   ngOnInit(): void {
     this.cargarCatalogo();
+    if (this.esCliente()) {
+      this.cargarFavoritos();
+    }
+  }
+
+  esCliente(): boolean {
+    return this.auth.hasRole(['CLIENTE']);
+  }
+
+  esFavorito(productoId: string): boolean {
+    return this.favoritosIds().has(productoId);
+  }
+
+  favoritoProcesando(productoId: string): boolean {
+    return this.favoritosProcesando().has(productoId);
+  }
+
+  private cargarFavoritos(): void {
+    this.favoritosService.listar().subscribe({
+      next: (productos) => this.favoritosIds.set(new Set(productos.map((p) => p.id))),
+      error: (error: FavoritosApiError) => this.errorFavorito.set(error.message),
+    });
+  }
+
+  alternarFavorito(producto: Producto): void {
+    if (this.favoritoProcesando(producto.id)) return;
+
+    const eraFavorito = this.esFavorito(producto.id);
+    this.errorFavorito.set(null);
+    this.favoritosProcesando.update((ids) => new Set(ids).add(producto.id));
+
+    const peticion = eraFavorito
+      ? this.favoritosService.quitar(producto.id)
+      : this.favoritosService.marcar(producto.id);
+
+    peticion.subscribe({
+      next: () => {
+        this.favoritosIds.update((ids) => {
+          const siguiente = new Set(ids);
+          if (eraFavorito) siguiente.delete(producto.id);
+          else siguiente.add(producto.id);
+          return siguiente;
+        });
+        this.terminarProceso(producto.id);
+      },
+      error: (error: FavoritosApiError) => {
+        this.errorFavorito.set(error.message);
+        this.terminarProceso(producto.id);
+      },
+    });
+  }
+
+  private terminarProceso(productoId: string): void {
+    this.favoritosProcesando.update((ids) => {
+      const siguiente = new Set(ids);
+      siguiente.delete(productoId);
+      return siguiente;
+    });
   }
 
   cargarCatalogo(filtros: FiltrosProductos = this.filtros()): void {

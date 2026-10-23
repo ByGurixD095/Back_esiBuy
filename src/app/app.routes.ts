@@ -11,6 +11,7 @@ import { RegistroInicio } from './components/registro/registro-inicio';
 import { roleGuard } from './guards/role.guard';
 import { Inicio } from './components/inicio/inicio';
 import { Cuenta } from './components/cuenta/cuenta';
+import { MisFavoritos } from './components/favoritos/favoritos';
 import { Gestionar } from './components/gestionar/gestionar';
 import { ConsultarUsuarios } from './components/consultar-usuarios/consultar-usuarios';
 import { AdminEditarUsuario } from './components/admin-editar-usuario/admin-editar-usuario';
@@ -28,6 +29,7 @@ export const routes: Routes = [
   { path: 'register/clientes', component: RegistroComponent, data: { tipoRegistro: 'cliente' }, canActivate: [guestGuard] },
   { path: 'register/vendedor', component: RegistroComponent, data: { tipoRegistro: 'vendedor' }, canActivate: [guestGuard] },
   { path: 'cart', children: [] },
+  { path: 'favoritos', component: MisFavoritos, canActivate: [roleGuard(['CLIENTE'])] },
   { path: 'account', component: Cuenta, canActivate: [roleGuard(['ADMINISTRADOR', 'VENDEDOR', 'CLIENTE'])] },
   {
     path: 'manage',
