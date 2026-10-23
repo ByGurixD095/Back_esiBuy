@@ -8,4 +8,6 @@ import esi.grupo5.esiBuy.Model.Categoria;
 /** Acceso persistente a las categorías. */
 @Repository
 public interface CategoriaRepository extends MongoRepository<Categoria, String> {
+
+    boolean existsByNombreRegexIgnoreCase(String nombreRegex);
 }
