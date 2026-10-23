@@ -197,3 +197,9 @@ h1 em { color: var(--orange); font-style: italic; }
 @media (prefers-reduced-motion: reduce) {
   .product-card, .product-image-wrap img { animation: none; transition: none; }
 }
+
+/* HU 15: corazón de favoritos (objetivo táctil de 44 px) */
+.favorite-button { width: 44px; height: 44px; }
+.favorite-button:disabled { opacity: 0.6; cursor: progress; }
+.favorite-button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.favorite-error { margin: 0 0 1rem; padding: 0.75rem 1rem; border: 1px solid #d9a3a3; color: #8f1f1f; background: #fbe4e4; font: 0.8rem Arial, sans-serif; }

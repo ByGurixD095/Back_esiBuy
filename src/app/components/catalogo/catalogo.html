@@ -6,6 +6,9 @@
       <a class="account-link" routerLink="/products">Catálogo</a>
       @if (auth.isAuthenticated()) {
         <a class="account-link" routerLink="/account">Mi cuenta</a>
+        @if (esCliente()) {
+          <a class="account-link" routerLink="/favoritos">Mis favoritos</a>
+        }
         @if (auth.hasRole(['ADMINISTRADOR', 'VENDEDOR'])) {
           <a class="account-link" routerLink="/manage">Gestionar</a>
         }
@@ -74,6 +77,10 @@
         <p class="success-note"><span aria-hidden="true">●</span> Catálogo actualizado · {{ tamanoPagina }} por página</p>
       </div>
 
+      @if (errorFavorito(); as mensajeFavorito) {
+        <p class="favorite-error" role="alert">{{ mensajeFavorito }}</p>
+      }
+
       <div class="product-grid">
         @for (producto of productos(); track producto.id) {
           <article class="product-card">
@@ -84,6 +91,19 @@
                 <div class="image-placeholder" aria-label="Producto sin imagen">Sin imagen</div>
               }
               @if (producto.descuento > 0) { <span class="discount-label">-{{ producto.descuento }}%</span> }
+              @if (esCliente()) {
+                <button
+                  type="button"
+                  class="favorite-button"
+                  [class.is-favorite]="esFavorito(producto.id)"
+                  [attr.aria-pressed]="esFavorito(producto.id)"
+                  [attr.aria-label]="(esFavorito(producto.id) ? 'Quitar de favoritos: ' : 'Guardar en favoritos: ') + producto.nombre"
+                  [disabled]="favoritoProcesando(producto.id)"
+                  (click)="alternarFavorito(producto)"
+                >
+                  <span aria-hidden="true">{{ esFavorito(producto.id) ? '♥' : '♡' }}</span>
+                </button>
+              }
             </div>
             <div class="product-info">
               <p class="product-category">{{ producto.categoria }}</p>
