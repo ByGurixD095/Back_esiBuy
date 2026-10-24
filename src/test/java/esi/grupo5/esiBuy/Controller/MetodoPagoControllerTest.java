@@ -66,7 +66,9 @@ class MetodoPagoControllerTest {
                         {
                           "tipo": "TARJETA",
                           "alias": "Mi tarjeta",
-                          "referencia": "**** 1234"
+                          "numeroTarjeta": "**** 1234",
+                          "titular": "Ana Pérez",
+                          "caducidad": "12/2028"
                         }
                         """))
                 .andExpect(status().isCreated())
@@ -85,7 +87,9 @@ class MetodoPagoControllerTest {
                         {
                           "tipo": "TARJETA",
                           "alias": "",
-                          "referencia": "**** 1234"
+                          "numeroTarjeta": "**** 1234",
+                          "titular": "Ana Pérez",
+                          "caducidad": "12/2028"
                         }
                         """))
                 .andExpect(status().isBadRequest());
@@ -103,7 +107,9 @@ class MetodoPagoControllerTest {
                         {
                           "tipo": null,
                           "alias": "Mi tarjeta",
-                          "referencia": "**** 1234"
+                          "numeroTarjeta": "**** 1234",
+                          "titular": "Ana Pérez",
+                          "caducidad": "12/2028"
                         }
                         """))
                 .andExpect(status().isBadRequest());
@@ -112,7 +118,7 @@ class MetodoPagoControllerTest {
     }
 
     @Test
-    void registrarMetodoPago_ReferenciaVacia_Devuelve400() throws Exception {
+    void registrarMetodoPago_NumeroTarjetaInvalido_Devuelve400() throws Exception {
         mockMvc.perform(post("/users/me/metodoPago")
                 .principal(new UsernamePasswordAuthenticationToken(
                         "cliente123", null))
@@ -121,7 +127,9 @@ class MetodoPagoControllerTest {
                         {
                           "tipo": "TARJETA",
                           "alias": "Mi tarjeta",
-                          "referencia": ""
+                          "numeroTarjeta": "no-es-una-tarjeta",
+                          "titular": "Ana Pérez",
+                          "caducidad": "12/2028"
                         }
                         """))
                 .andExpect(status().isBadRequest());

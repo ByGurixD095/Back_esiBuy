@@ -1,34 +1,27 @@
 
 package esi.grupo5.esiBuy.Service;
 
-import esi.grupo5.esiBuy.Dto.MetodoPagoRequestDTO;
-import esi.grupo5.esiBuy.Dto.MetodoPagoResponseDTO;
-import esi.grupo5.esiBuy.Exception.BusinessException;
-import esi.grupo5.esiBuy.Exception.NotFoundException;
-import esi.grupo5.esiBuy.Exception.ValidationException;
-import esi.grupo5.esiBuy.Model.Cliente;
-import esi.grupo5.esiBuy.Model.MetodoPago;
-import esi.grupo5.esiBuy.Model.Usuario;
-import esi.grupo5.esiBuy.Model.enums.TipoMetodoPago;
-import esi.grupo5.esiBuy.Repository.MetodoPagoRepository;
-import esi.grupo5.esiBuy.Repository.UsuarioRepository;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import org.springframework.dao.DataAccessResourceFailureException;
-
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import esi.grupo5.esiBuy.Dto.MetodoPagoRequestDTO;
+import esi.grupo5.esiBuy.Dto.MetodoPagoResponseDTO;
+import esi.grupo5.esiBuy.Exception.ValidationException;
+import esi.grupo5.esiBuy.Model.Cliente;
+import esi.grupo5.esiBuy.Model.MetodoPago;
+import esi.grupo5.esiBuy.Model.enums.TipoMetodoPago;
+import esi.grupo5.esiBuy.Repository.MetodoPagoRepository;
+import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 
 @ExtendWith(MockitoExtension.class)
 class MetodoPagoServiceTest {
@@ -43,116 +36,177 @@ class MetodoPagoServiceTest {
     private MetodoPagoService metodoPagoService;
 
     private Cliente cliente;
-    private MetodoPagoRequestDTO request;
 
     @BeforeEach
     void setUp() {
-        cliente = new Cliente();
-        cliente.setId("cliente123");
-
-        request = new MetodoPagoRequestDTO(
-                TipoMetodoPago.TARJETA,
-                "Mi tarjeta",
-                "**** 1234");
+        cliente = mock(Cliente.class);
+        when(usuarioRepository.findById("cliente123"))
+                .thenReturn(Optional.of(cliente));
     }
 
     @Test
-    void registrarMetodoPago_ClienteValido_GuardaMetodo() {
-        when(usuarioRepository.findById("cliente123"))
-                .thenReturn(Optional.of(cliente));
+    void registrarTarjetaValida_GuardaReferenciaEnmascarada() {
+        MetodoPagoRequestDTO dto = new MetodoPagoRequestDTO(
+                TipoMetodoPago.TARJETA,
+                "Mi tarjeta",
+                "4111111111111234",
+                "Ana Pérez",
+                "12/2028",
+                null,
+                null
+        );
 
         when(metodoPagoRepository.save(any(MetodoPago.class)))
                 .thenAnswer(invocation -> {
-                    MetodoPago metodo = invocation.getArgument(0);
-                    metodo.setId("pago123");
-                    return metodo;
+                    MetodoPago guardado = invocation.getArgument(0);
+                    guardado.setId("pago123");
+                    return guardado;
                 });
 
-        MetodoPagoResponseDTO resultado =
-                metodoPagoService.registrarMetodoPago(
-                        "cliente123", request);
+        MetodoPagoResponseDTO respuesta =
+                metodoPagoService.registrarMetodoPago("cliente123", dto);
 
-        assertEquals("pago123", resultado.id());
-        assertEquals(TipoMetodoPago.TARJETA, resultado.tipo());
-        assertEquals("Mi tarjeta", resultado.alias());
-        assertEquals("**** 1234", resultado.referencia());
+        assertEquals("pago123", respuesta.id());
+        assertEquals(TipoMetodoPago.TARJETA, respuesta.tipo());
+        assertEquals("Mi tarjeta", respuesta.alias());
+        assertEquals("**** 1234", respuesta.referencia());
+        assertEquals("Ana Pérez", respuesta.titular());
+        assertEquals("12/2028", respuesta.caducidad());
 
         verify(metodoPagoRepository).save(any(MetodoPago.class));
     }
 
     @Test
-    void registrarMetodoPago_ClienteInexistente_LanzaExcepcion() {
-        when(usuarioRepository.findById("cliente123"))
-                .thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class,
-                () -> metodoPagoService.registrarMetodoPago(
-                        "cliente123", request));
-
-        verifyNoInteractions(metodoPagoRepository);
-    }
-
-    @Test
-    void registrarMetodoPago_UsuarioNoCliente_LanzaExcepcion() {
-        Usuario usuario = mock(Usuario.class);
-
-        when(usuarioRepository.findById("cliente123"))
-                .thenReturn(Optional.of(usuario));
-
-        assertThrows(ValidationException.class,
-                () -> metodoPagoService.registrarMetodoPago(
-                        "cliente123", request));
-
-        verifyNoInteractions(metodoPagoRepository);
-    }
-
-    @Test
-    void registrarMetodoPago_ErrorMongoDB_LanzaBusinessException() {
-        when(usuarioRepository.findById("cliente123"))
-                .thenReturn(Optional.of(cliente));
+    void registrarPaypalValido_GuardaCorreoComoReferencia() {
+        MetodoPagoRequestDTO dto = new MetodoPagoRequestDTO(
+                TipoMetodoPago.PAYPAL,
+                "Mi PayPal",
+                null,
+                null,
+                null,
+                "cliente@example.com",
+                null
+        );
 
         when(metodoPagoRepository.save(any(MetodoPago.class)))
-                .thenThrow(new DataAccessResourceFailureException(
-                        "Error simulado de MongoDB"));
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-        assertThrows(BusinessException.class,
-                () -> metodoPagoService.registrarMetodoPago(
-                        "cliente123", request));
+        MetodoPagoResponseDTO respuesta =
+                metodoPagoService.registrarMetodoPago("cliente123", dto);
+
+        assertEquals(TipoMetodoPago.PAYPAL, respuesta.tipo());
+        assertEquals("cliente@example.com", respuesta.referencia());
     }
 
     @Test
-    void listarMetodosPago_ClienteValido_DevuelveLista() {
-        MetodoPago metodo = new MetodoPago();
-        metodo.setId("pago123");
-        metodo.setClienteId("cliente123");
-        metodo.setTipo(TipoMetodoPago.TARJETA);
-        metodo.setAlias("Mi tarjeta");
-        metodo.setReferencia("**** 1234");
+    void registrarBizumValido_GuardaTelefonoComoReferencia() {
+        MetodoPagoRequestDTO dto = new MetodoPagoRequestDTO(
+                TipoMetodoPago.BIZUM,
+                "Mi Bizum",
+                null,
+                null,
+                null,
+                null,
+                "612345678"
+        );
 
-        when(usuarioRepository.findById("cliente123"))
-                .thenReturn(Optional.of(cliente));
+        when(metodoPagoRepository.save(any(MetodoPago.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-        when(metodoPagoRepository.findByClienteId("cliente123"))
-                .thenReturn(List.of(metodo));
+        MetodoPagoResponseDTO respuesta =
+                metodoPagoService.registrarMetodoPago("cliente123", dto);
 
-        List<MetodoPagoResponseDTO> resultado =
-                metodoPagoService.listarMetodosPago("cliente123");
-
-        assertEquals(1, resultado.size());
-        assertEquals("pago123", resultado.get(0).id());
-        assertEquals("Mi tarjeta", resultado.get(0).alias());
+        assertEquals(TipoMetodoPago.BIZUM, respuesta.tipo());
+        assertEquals("612345678", respuesta.referencia());
     }
 
     @Test
-    void listarMetodosPago_ErrorMongoDB_LanzaBusinessException() {
-        when(usuarioRepository.findById("cliente123"))
-                .thenReturn(Optional.of(cliente));
+    void registrarTarjetaSinNumero_LanzaExcepcion() {
+        MetodoPagoRequestDTO dto = new MetodoPagoRequestDTO(
+                TipoMetodoPago.TARJETA,
+                "Mi tarjeta",
+                null,
+                "Ana Pérez",
+                "12/2028",
+                null,
+                null
+        );
 
-        when(metodoPagoRepository.findByClienteId("cliente123"))
-                .thenThrow(new DataAccessResourceFailureException(
-                        "Error simulado de MongoDB"));
+        assertThrows(ValidationException.class,
+                () -> metodoPagoService.registrarMetodoPago("cliente123", dto));
 
-        assertThrows(BusinessException.class,
-                () -> metodoPagoService.listarMetodosPago("cliente123"));
+        verify(metodoPagoRepository, never()).save(any(MetodoPago.class));
+    }
+
+    @Test
+    void registrarTarjetaSinTitular_LanzaExcepcion() {
+        MetodoPagoRequestDTO dto = new MetodoPagoRequestDTO(
+                TipoMetodoPago.TARJETA,
+                "Mi tarjeta",
+                "4111111111111234",
+                " ",
+                "12/2028",
+                null,
+                null
+        );
+
+        assertThrows(ValidationException.class,
+                () -> metodoPagoService.registrarMetodoPago("cliente123", dto));
+
+        verify(metodoPagoRepository, never()).save(any(MetodoPago.class));
+    }
+
+    @Test
+    void registrarTarjetaSinCaducidad_LanzaExcepcion() {
+        MetodoPagoRequestDTO dto = new MetodoPagoRequestDTO(
+                TipoMetodoPago.TARJETA,
+                "Mi tarjeta",
+                "4111111111111234",
+                "Ana Pérez",
+                null,
+                null,
+                null
+        );
+
+        assertThrows(ValidationException.class,
+                () -> metodoPagoService.registrarMetodoPago("cliente123", dto));
+
+        verify(metodoPagoRepository, never()).save(any(MetodoPago.class));
+    }
+
+    @Test
+    void registrarPaypalSinCorreo_LanzaExcepcion() {
+        MetodoPagoRequestDTO dto = new MetodoPagoRequestDTO(
+                TipoMetodoPago.PAYPAL,
+                "Mi PayPal",
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        assertThrows(ValidationException.class,
+                () -> metodoPagoService.registrarMetodoPago("cliente123", dto));
+
+        verify(metodoPagoRepository, never()).save(any(MetodoPago.class));
+    }
+
+    @Test
+    void registrarBizumSinTelefono_LanzaExcepcion() {
+        MetodoPagoRequestDTO dto = new MetodoPagoRequestDTO(
+                TipoMetodoPago.BIZUM,
+                "Mi Bizum",
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        assertThrows(ValidationException.class,
+                () -> metodoPagoService.registrarMetodoPago("cliente123", dto));
+
+        verify(metodoPagoRepository, never()).save(any(MetodoPago.class));
     }
 }

@@ -21,6 +21,10 @@ public class MetodoPago {
     @NotBlank(message = "La referencia es obligatoria")
     private String referencia;
 
+    private String titular;
+
+    private String caducidad;
+
     public MetodoPago() {
     }
 
@@ -69,5 +73,21 @@ public class MetodoPago {
 
     public void setReferencia(String referencia) {
         this.referencia = referencia;
+    }
+
+    public String getTitular() {
+        return titular;
+    }
+
+    public void setTitular(String titular) {
+        this.titular = titular;
+    }
+
+    public String getCaducidad() {
+        return caducidad;
+    }
+
+    public void setCaducidad(String caducidad) {
+        this.caducidad = caducidad;
     }
 }
