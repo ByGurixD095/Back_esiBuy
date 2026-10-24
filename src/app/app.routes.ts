@@ -17,6 +17,7 @@ import { ConsultarUsuarios } from './components/consultar-usuarios/consultar-usu
 import { AdminEditarUsuario } from './components/admin-editar-usuario/admin-editar-usuario';
 import { ProductoDetalle } from './components/producto-detalle/producto-detalle';
 import { guestGuard } from './guards/guest.guard';
+import { MetodosPagoComponent } from './components/metodos-pago/metodos-pago';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', component: Inicio },
@@ -30,11 +31,12 @@ export const routes: Routes = [
   { path: 'register/vendedor', component: RegistroComponent, data: { tipoRegistro: 'vendedor' }, canActivate: [guestGuard] },
   { path: 'cart', children: [] },
   { path: 'favoritos', component: MisFavoritos, canActivate: [roleGuard(['CLIENTE'])] },
+  { path: 'account/metodos-pago', component: MetodosPagoComponent, canActivate: [roleGuard(['CLIENTE'])] },
   { path: 'account', component: Cuenta, canActivate: [roleGuard(['ADMINISTRADOR', 'VENDEDOR', 'CLIENTE'])] },
   {
     path: 'manage',
     component: Gestionar,
-    canActivate: [roleGuard(['ADMINISTRADOR', 'VENDEDOR'])],
+    canActivate: [roleGuard(['ADMINISTRADOR', 'VENDEDOR', 'CLIENTE'])],
   },
   {
     path: 'administradores/nuevo',
