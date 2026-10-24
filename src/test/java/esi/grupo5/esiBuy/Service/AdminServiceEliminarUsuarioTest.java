@@ -1,6 +1,7 @@
 package esi.grupo5.esiBuy.Service;
 
 import esi.grupo5.esiBuy.Exception.ForbiddenException;
+import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Service.strategy.UsuarioUpdateStrategy;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,9 +12,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.List;
+import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AdminServiceEliminarUsuarioTest {
@@ -35,9 +38,12 @@ class AdminServiceEliminarUsuarioTest {
 
     @Test
     void eliminarUsuario_delegaEnLaReglaComunDeEliminacion() {
-        service.eliminarUsuario("cliente-1", "admin-1");
+        Administrador objetivo = new Administrador();
+        when(usuarioRepository.findById("admin-2")).thenReturn(Optional.of(objetivo));
 
-        verify(userService).eliminarCuenta("cliente-1");
+        service.eliminarUsuario("admin-2", "admin-1");
+
+        verify(userService).eliminarCuenta("admin-2");
     }
 
     @Test
