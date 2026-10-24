@@ -67,6 +67,7 @@ public class FavoritoService {
             favoritoRepository.save(new Favorito(clienteId, productoId));
         } catch (DuplicateKeyException e) {
             // Otra petición simultánea ya lo marcó: el resultado es el mismo.
+            return;
         }
     }
 
