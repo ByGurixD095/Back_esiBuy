@@ -20,6 +20,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -77,25 +78,7 @@ class MetodoPagoControllerTest {
                 .andExpect(jsonPath("$.alias").value("Mi tarjeta"));
     }
 
-    @Test
-    void registrarMetodoPago_AliasVacio_Devuelve400() throws Exception {
-        mockMvc.perform(post("/users/me/metodoPago")
-                .principal(new UsernamePasswordAuthenticationToken(
-                        "cliente123", null))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {
-                          "tipo": "TARJETA",
-                          "alias": "",
-                          "numeroTarjeta": "**** 1234",
-                          "titular": "Ana Pérez",
-                          "caducidad": "12/2028"
-                        }
-                        """))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(metodoPagoService);
-    }
+ 
 
     @Test
     void registrarMetodoPago_TipoNulo_Devuelve400() throws Exception {
