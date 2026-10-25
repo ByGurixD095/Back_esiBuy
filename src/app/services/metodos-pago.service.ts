@@ -36,4 +36,8 @@ export class MetodosPagoService {
   registrar(datos: RegistrarMetodoPagoRequest): Observable<MetodoPago> {
     return this.http.post<MetodoPago>(this.apiUrl, datos);
   }
+
+  eliminar(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${encodeURIComponent(id)}`);
+  }
 }

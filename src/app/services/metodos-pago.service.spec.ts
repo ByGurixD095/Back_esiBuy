@@ -47,4 +47,15 @@ describe('MetodosPagoService', () => {
 
     expect(resultado).toEqual({ id: 'mp-2', ...datos });
   });
+
+  it('elimina un método de pago por su identificador', () => {
+    let completado = false;
+    servicio.eliminar('mp-1').subscribe(() => (completado = true));
+
+    const peticion = http.expectOne('http://localhost:8080/users/me/metodoPago/mp-1');
+    expect(peticion.request.method).toBe('DELETE');
+    peticion.flush(null);
+
+    expect(completado).toBe(true);
+  });
 });
