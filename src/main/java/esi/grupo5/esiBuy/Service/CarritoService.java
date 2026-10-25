@@ -19,9 +19,7 @@ public class CarritoService {
     }
 
     public List<ItemCarrito> listarCarrito(String clienteId) {
-        return carritoRepository.findByClienteId(clienteId).map(carrito -> Collections.<ItemCarrito>emptyList()).orElse(Collections.emptyList());
+        return carritoRepository.findByClienteId(clienteId).map(Carrito::getItems).orElse(Collections.emptyList());
 }
 
-
-    
 }
