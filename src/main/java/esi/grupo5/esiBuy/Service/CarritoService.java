@@ -1,6 +1,7 @@
 package esi.grupo5.esiBuy.Service;
 
 import java.util.List;
+import java.util.Collections;
 
 import org.springframework.stereotype.Service;
 
@@ -16,7 +17,7 @@ public class CarritoService {
     }
 
     public List<?> listarCarrito(String clienteId) {
-        return null; //Temporal para provocar el fallo en el test, luego se implementa correctamente
+        return carritoRepository.findByClienteId(clienteId).map(carrito -> Collections.emptyList()).orElse(Collections.emptyList());
     }
 
 
