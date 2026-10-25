@@ -21,14 +21,16 @@
         <span>Gestionar los productos de tu catálogo.</span>
       </a>
       }
+      @if (auth.hasRole(['CLIENTE'])) {
+      <a class="opcion esi-tarjeta" routerLink="/account/metodos-pago">
+        <strong>Métodos de pago</strong>
+        <span>Registrar y consultar tus métodos de pago.</span>
+      </a>
+      }
     </div>
 
     @if (auth.hasRole(['ADMINISTRADOR', 'VENDEDOR'])) {
     <p class="nota">Más opciones de gestión estarán disponibles próximamente.</p>
-    } @else {
-    <p class="esi-alerta esi-alerta--error" role="alert">
-      Tu cuenta no tiene todavía opciones de gestión disponibles.
-    </p>
     }
   </section>
 </app-marco-pagina>

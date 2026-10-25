@@ -1,0 +1,175 @@
+.pagina-metodos {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.pagina-metodos .esi-titulo {
+  margin-bottom: 12px;
+}
+
+.descripcion,
+.ayuda-seguridad,
+.estado {
+  color: var(--esi-soft-ink);
+}
+
+.descripcion {
+  margin: 0 0 28px;
+}
+
+.seccion-metodos {
+  margin-top: 32px;
+}
+
+.seccion-metodos h2 {
+  margin: 0 0 16px;
+  font-family: var(--esi-font-title);
+  font-size: 22px;
+  font-weight: 400;
+}
+
+.lista-metodos {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.metodo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--esi-line);
+  border-radius: 10px;
+  background: var(--esi-card);
+}
+
+.datos-metodo {
+  min-width: 0;
+}
+
+.metodo h3,
+.metodo p {
+  margin: 0;
+}
+
+.metodo h3 {
+  font-size: 16px;
+}
+
+.metodo p,
+.estado {
+  margin: 0;
+}
+
+.metodo p {
+  color: var(--esi-soft-ink);
+}
+
+.metodo .referencia {
+  overflow-wrap: anywhere;
+  text-align: right;
+  font-weight: 600;
+}
+
+.estado-caducidad {
+  margin-top: 4px !important;
+  font-size: 13px;
+}
+
+.estado-caducidad.vencido {
+  color: var(--esi-error-text);
+}
+
+.estado-error {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+
+.pagina-metodos form > .esi-alerta {
+  margin: 20px 0 0;
+}
+
+.campos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px;
+}
+
+.esi-campo {
+  min-width: 0;
+}
+
+.opcional {
+  color: var(--esi-soft-ink);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.esi-campo input,
+.esi-campo select {
+  width: 100%;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.esi-campo input:focus-visible,
+.esi-campo select:focus-visible {
+  border-color: var(--esi-orange-text);
+  outline-color: var(--esi-orange-text);
+  box-shadow: 0 0 0 3px rgb(184 74 36 / 12%);
+}
+
+.caducidad {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(90px, 1fr);
+  gap: 10px;
+}
+
+.telefono-bizum {
+  display: grid;
+  grid-template-columns: minmax(155px, 0.8fr) minmax(0, 2fr);
+  gap: 10px;
+}
+
+.campo-completo {
+  grid-column: 1 / -1;
+}
+
+.pagina-metodos form > .esi-boton {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 18px;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+@media (max-width: 600px) {
+  .campos {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .campo-completo {
+    grid-column: auto;
+  }
+
+  .telefono-bizum {
+    grid-template-columns: minmax(130px, 0.9fr) minmax(0, 1.5fr);
+    gap: 8px;
+  }
+
+  .metodo {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .metodo .referencia {
+    text-align: left;
+  }
+}
