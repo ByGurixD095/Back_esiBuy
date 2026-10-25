@@ -79,11 +79,10 @@ class AdminControllerConsultaUsuariosEndpointTest {
                 .andExpect(jsonPath("$[0].tipoCliente").value("NORMAL"))
                 .andExpect(jsonPath("$[0].rol").value("CLIENTE"))
                 .andExpect(jsonPath("$[0].activo").value(true))
-                .andExpect(jsonPath("$[0].eliminado").value(false))
                 .andExpect(jsonPath("$[0].bloqueado").value(false))
                 .andExpect(jsonPath("$[1].id").value("cliente-eliminado"))
+                .andExpect(jsonPath("$[1].activo").value(false))
                 .andExpect(jsonPath("$[1].bloqueado").value(true))
-                .andExpect(jsonPath("$[1].eliminado").value(true))
                 .andExpect(jsonPath("$[2].rol").value("ADMINISTRADOR"))
                 .andExpect(jsonPath("$[2].sede").value("Madrid"))
                 .andExpect(jsonPath("$[2].fechaIncorporacion").value("2024-02-01"));
