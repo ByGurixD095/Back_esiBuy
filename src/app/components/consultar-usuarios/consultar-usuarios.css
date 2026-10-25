@@ -26,7 +26,11 @@
 }
 
 .busqueda {
-  flex: 0 1 360px;
+  flex: 1 1 220px;
+}
+
+.filtro-rol {
+  flex: 0 1 180px;
 }
 
 .filtro-eliminados {

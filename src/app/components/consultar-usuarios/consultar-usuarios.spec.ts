@@ -140,47 +140,42 @@ describe('ConsultarUsuarios', () => {
     expect(el.querySelector('.paginacion')).toBeNull();
   });
 
-  it('filtra los usuarios por coincidencia parcial del ID', () => {
-    const campoBusqueda = (fixture.nativeElement as HTMLElement).querySelector(
-      '#buscar-id',
-    ) as HTMLInputElement;
-    campoBusqueda.value = 'db-2';
-    campoBusqueda.dispatchEvent(new Event('input'));
-    fixture.detectChanges();
-
-    const filas = (fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr');
-    expect(filas.length).toBe(1);
-    expect(filas[0].textContent).toContain('user-db-2');
-  });
-
-  it('filtra solo usuarios eliminados y permite combinarlos con la búsqueda por ID', () => {
+  it('filtra los usuarios por nombre, correo y rol', () => {
     const el = fixture.nativeElement as HTMLElement;
-    const filtro = el.querySelector('#filtro-eliminados') as HTMLSelectElement;
-    filtro.value = 'eliminados';
-    filtro.dispatchEvent(new Event('change'));
+    
+    // Probar filtro por Nombre
+    const buscarNombre = el.querySelector('#buscar-nombre') as HTMLInputElement;
+    buscarNombre.value = 'Ana';
+    buscarNombre.dispatchEvent(new Event('input'));
     fixture.detectChanges();
-
+    
     let filas = el.querySelectorAll('tbody tr');
     expect(filas.length).toBe(1);
-    expect(filas[0].textContent).toContain('user-db-2');
-
-    const campoBusqueda = el.querySelector('#buscar-id') as HTMLInputElement;
-    campoBusqueda.value = 'db-1';
-    campoBusqueda.dispatchEvent(new Event('input'));
+    expect(filas[0].textContent).toContain('Ana López');
+    
+    // Limpiar nombre y probar filtro por Correo
+    buscarNombre.value = '';
+    buscarNombre.dispatchEvent(new Event('input'));
+    const buscarEmail = el.querySelector('#buscar-email') as HTMLInputElement;
+    buscarEmail.value = 'luis@test.com';
+    buscarEmail.dispatchEvent(new Event('input'));
     fixture.detectChanges();
-    expect(el.textContent).toContain(
-      'No hay usuarios que coincidan con los filtros seleccionados.',
-    );
-
-    campoBusqueda.value = '';
-    campoBusqueda.dispatchEvent(new Event('input'));
-    filtro.value = 'no-eliminados';
-    filtro.dispatchEvent(new Event('change'));
-    fixture.detectChanges();
-
+    
     filas = el.querySelectorAll('tbody tr');
-    expect(filas.length).toBe(2);
-    expect(Array.from(filas).some((fila) => fila.textContent?.includes('user-db-1'))).toBe(true);
+    expect(filas.length).toBe(1);
+    expect(filas[0].textContent).toContain('Luis Pérez');
+
+    // Limpiar correo y probar filtro por Rol
+    buscarEmail.value = '';
+    buscarEmail.dispatchEvent(new Event('input'));
+    const filtroRol = el.querySelector('#filtro-rol') as HTMLSelectElement;
+    filtroRol.value = 'ADMINISTRADOR';
+    filtroRol.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+    
+    filas = el.querySelectorAll('tbody tr');
+    expect(filas.length).toBe(1);
+    expect(filas[0].textContent).toContain('Admin');
   });
 
   it('muestra un mensaje si los filtros no tienen resultados', () => {
