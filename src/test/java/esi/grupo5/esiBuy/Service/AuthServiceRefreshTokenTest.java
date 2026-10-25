@@ -101,6 +101,7 @@ class AuthServiceRefreshTokenTest {
     @Test
     void refreshTokenDeUsuarioEliminado_seEliminaYSeRechaza() {
         Usuario usuario = usuario();
+        usuario.setActivo(false);
         RefreshToken refreshToken = refreshToken("deleted-token", usuario);
         when(refreshTokenRepository.findByToken("deleted-token")).thenReturn(Optional.of(refreshToken));
         when(jwtService.isTokenValid("deleted-token")).thenReturn(true);

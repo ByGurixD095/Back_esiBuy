@@ -10,16 +10,13 @@ import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -44,7 +41,7 @@ class UserServiceEliminarCuentaTest {
     }
 
     @Test
-    void eliminarCuenta_clienteSeMarcaEliminadoInactivoYRevocaRefreshTokens() {
+    void eliminarCuenta_clienteSeEliminaYRevocaRefreshTokens() {
         Cliente cliente = new Cliente();
         cliente.setActivo(true);
         when(usuarioRepository.findById("cliente-1"))
@@ -52,9 +49,8 @@ class UserServiceEliminarCuentaTest {
 
         userService.eliminarCuenta("cliente-1");
 
-        ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
-        verify(usuarioRepository).save(captor.capture());
-        assertFalse(captor.getValue().isActivo());
+        verify(usuarioRepository).delete(cliente);
+        verify(usuarioRepository, never()).save(any(Usuario.class));
         verify(authService).revocarRefreshTokens("cliente-1");
     }
 
@@ -69,7 +65,7 @@ class UserServiceEliminarCuentaTest {
 
         assertThrows(ForbiddenException.class, () -> userService.eliminarCuenta("admin-1"));
 
-        verify(usuarioRepository, never()).save(any(Usuario.class));
+        verify(usuarioRepository, never()).delete(any(Usuario.class));
         verify(authService, never()).revocarRefreshTokens("admin-1");
     }
 
@@ -84,8 +80,8 @@ class UserServiceEliminarCuentaTest {
 
         userService.eliminarCuenta("admin-2");
 
-        assertFalse(administrador.isActivo());
-        verify(usuarioRepository).save(administrador);
+        verify(usuarioRepository).delete(administrador);
+        verify(usuarioRepository, never()).save(any(Usuario.class));
         verify(authService).revocarRefreshTokens("admin-2");
     }
 
@@ -95,7 +91,7 @@ class UserServiceEliminarCuentaTest {
 
         assertThrows(NotFoundException.class, () -> userService.eliminarCuenta("no-existe"));
 
-        verify(usuarioRepository, never()).save(any(Usuario.class));
+        verify(usuarioRepository, never()).delete(any(Usuario.class));
         verify(authService, never()).revocarRefreshTokens("no-existe");
     }
 }

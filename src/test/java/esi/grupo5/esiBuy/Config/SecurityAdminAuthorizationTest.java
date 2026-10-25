@@ -33,7 +33,8 @@ class SecurityAdminAuthorizationTest {
 
     private static final String BODY = """
             {"nombre":"Ana","apellidos":"Lopez","email":"ana@esi.es",
-             "contrasena":"Abcdef1!x","sede":"Ciudad Real"}
+             "contrasena":"Abcdef1!x","confirmarContrasena":"Abcdef1!x",
+             "sede":"Ciudad Real"}
             """;
 
     @Autowired private MockMvc mockMvc;
