@@ -144,4 +144,19 @@ public class MetodoPagoService {
                 metodoPago.getTitular(),
                 metodoPago.getCaducidad());
     }
+
+    public void eliminarMetodoPago(String clienteId, String metodoPagoId) {
+        validarCliente(clienteId);
+
+        MetodoPago metodoPago = metodoPagoRepository.findByIdAndClienteId(metodoPagoId, clienteId)
+                .orElseThrow(() ->new NotFoundException("Método de pago no encontrado"));
+
+        try {
+            metodoPagoRepository.delete(metodoPago);
+        } catch (DataAccessException e) {
+            throw new BusinessException(
+                    "Error interno al eliminar el método de pago",
+                    500, "SERVER_ERROR", e);
+        }
+    }
 }
