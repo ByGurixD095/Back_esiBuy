@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { environment } from '../../environments/environment';
+import { environment } from '../../../environments/environment';
 
 export type TipoMetodoPago = 'TARJETA' | 'PAYPAL' | 'BIZUM';
 
@@ -35,5 +35,9 @@ export class MetodosPagoService {
 
   registrar(datos: RegistrarMetodoPagoRequest): Observable<MetodoPago> {
     return this.http.post<MetodoPago>(this.apiUrl, datos);
+  }
+
+  eliminar(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${encodeURIComponent(id)}`);
   }
 }

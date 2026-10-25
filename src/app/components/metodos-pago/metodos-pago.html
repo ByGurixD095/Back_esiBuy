@@ -4,214 +4,293 @@
     <h1 id="metodos-titulo" class="esi-titulo">Métodos de pago.</h1>
     <p class="descripcion">Consulta tus métodos guardados o registra uno nuevo.</p>
 
-    <section class="seccion-metodos" aria-labelledby="lista-titulo">
-      <h2 id="lista-titulo">Tus métodos guardados</h2>
-      @if (cargando()) {
-        <p class="estado" role="status">Cargando tus métodos de pago…</p>
-      } @else if (errorListado()) {
-        <div class="estado-error">
-          <p class="esi-alerta esi-alerta--error" role="alert">{{ errorListado() }}</p>
-          <button type="button" class="esi-boton" (click)="cargar()">Reintentar</button>
-        </div>
-      } @else if (metodos().length === 0) {
-        <p class="estado">Aún no has registrado ningún método de pago.</p>
-      } @else {
-        <ul class="lista-metodos">
-          @for (metodo of metodos(); track metodo.id) {
-            <li class="metodo esi-tarjeta">
-              @if (metodo.tipo === 'TARJETA') {
-                <div class="datos-metodo">
-                  <h3>{{ metodo.alias }}</h3>
-                  <p>{{ metodo.titular || 'Tarjeta' }}</p>
-                  @if (metodo.caducidad) {
-                    <p class="estado-caducidad" [class.vencido]="estaCaducada(metodo.caducidad)">
-                      {{ estaCaducada(metodo.caducidad) ? 'Vencida' : 'Vence' }}
-                      {{ metodo.caducidad }}
+    @if (mensajeEliminacion()) {
+      <p class="esi-alerta esi-alerta--ok aviso-eliminacion" role="status">
+        {{ mensajeEliminacion() }}
+      </p>
+    }
+
+    <div class="gestion-metodos">
+      <section class="seccion-metodos panel-metodos" aria-labelledby="lista-titulo">
+        <h2 id="lista-titulo">Tus métodos guardados</h2>
+        @if (cargando()) {
+          <p class="estado" role="status">Cargando tus métodos de pago…</p>
+        } @else if (errorListado()) {
+          <div class="estado-error">
+            <p class="esi-alerta esi-alerta--error" role="alert">{{ errorListado() }}</p>
+            <button type="button" class="esi-boton" (click)="cargar()">Reintentar</button>
+          </div>
+        } @else if (metodos().length === 0) {
+          <div class="estado-vacio">
+            <span class="icono-vacio" aria-hidden="true">＋</span>
+            <h3>Aún no tienes métodos guardados</h3>
+            <p>Añade uno con el formulario para tenerlo disponible en tu cuenta.</p>
+          </div>
+        } @else {
+          <ul class="lista-metodos">
+            @for (metodo of metodos(); track metodo.id) {
+              <li class="metodo esi-tarjeta">
+                @if (metodo.tipo === 'TARJETA') {
+                  <span class="icono-metodo" aria-hidden="true">▤</span>
+                  <div class="datos-metodo">
+                    <h3>{{ metodo.alias }}</h3>
+                    <p>{{ metodo.titular || 'Tarjeta' }}</p>
+                    @if (metodo.caducidad) {
+                      <p class="estado-caducidad" [class.vencido]="estaCaducada(metodo.caducidad)">
+                        {{ estaCaducada(metodo.caducidad) ? 'Vencida' : 'Vence' }}
+                        {{ metodo.caducidad }}
+                      </p>
+                    }
+                  </div>
+                  @if (mostrarReferenciaTarjeta(metodo.alias)) {
+                    <p class="referencia">
+                      {{ referenciaVisible(metodo.referencia, metodo.tipo) }}
                     </p>
                   }
-                </div>
-                @if (mostrarReferenciaTarjeta(metodo.alias)) {
+                } @else {
+                  <span class="icono-metodo" aria-hidden="true">
+                    {{ metodo.tipo === 'PAYPAL' ? 'P' : 'B' }}
+                  </span>
+                  <div class="datos-metodo">
+                    <h3>{{ metodo.alias }}</h3>
+                    <p>{{ nombreTipo(metodo.tipo) }}</p>
+                  </div>
                   <p class="referencia">
                     {{ referenciaVisible(metodo.referencia, metodo.tipo) }}
                   </p>
                 }
-              } @else {
-                <div class="datos-metodo">
-                  <h3>{{ metodo.alias }}</h3>
-                  <p>{{ nombreTipo(metodo.tipo) }}</p>
-                </div>
-                <p class="referencia">
-                  {{ referenciaVisible(metodo.referencia, metodo.tipo) }}
-                </p>
-              }
-            </li>
-          }
-        </ul>
-      }
-    </section>
+                <button
+                  type="button"
+                  class="boton-quitar"
+                  [attr.aria-label]="'Eliminar ' + metodo.alias"
+                  (click)="solicitarEliminacion(metodo)"
+                >
+                  Eliminar
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </section>
 
-    <section class="seccion-metodos" aria-labelledby="registro-titulo">
-      <h2 id="registro-titulo">Registrar un método de pago</h2>
-      <form [formGroup]="form" (ngSubmit)="registrar()" autocomplete="off" novalidate>
-        <div class="campos">
-          <div class="esi-campo">
-            <label for="tipo-metodo">Tipo de método</label>
-            <select id="tipo-metodo" formControlName="tipo" (change)="cambiarTipo()">
-              <option value="TARJETA">Tarjeta</option>
-              <option value="PAYPAL">PayPal</option>
-              <option value="BIZUM">Bizum</option>
-            </select>
-          </div>
-
-          <div class="esi-campo campo-completo">
-            <label for="alias-metodo"> Alias <span class="opcional">Opcional</span> </label>
-            <input
-              id="alias-metodo"
-              type="text"
-              formControlName="alias"
-              autocomplete="off"
-              placeholder="Ej. Mi tarjeta personal"
-            />
-            <small class="esi-ayuda"> Si lo dejas vacío, usaremos un nombre predeterminado. </small>
-          </div>
-
-          @if (form.controls.tipo.value === 'TARJETA') {
+      <section
+        class="seccion-metodos panel-metodos panel-registro"
+        aria-labelledby="registro-titulo"
+      >
+        <p class="esi-eyebrow">Añadir nuevo</p>
+        <h2 id="registro-titulo">Registrar un método de pago</h2>
+        <p class="subtitulo-formulario">
+          Los datos sensibles de la tarjeta no se guardan completos.
+        </p>
+        <form [formGroup]="form" (ngSubmit)="registrar()" autocomplete="off" novalidate>
+          <div class="campos">
             <div class="esi-campo">
-              <label for="nombre-titular">Nombre del titular</label>
-              <input
-                id="nombre-titular"
-                type="text"
-                formControlName="nombreTitular"
-                autocomplete="new-password"
-                required
-              />
-              @if (esInvalido('nombreTitular')) {
-                <small class="esi-ayuda esi-error">Introduce el nombre del titular.</small>
-              }
+              <label for="tipo-metodo">Tipo de método</label>
+              <select id="tipo-metodo" formControlName="tipo" (change)="cambiarTipo()">
+                <option value="TARJETA">Tarjeta</option>
+                <option value="PAYPAL">PayPal</option>
+                <option value="BIZUM">Bizum</option>
+              </select>
             </div>
 
             <div class="esi-campo campo-completo">
-              <label for="numero-tarjeta">Número de tarjeta</label>
+              <label for="alias-metodo"> Alias <span class="opcional">Opcional</span> </label>
               <input
-                id="numero-tarjeta"
+                id="alias-metodo"
                 type="text"
-                formControlName="numeroTarjeta"
-                autocomplete="new-password"
-                maxlength="23"
-                required
-              />
-              @if (esInvalido('numeroTarjeta')) {
-                <small class="esi-ayuda esi-error">
-                  Introduce un número de tarjeta válido, de 13 a 19 dígitos.
-                </small>
-              }
-            </div>
-
-            <div class="esi-campo">
-              <label for="caducidad-mes">Fecha de caducidad</label>
-              <div class="caducidad">
-                <select
-                  id="caducidad-mes"
-                  formControlName="caducidadMes"
-                  autocomplete="off"
-                  required
-                >
-                  <option value="">Mes</option>
-                  @for (mes of mesesCaducidad; track mes.valor) {
-                    <option [value]="mes.valor">{{ mes.nombre }}</option>
-                  }
-                </select>
-                <select
-                  id="caducidad-anio"
-                  formControlName="caducidadAnio"
-                  autocomplete="off"
-                  required
-                >
-                  <option value="">Año</option>
-                  @for (anio of aniosCaducidad; track anio) {
-                    <option [value]="anio">{{ anio }}</option>
-                  }
-                </select>
-              </div>
-              @if (esInvalido('caducidadMes') || esInvalido('caducidadAnio')) {
-                <small class="esi-ayuda esi-error">Selecciona el mes y el año de caducidad.</small>
-              } @else if (esCaducidadInvalida()) {
-                <small class="esi-ayuda esi-error">La tarjeta está caducada.</small>
-              }
-            </div>
-
-            <div class="esi-campo">
-              <label for="cvc">CVC</label>
-              <input
-                id="cvc"
-                type="text"
-                formControlName="cvc"
-                autocomplete="new-password"
-                maxlength="4"
-                required
-              />
-              @if (esInvalido('cvc')) {
-                <small class="esi-ayuda esi-error">Introduce un CVC de 3 o 4 dígitos.</small>
-              }
-            </div>
-          } @else if (form.controls.tipo.value === 'PAYPAL') {
-            <div class="esi-campo campo-completo">
-              <label for="correo-paypal">Correo de PayPal</label>
-              <input
-                id="correo-paypal"
-                type="email"
-                formControlName="correoPayPal"
+                formControlName="alias"
                 autocomplete="off"
-                required
+                placeholder="Ej. Mi tarjeta personal"
               />
-              @if (esInvalido('correoPayPal')) {
-                <small class="esi-ayuda esi-error">Introduce un correo electrónico válido.</small>
-              }
+              <small class="esi-ayuda">
+                Si lo dejas vacío, usaremos un nombre predeterminado.
+              </small>
             </div>
-          } @else {
-            <div class="esi-campo campo-completo">
-              <label for="telefono-bizum">Número de teléfono de Bizum</label>
-              <div class="telefono-bizum">
-                <select
-                  id="prefijo-bizum"
-                  formControlName="prefijoBizum"
-                  aria-label="Prefijo internacional"
-                  autocomplete="off"
-                >
-                  @for (prefijo of prefijosTelefonicos; track prefijo.valor) {
-                    <option [value]="prefijo.valor">{{ prefijo.valor }} {{ prefijo.pais }}</option>
-                  }
-                </select>
+
+            @if (form.controls.tipo.value === 'TARJETA') {
+              <div class="esi-campo">
+                <label for="nombre-titular">Nombre del titular</label>
                 <input
-                  id="telefono-bizum"
-                  type="tel"
-                  inputmode="numeric"
-                  formControlName="telefonoBizum"
-                  autocomplete="off"
-                  placeholder="612 345 678"
+                  id="nombre-titular"
+                  type="text"
+                  formControlName="nombreTitular"
+                  autocomplete="new-password"
                   required
                 />
+                @if (esInvalido('nombreTitular')) {
+                  <small class="esi-ayuda esi-error">Introduce el nombre del titular.</small>
+                }
               </div>
-              @if (esInvalido('telefonoBizum')) {
-                <small class="esi-ayuda esi-error">
-                  Introduce el número sin prefijo, con entre 8 y 12 dígitos.
-                </small>
-              }
-            </div>
+
+              <div class="esi-campo campo-completo">
+                <label for="numero-tarjeta">Número de tarjeta</label>
+                <input
+                  id="numero-tarjeta"
+                  type="text"
+                  formControlName="numeroTarjeta"
+                  autocomplete="new-password"
+                  maxlength="23"
+                  required
+                />
+                @if (esInvalido('numeroTarjeta')) {
+                  <small class="esi-ayuda esi-error">
+                    Introduce un número de tarjeta válido, de 13 a 19 dígitos.
+                  </small>
+                }
+              </div>
+
+              <div class="esi-campo">
+                <label for="caducidad-mes">Fecha de caducidad</label>
+                <div class="caducidad">
+                  <select
+                    id="caducidad-mes"
+                    formControlName="caducidadMes"
+                    autocomplete="off"
+                    required
+                  >
+                    <option value="">Mes</option>
+                    @for (mes of mesesCaducidad; track mes.valor) {
+                      <option [value]="mes.valor">{{ mes.nombre }}</option>
+                    }
+                  </select>
+                  <select
+                    id="caducidad-anio"
+                    formControlName="caducidadAnio"
+                    autocomplete="off"
+                    required
+                  >
+                    <option value="">Año</option>
+                    @for (anio of aniosCaducidad; track anio) {
+                      <option [value]="anio">{{ anio }}</option>
+                    }
+                  </select>
+                </div>
+                @if (esInvalido('caducidadMes') || esInvalido('caducidadAnio')) {
+                  <small class="esi-ayuda esi-error"
+                    >Selecciona el mes y el año de caducidad.</small
+                  >
+                } @else if (esCaducidadInvalida()) {
+                  <small class="esi-ayuda esi-error">La tarjeta está caducada.</small>
+                }
+              </div>
+
+              <div class="esi-campo">
+                <label for="cvc">CVC</label>
+                <input
+                  id="cvc"
+                  type="text"
+                  formControlName="cvc"
+                  autocomplete="new-password"
+                  maxlength="4"
+                  required
+                />
+                @if (esInvalido('cvc')) {
+                  <small class="esi-ayuda esi-error">Introduce un CVC de 3 o 4 dígitos.</small>
+                }
+              </div>
+            } @else if (form.controls.tipo.value === 'PAYPAL') {
+              <div class="esi-campo campo-completo">
+                <label for="correo-paypal">Correo de PayPal</label>
+                <input
+                  id="correo-paypal"
+                  type="email"
+                  formControlName="correoPayPal"
+                  autocomplete="off"
+                  required
+                />
+                @if (esInvalido('correoPayPal')) {
+                  <small class="esi-ayuda esi-error">Introduce un correo electrónico válido.</small>
+                }
+              </div>
+            } @else {
+              <div class="esi-campo campo-completo">
+                <label for="telefono-bizum">Número de teléfono de Bizum</label>
+                <div class="telefono-bizum">
+                  <select
+                    id="prefijo-bizum"
+                    formControlName="prefijoBizum"
+                    aria-label="Prefijo internacional"
+                    autocomplete="off"
+                  >
+                    @for (prefijo of prefijosTelefonicos; track prefijo.valor) {
+                      <option [value]="prefijo.valor">
+                        {{ prefijo.valor }} {{ prefijo.pais }}
+                      </option>
+                    }
+                  </select>
+                  <input
+                    id="telefono-bizum"
+                    type="tel"
+                    inputmode="numeric"
+                    formControlName="telefonoBizum"
+                    autocomplete="off"
+                    placeholder="612 345 678"
+                    required
+                  />
+                </div>
+                @if (esInvalido('telefonoBizum')) {
+                  <small class="esi-ayuda esi-error">
+                    Introduce el número sin prefijo, con entre 8 y 12 dígitos.
+                  </small>
+                }
+              </div>
+            }
+          </div>
+
+          @if (mensajeExito()) {
+            <p class="esi-alerta esi-alerta--ok" role="status">{{ mensajeExito() }}</p>
           }
-        </div>
+          @if (errorRegistro()) {
+            <p class="esi-alerta esi-alerta--error" role="alert">{{ errorRegistro() }}</p>
+          }
 
-        @if (mensajeExito()) {
-          <p class="esi-alerta esi-alerta--ok" role="status">{{ mensajeExito() }}</p>
-        }
-        @if (errorRegistro()) {
-          <p class="esi-alerta esi-alerta--error" role="alert">{{ errorRegistro() }}</p>
-        }
-
-        <button type="submit" class="esi-boton" [disabled]="form.invalid || guardando()">
-          {{ guardando() ? 'Registrando…' : 'Registrar método de pago' }}
-        </button>
-      </form>
-    </section>
+          <button type="submit" class="esi-boton" [disabled]="form.invalid || guardando()">
+            {{ guardando() ? 'Registrando…' : 'Registrar método de pago' }}
+          </button>
+        </form>
+      </section>
+    </div>
   </section>
+
+  @if (metodoPendienteEliminar(); as metodo) {
+    <div class="modal-fondo">
+      <section
+        class="modal-confirmacion esi-tarjeta"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="confirmar-eliminacion-titulo"
+        aria-describedby="confirmar-eliminacion-texto"
+        [attr.aria-busy]="eliminando()"
+      >
+        <p class="esi-eyebrow">Confirmar acción</p>
+        <h2 id="confirmar-eliminacion-titulo">¿Seguro que quieres eliminar este método?</h2>
+        <p id="confirmar-eliminacion-texto" class="texto-confirmacion">
+          Vas a eliminar <strong>«{{ metodo.alias }}»</strong>. Esta acción no se puede deshacer.
+        </p>
+        @if (errorEliminacion()) {
+          <p class="esi-alerta esi-alerta--error error-modal" role="alert">
+            {{ errorEliminacion() }}
+          </p>
+        }
+        <div class="acciones-modal">
+          <button
+            type="button"
+            class="esi-boton boton-secundario"
+            [disabled]="eliminando()"
+            (click)="cancelarEliminacion()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="esi-boton boton-peligro"
+            [disabled]="eliminando()"
+            (click)="confirmarEliminacion()"
+          >
+            {{ eliminando() ? 'Eliminando…' : 'Sí, eliminar' }}
+          </button>
+        </div>
+      </section>
+    </div>
+  }
 </app-marco-pagina>

@@ -13,7 +13,7 @@ import {
   MetodoPago,
   MetodosPagoService,
   TipoMetodoPago,
-} from '../../services/metodos-pago.service';
+} from '../../services/metodos-pago-service/metodos-pago';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
 
 const NO_VACIO = /\S/;
@@ -61,6 +61,10 @@ export class MetodosPagoComponent implements OnInit {
   readonly errorListado = signal('');
   readonly errorRegistro = signal('');
   readonly mensajeExito = signal('');
+  readonly mensajeEliminacion = signal('');
+  readonly errorEliminacion = signal('');
+  readonly metodoPendienteEliminar = signal<MetodoPago | null>(null);
+  readonly eliminando = signal(false);
   readonly mesesCaducidad = MESES;
   readonly prefijosTelefonicos = PREFIJOS_TELEFONICOS;
   readonly aniosCaducidad = Array.from(
@@ -195,6 +199,43 @@ export class MetodosPagoComponent implements OnInit {
         this.errorRegistro.set(
           this.auth.errorMessage(error, 'No se ha podido registrar el método de pago.'),
         );
+      },
+    });
+  }
+
+  solicitarEliminacion(metodo: MetodoPago): void {
+    this.errorEliminacion.set('');
+    this.mensajeEliminacion.set('');
+    this.metodoPendienteEliminar.set(metodo);
+  }
+
+  cancelarEliminacion(): void {
+    if (!this.eliminando()) {
+      this.metodoPendienteEliminar.set(null);
+      this.errorEliminacion.set('');
+    }
+  }
+
+  confirmarEliminacion(): void {
+    const metodo = this.metodoPendienteEliminar();
+    if (!metodo || this.eliminando()) {
+      return;
+    }
+
+    this.eliminando.set(true);
+    this.errorEliminacion.set('');
+    this.metodosPagoService.eliminar(metodo.id).subscribe({
+      next: () => {
+        this.metodos.update((metodos) => metodos.filter((item) => item.id !== metodo.id));
+        this.metodoPendienteEliminar.set(null);
+        this.mensajeEliminacion.set(`Se ha eliminado «${metodo.alias}» correctamente.`);
+        this.eliminando.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.errorEliminacion.set(
+          this.auth.errorMessage(error, 'No se ha podido eliminar el método de pago.'),
+        );
+        this.eliminando.set(false);
       },
     });
   }
