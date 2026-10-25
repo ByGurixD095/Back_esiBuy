@@ -36,7 +36,7 @@ class AdminControllerConsultaUsuariosEndpointTest {
 
     @Test
     void consultarUsuarios_devuelveListado() throws Exception {
-        when(userService.getAllUsers()).thenReturn(List.of(
+        when(userService.getAllUsers(null, null, null)).thenReturn(List.of(
                 ClienteResponseDTO.builder()
                         .id("cliente-1")
                         .name("Ana")
@@ -87,18 +87,18 @@ class AdminControllerConsultaUsuariosEndpointTest {
                 .andExpect(jsonPath("$[2].sede").value("Madrid"))
                 .andExpect(jsonPath("$[2].fechaIncorporacion").value("2024-02-01"));
 
-        verify(userService).getAllUsers();
+        verify(userService).getAllUsers(null, null, null);
     }
 
     @Test
     void consultarUsuarios_sinUsuariosDevuelveListaVacia() throws Exception {
-        when(userService.getAllUsers()).thenReturn(List.of());
+        when(userService.getAllUsers(null, null, null)).thenReturn(List.of());
 
         mockMvc.perform(get("/admin/users"))
                 .andExpect(status().isOk())
                 .andExpect(content().json("[]"));
 
-        verify(userService).getAllUsers();
+        verify(userService).getAllUsers(null, null, null);
     }
 
     @Test
