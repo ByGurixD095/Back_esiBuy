@@ -1,7 +1,7 @@
 
 package esi.grupo5.esiBuy.Controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import esi.grupo5.esiBuy.Config.GlobalExceptionHandler;
 import esi.grupo5.esiBuy.Dto.MetodoPagoResponseDTO;
 import esi.grupo5.esiBuy.Model.enums.TipoMetodoPago;
 import esi.grupo5.esiBuy.Service.MetodoPagoService;
@@ -17,6 +17,8 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import esi.grupo5.esiBuy.Exception.NotFoundException;
 
 import java.util.List;
 
@@ -34,17 +36,16 @@ class MetodoPagoControllerTest {
     private MetodoPagoService metodoPagoService;
 
     private MockMvc mockMvc;
-    private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
         MetodoPagoController controller =
                 new MetodoPagoController(metodoPagoService);
 
-        mockMvc = MockMvcBuilders.standaloneSetup(controller)
+        mockMvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
-
-        objectMapper = new ObjectMapper();
     }
 
     @Test
@@ -136,5 +137,33 @@ class MetodoPagoControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("pago123"))
                 .andExpect(jsonPath("$[0].alias").value("Mi tarjeta"));
+    }
+
+    @Test
+    void eliminarMetodoPago_ClienteValido_Devuelve204() throws Exception {
+        mockMvc.perform(delete("/users/me/metodoPago/pago123")
+                .principal(new UsernamePasswordAuthenticationToken(
+                        "cliente123", null)))
+                .andExpect(status().isNoContent());
+
+        verify(metodoPagoService)
+                .eliminarMetodoPago("cliente123", "pago123");
+    }
+
+    @Test
+    void eliminarMetodoPago_MetodoAjeno_ServiceLanzaNotFound()
+            throws Exception {
+
+        doThrow(new NotFoundException("Método de pago no encontrado"))
+                .when(metodoPagoService)
+                .eliminarMetodoPago("cliente123", "pagoAjeno");
+
+        mockMvc.perform(delete("/users/me/metodoPago/pagoAjeno")
+                .principal(new UsernamePasswordAuthenticationToken(
+                        "cliente123", null)))
+                .andExpect(status().isNotFound());
+
+        verify(metodoPagoService)
+                .eliminarMetodoPago("cliente123", "pagoAjeno");
     }
 }
