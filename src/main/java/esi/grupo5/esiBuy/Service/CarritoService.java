@@ -5,6 +5,8 @@ import java.util.Collections;
 
 import org.springframework.stereotype.Service;
 
+import esi.grupo5.esiBuy.Model.ItemCarrito;
+import esi.grupo5.esiBuy.Model.Carrito;
 import esi.grupo5.esiBuy.Repository.CarritoRepository;
 
 @Service
@@ -16,9 +18,9 @@ public class CarritoService {
         this.carritoRepository = carritoRepository;
     }
 
-    public List<?> listarCarrito(String clienteId) {
-        return carritoRepository.findByClienteId(clienteId).map(carrito -> Collections.emptyList()).orElse(Collections.emptyList());
-    }
+    public List<ItemCarrito> listarCarrito(String clienteId) {
+        return carritoRepository.findByClienteId(clienteId).map(carrito -> Collections.<ItemCarrito>emptyList()).orElse(Collections.emptyList());
+}
 
 
     
