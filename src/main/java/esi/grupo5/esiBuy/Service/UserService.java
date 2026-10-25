@@ -138,15 +138,18 @@ public class UserService {
      * @return lista de usuarios representados para la API
      */
     public List<UsuarioResponseDTO> getAllUsers(String nombre, String email, Rol rol) {
-        return usuarioRepository.findAll().stream()
-                .filter(u -> nombre == null || nombre.isBlank() || 
-                        (u.getNombre() + " " + u.getApellidos()).toLowerCase().contains(nombre.trim().toLowerCase()))
-                .filter(u -> email == null || email.isBlank() || 
-                        u.getEmail().toLowerCase().contains(email.trim().toLowerCase()))
-                .filter(u -> rol == null || u.getRol() == rol)
-                .map(this::toResponseDto)
-                .collect(Collectors.toCollection(ArrayList::new));
-    }
+    return usuarioRepository.findAll().stream()
+            .filter(u -> {
+                String nombreCompleto = u.getNombre() + " " + u.getApellidos();
+                return nombre == null || nombre.isBlank()
+                        || nombreCompleto.toLowerCase().contains(nombre.trim().toLowerCase());
+            })
+            .filter(u -> email == null || email.isBlank()
+                    || u.getEmail().toLowerCase().contains(email.trim().toLowerCase()))
+            .filter(u -> rol == null || u.getRol() == rol)
+            .map(this::toResponseDto)
+            .collect(Collectors.toCollection(ArrayList::new));
+}
 
     /**
      * Recupera una cuenta que no haya sido eliminada lógicamente.
