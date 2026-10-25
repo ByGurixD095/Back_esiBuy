@@ -95,7 +95,7 @@ class SecurityAdminAuthorizationTest {
     @Test
     void administradorPuedeConsultarUsuarios() throws Exception {
         stubAuthenticatedRole("ADMINISTRADOR");
-        when(userService.getAllUsers()).thenReturn(List.of());
+        when(userService.getAllUsers(null, null, null)).thenReturn(List.of());
 
         mockMvc.perform(get("/admin/users")
                         .cookie(new Cookie("accessToken", "token")))

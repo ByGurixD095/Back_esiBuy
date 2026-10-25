@@ -4,6 +4,7 @@ import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 import esi.grupo5.esiBuy.Dto.UserPatchDTO;
 import esi.grupo5.esiBuy.Dto.UsuarioResponseDTO;
+import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Service.UserService;
 import esi.grupo5.esiBuy.Service.AdminService;
 import jakarta.validation.Valid;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -46,11 +48,18 @@ public class AdminController {
     /**
      * Lista todos los usuarios.
      *
+     * @param nombre filtro por nombre
+     * @param email filtro por email
+     * @param rol filtro por rol
      * @return usuarios en una respuesta HTTP 200
+     * 
      */
     @GetMapping("/users")
-    public ResponseEntity<List<UsuarioResponseDTO>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
+    public ResponseEntity<List<UsuarioResponseDTO>> getAllUsers(
+            @RequestParam(required = false) String nombre,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) Rol rol) {
+        return ResponseEntity.ok(userService.getAllUsers(nombre, email, rol));
     }
 
     /**

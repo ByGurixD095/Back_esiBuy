@@ -132,13 +132,24 @@ public class UserService {
     /**
      * Recupera todos los usuarios y los convierte a DTO de respuesta.
      *
+     * @param nombre filtro por nombre
+     * @param email filtro por email
+     * @param rol filtro por rol
      * @return lista de usuarios representados para la API
      */
-    public List<UsuarioResponseDTO> getAllUsers() {
-        return usuarioRepository.findAll().stream()
-                .map(this::toResponseDto)
-                .collect(Collectors.toCollection(ArrayList::new));
-    }
+    public List<UsuarioResponseDTO> getAllUsers(String nombre, String email, Rol rol) {
+    return usuarioRepository.findAll().stream()
+            .filter(u -> {
+                String nombreCompleto = u.getNombre() + " " + u.getApellidos();
+                return nombre == null || nombre.isBlank()
+                        || nombreCompleto.toLowerCase().contains(nombre.trim().toLowerCase());
+            })
+            .filter(u -> email == null || email.isBlank()
+                    || u.getEmail().toLowerCase().contains(email.trim().toLowerCase()))
+            .filter(u -> rol == null || u.getRol() == rol)
+            .map(this::toResponseDto)
+            .collect(Collectors.toCollection(ArrayList::new));
+}
 
     /**
      * Recupera una cuenta que no haya sido eliminada lógicamente.

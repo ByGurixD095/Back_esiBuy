@@ -71,7 +71,7 @@ class UserServiceConsultarUsuariosLecturaTest {
         Cliente usuarioEliminado = cliente("cliente-eliminado", "Luis", "luis@test.com");
         when(usuarioRepository.findAll()).thenReturn(List.of(cliente, usuarioEliminado));
 
-        List<UsuarioResponseDTO> resultado = service.getAllUsers();
+        List<UsuarioResponseDTO> resultado = service.getAllUsers(null, null, null);
 
         assertEquals(2, resultado.size());
         assertEquals("cliente-1", resultado.get(0).getId());
@@ -101,7 +101,7 @@ class UserServiceConsultarUsuariosLecturaTest {
         vendedor.setCategoriaPrincipalId("electronica");
         when(usuarioRepository.findAll()).thenReturn(List.of(vendedor));
 
-        List<UsuarioResponseDTO> resultado = service.getAllUsers();
+        List<UsuarioResponseDTO> resultado = service.getAllUsers(null, null, null);
 
         VendedorResponseDTO dto = (VendedorResponseDTO) resultado.get(0);
         assertEquals("Tienda Luis", dto.getNombreComercial());
@@ -123,7 +123,7 @@ class UserServiceConsultarUsuariosLecturaTest {
         when(usuarioRepository.findAll()).thenReturn(List.of(administrador));
 
         AdministradorResponseDTO resultado =
-                (AdministradorResponseDTO) service.getAllUsers().get(0);
+                (AdministradorResponseDTO) service.getAllUsers(null, null, null).get(0);
 
         assertEquals("admin-1", resultado.getId());
         assertEquals(Rol.ADMINISTRADOR, resultado.getRol());
@@ -137,7 +137,7 @@ class UserServiceConsultarUsuariosLecturaTest {
     void consultarUsuarios_sinUsuariosDevuelveListaVacia() {
         when(usuarioRepository.findAll()).thenReturn(List.of());
 
-        List<UsuarioResponseDTO> resultado = service.getAllUsers();
+        List<UsuarioResponseDTO> resultado = service.getAllUsers(null, null, null);
 
         assertEquals(List.of(), resultado);
         verify(usuarioRepository).findAll();
