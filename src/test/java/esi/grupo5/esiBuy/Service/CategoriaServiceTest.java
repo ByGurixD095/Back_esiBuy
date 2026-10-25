@@ -45,13 +45,13 @@ class CategoriaServiceTest {
     }
 
     @Test
-    void crearCategoria_nombreDuplicadoIgnorandoMayusculasYEspaciosLanzaConflicto() {
+    void crearCategoria_nombreDuplicadoIgnorandoMayusculasLanzaConflicto() {
         Categoria categoria = new Categoria(null, "  ROPA  ", true);
         when(categoriaRepository.existsByNombreRegexIgnoreCase(anyString())).thenReturn(true);
 
         assertThrows(ConflictException.class, () -> categoriaService.crearCategoria(categoria));
 
-        verify(categoriaRepository).existsByNombreRegexIgnoreCase("^\\s*\\QROPA\\E\\s*$");
+        verify(categoriaRepository).existsByNombreRegexIgnoreCase("^\\QROPA\\E$");
         verify(categoriaRepository, never()).save(categoria);
     }
 
@@ -64,6 +64,12 @@ class CategoriaServiceTest {
 
         assertThrows(ValidationException.class, () -> categoriaService.crearCategoria(categoria));
 
+        verifyNoInteractions(categoriaRepository);
+    }
+
+    @Test
+    void crearCategoria_sinDatosLanzaValidacion() {
+        assertThrows(ValidationException.class, () -> categoriaService.crearCategoria(null));
         verifyNoInteractions(categoriaRepository);
     }
 }

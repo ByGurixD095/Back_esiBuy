@@ -19,14 +19,16 @@ public class CategoriaService {
     }
 
     public Categoria crearCategoria(Categoria categoria) {
+        if (categoria == null) {
+            throw new ValidationException("Los datos de la categoría son obligatorios");
+        }
         String nombre = categoria.getNombre();
         if (nombre == null || nombre.isBlank()) {
             throw new ValidationException("El nombre de la categoría no puede estar vacío");
         }
 
-        // ^ y $ fijan el inicio y final; \\s* admite espacios alrededor del nombre.
         // Pattern.quote lo trata como texto literal, y IgnoreCase ignora mayúsculas.
-        String nombreRegex = "^\\s*" + Pattern.quote(nombre.trim()) + "\\s*$";
+        String nombreRegex = "^" + Pattern.quote(nombre.trim()) + "$";
         if (categoriaRepository.existsByNombreRegexIgnoreCase(nombreRegex)) {
             throw new ConflictException("Ya existe una categoría con ese nombre");
         }
