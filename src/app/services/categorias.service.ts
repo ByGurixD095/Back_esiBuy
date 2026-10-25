@@ -1,8 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-
-const API_URL = 'http://localhost:8080';
+import { environment } from '../../environments/environment';
 
 export interface NuevaCategoria {
   nombre: string;
@@ -20,8 +19,10 @@ export class Categorias {
   private readonly http = inject(HttpClient);
 
   crear(datos: NuevaCategoria): Observable<CategoriaCreada> {
-    return this.http.post<CategoriaCreada>(`${API_URL}/admin/categorias`, datos, {
-      withCredentials: true,
-    });
+    return this.http.post<CategoriaCreada>(
+      `${environment.apiUrl}/admin/categorias`,
+      datos,
+      { withCredentials: true },
+    );
   }
 }

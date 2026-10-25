@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Categorias } from './categorias.service';
+import { environment } from '../../environments/environment';
 
 describe('Categorias', () => {
   let servicio: Categorias;
@@ -22,7 +23,7 @@ describe('Categorias', () => {
   it('envía un POST a /admin/categorias con los datos y las cookies', () => {
     servicio.crear(datos).subscribe();
 
-    const peticion = http.expectOne('http://localhost:8080/admin/categorias');
+    const peticion = http.expectOne(`${environment.apiUrl}/admin/categorias`);
     expect(peticion.request.method).toBe('POST');
     expect(peticion.request.body).toEqual(datos);
     expect(peticion.request.withCredentials).toBe(true);
@@ -35,7 +36,7 @@ describe('Categorias', () => {
 
     servicio.crear(datos).subscribe((categoria) => (recibido = categoria));
 
-    http.expectOne('http://localhost:8080/admin/categorias').flush(respuesta);
+    http.expectOne(`${environment.apiUrl}/admin/categorias`).flush(respuesta);
     expect(recibido).toEqual(respuesta);
   });
 });
