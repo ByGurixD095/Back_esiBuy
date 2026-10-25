@@ -13,7 +13,7 @@ import {
   MetodoPago,
   MetodosPagoService,
   TipoMetodoPago,
-} from '../../services/metodos-pago.service';
+} from '../../services/metodos-pago-service/metodos-pago';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
 
 const NO_VACIO = /\S/;
