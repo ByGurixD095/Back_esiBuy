@@ -19,6 +19,7 @@ import esi.grupo5.esiBuy.Repository.ProductoRepository;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Model.Carrito;
 import esi.grupo5.esiBuy.Model.ItemCarrito;
+import esi.grupo5.esiBuy.Dto.ItemCarritoResponseDTO;
 
 @ExtendWith(MockitoExtension.class)
 class CarritoServiceTest {
@@ -41,16 +42,26 @@ class CarritoServiceTest {
     }
 
     @Test
-    void listarCarrito_conProductosDevuelveSusProductosYCantidades() {
+    void listarCarrito_conProductosDevuelveDatosYCantidad() {
         Carrito carrito = new Carrito("cliente-1");
         carrito.setItems(List.of(new ItemCarrito("producto-1", 3)));
 
-        when(carritoRepository.findByClienteId("cliente-1")).thenReturn(Optional.of(carrito));
+        Producto producto = new Producto();
+        producto.setId("producto-1");
+        producto.setNombre("Ratón inalámbrico");
+        producto.setPrecioCent(1999);
+        producto.setUrlImagen("raton.jpg");
 
-        List<ItemCarrito> resultado = carritoService.listarCarrito("cliente-1");
+        when(carritoRepository.findByClienteId("cliente-1")).thenReturn(Optional.of(carrito));
+        when(productoRepository.findById("producto-1")).thenReturn(Optional.of(producto));
+
+        List<ItemCarritoResponseDTO> resultado = carritoService.listarCarrito("cliente-1");
         assertEquals(1, resultado.size());
-        assertEquals("producto-1", resultado.get(0).getProductoId());
-        assertEquals(3, resultado.get(0).getCantidad());
+        assertEquals("producto-1", resultado.get(0).productoId());
+        assertEquals("Ratón inalámbrico", resultado.get(0).nombre());
+        assertEquals(1999, resultado.get(0).precioCent());
+        assertEquals("raton.jpg", resultado.get(0).urlImagen());
+        assertEquals(3, resultado.get(0).cantidad());
     }
 
     @Test
@@ -70,7 +81,5 @@ class CarritoServiceTest {
 
         verify(productoRepository).findById("producto-1");
     }
-
-
 
 }
