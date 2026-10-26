@@ -4,12 +4,12 @@ import {
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { csrfInterceptor, resetCsrfTokenCacheForTesting } from './csrf.interceptor';
-
-vi.mock('../../environments/environment', () => ({
-  environment: { apiUrl: 'https://back-esibuy.onrender.com', csrfEnabled: true },
-}));
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import {
+  CSRF_CONFIGURATION,
+  csrfInterceptor,
+  resetCsrfTokenCacheForTesting,
+} from './csrf.interceptor';
 
 describe('csrfInterceptor', () => {
   let http: HttpTestingController;
@@ -21,6 +21,10 @@ describe('csrfInterceptor', () => {
       providers: [
         provideHttpClient(withInterceptors([csrfInterceptor])),
         provideHttpClientTesting(),
+        {
+          provide: CSRF_CONFIGURATION,
+          useValue: { apiUrl, csrfEnabled: true },
+        },
       ],
     });
     http = TestBed.inject(HttpTestingController);
