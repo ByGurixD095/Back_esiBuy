@@ -60,7 +60,16 @@ public class CarritoService {
                 .orElseThrow(() -> new NotFoundException("Producto no encontrado o no disponible"));
         Carrito carrito = carritoRepository.findByClienteId(clienteId)
                 .orElseGet(() -> new Carrito(clienteId));
-        carrito.getItems().add(new ItemCarrito(producto.getId(), 1));
+        Optional<ItemCarrito> itemExistente = carrito.getItems().stream()
+                .filter(item -> item.getProductoId().equals(producto.getId()))
+                .findFirst();
+
+        if (itemExistente.isPresent()) {
+            ItemCarrito item = itemExistente.get();
+            item.setCantidad(item.getCantidad() + 1);
+        } else {
+            carrito.getItems().add(new ItemCarrito(producto.getId(), 1));
+        }
         carritoRepository.save(carrito);
     }
 
