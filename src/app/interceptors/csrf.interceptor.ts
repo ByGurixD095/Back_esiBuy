@@ -3,9 +3,22 @@ import {
   HttpClient,
   HttpInterceptorFn,
 } from '@angular/common/http';
-import { inject } from '@angular/core';
+import { inject, InjectionToken } from '@angular/core';
 import { Observable, catchError, map, shareReplay, switchMap, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
+
+interface CsrfConfiguration {
+  apiUrl: string;
+  csrfEnabled: boolean;
+}
+
+export const CSRF_CONFIGURATION = new InjectionToken<CsrfConfiguration>('CSRF_CONFIGURATION', {
+  providedIn: 'root',
+  factory: () => ({
+    apiUrl: environment.apiUrl,
+    csrfEnabled: environment.csrfEnabled,
+  }),
+});
 
 interface CsrfTokenResponse {
   headerName: string;
@@ -17,10 +30,11 @@ let csrfToken$: Observable<CsrfTokenResponse> | null = null;
 const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 export const csrfInterceptor: HttpInterceptorFn = (request, next) => {
-  const apiUrl = environment.apiUrl.replace(/\/+$/, '');
+  const config = inject(CSRF_CONFIGURATION);
+  const apiUrl = config.apiUrl.replace(/\/+$/, '');
   const isApiRequest = request.url === apiUrl || request.url.startsWith(`${apiUrl}/`);
 
-  if (!environment.csrfEnabled || !apiUrl || !isApiRequest || !UNSAFE_METHODS.has(request.method)) {
+  if (!config.csrfEnabled || !apiUrl || !isApiRequest || !UNSAFE_METHODS.has(request.method)) {
     return next(request);
   }
 
