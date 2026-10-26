@@ -12,7 +12,7 @@ import { DatePipe } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { map, type Observable } from 'rxjs';
-import { AuthService } from '../../services/auth.service';
+import { AuthService, Rol } from '../../services/auth.service';
 import {
   Usuarios,
   type Usuario,
@@ -20,7 +20,6 @@ import {
 } from '../../services/consultar-usuarios-service/usuarios';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
 
-type FiltroEliminados = 'todos' | 'eliminados' | 'no-eliminados';
 type AccionUsuario = 'eliminar' | 'bloquear' | 'desbloquear' | 'activar';
 
 @Component({
@@ -43,8 +42,9 @@ export class ConsultarUsuarios implements OnInit {
   }
 
   readonly usuarios = signal<Usuario[]>([]);
-  readonly busquedaId = signal('');
-  readonly filtroEliminados = signal<FiltroEliminados>('todos');
+  readonly busquedaNombre = signal('');
+  readonly busquedaEmail = signal('');
+  readonly filtroRol = signal<Rol | 'TODOS'>('TODOS');
   readonly cargando = signal(true);
   readonly mensajeError = signal('');
   readonly mensajeErrorAccion = signal('');
@@ -58,13 +58,17 @@ export class ConsultarUsuarios implements OnInit {
   readonly accionPendiente = signal<{ usuario: Usuario; accion: AccionUsuario } | null>(null);
   readonly paginaActual = signal(0);
   readonly usuariosFiltrados = computed(() => {
-    const idBuscado = this.busquedaId().trim().toLocaleLowerCase();
+    const nombreBuscado = this.busquedaNombre().trim().toLowerCase();
+    const emailBuscado = this.busquedaEmail().trim().toLowerCase();
+    const rolBuscado = this.filtroRol();
+
     return this.usuarios().filter((usuario) => {
-      const coincideId = !idBuscado || usuario.id.toLocaleLowerCase().includes(idBuscado);
-      const coincideEliminado =
-        this.filtroEliminados() === 'todos' ||
-        usuario.eliminado === (this.filtroEliminados() === 'eliminados');
-      return coincideId && coincideEliminado;
+      const nombreCompleto = `${usuario.name} ${usuario.apellidos}`.toLowerCase();
+      const coincideNombre = !nombreBuscado || nombreCompleto.includes(nombreBuscado);
+      const coincideEmail = !emailBuscado || usuario.email.toLowerCase().includes(emailBuscado);
+      const coincideRol = rolBuscado === 'TODOS' || usuario.rol === rolBuscado;
+
+      return coincideNombre && coincideEmail && coincideRol;
     });
   });
   readonly totalPaginas = computed(() =>
@@ -95,15 +99,21 @@ export class ConsultarUsuarios implements OnInit {
     });
   }
 
-  actualizarBusquedaId(event: Event): void {
-    this.busquedaId.set((event.target as HTMLInputElement).value);
+  actualizarBusquedaNombre(event: Event): void {
+    this.busquedaNombre.set((event.target as HTMLInputElement).value);
     this.paginaActual.set(0);
   }
 
-  actualizarFiltroEliminados(event: Event): void {
-    this.filtroEliminados.set((event.target as HTMLSelectElement).value as FiltroEliminados);
+  actualizarBusquedaEmail(event: Event): void {
+    this.busquedaEmail.set((event.target as HTMLInputElement).value);
     this.paginaActual.set(0);
   }
+
+  actualizarFiltroRol(event: Event): void {
+    this.filtroRol.set((event.target as HTMLSelectElement).value as Rol | 'TODOS');
+    this.paginaActual.set(0);
+  }
+
 
   paginaAnterior(): void {
     if (this.paginaActual() === 0) return;
@@ -141,10 +151,9 @@ export class ConsultarUsuarios implements OnInit {
   }
 
   eliminarUsuario(usuario: Usuario): void {
-    if (usuario.eliminado || this.esUsuarioActual(usuario) || this.hayAccionEnCurso()) {
+    if (usuario.rol !== 'ADMINISTRADOR' || this.esUsuarioActual(usuario) || this.hayAccionEnCurso()) {
       return;
     }
-
     this.accionPendiente.set({ usuario, accion: 'eliminar' });
   }
 
@@ -202,17 +211,18 @@ export class ConsultarUsuarios implements OnInit {
 
     peticion.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: () => {
-        this.usuarios.update((usuarios) =>
-          usuarios.map((actual) =>
+        this.usuarios.update((usuarios) => {
+          if (accion === 'eliminar') {
+            return usuarios.filter((actual) => actual.id !== usuario.id);
+          }
+          return usuarios.map((actual) =>
             actual.id === usuario.id
-              ? accion === 'eliminar'
-                ? { ...actual, eliminado: true }
-                : accion === 'activar'
-                  ? { ...actual, activo: true }
-                  : { ...actual, bloqueado: accion === 'bloquear' }
-              : actual,
-          ),
-        );
+              ? accion === 'activar'
+                ? { ...actual, activo: true }
+                : { ...actual, bloqueado: accion === 'bloquear' }
+              : actual
+          );
+        });
         const ultimaPagina = Math.max(0, this.totalPaginas() - 1);
         if (this.paginaActual() > ultimaPagina) {
           this.paginaActual.set(ultimaPagina);

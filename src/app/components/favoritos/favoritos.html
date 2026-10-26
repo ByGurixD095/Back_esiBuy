@@ -1,0 +1,65 @@
+<app-marco-pagina panel="Mis favoritos">
+  <section class="pagina" aria-labelledby="favoritos-titulo" [attr.aria-busy]="cargando()">
+    <p class="esi-eyebrow">Tu lista</p>
+    <h1 id="favoritos-titulo" class="esi-titulo">Mis <em>favoritos.</em></h1>
+    <p class="descripcion">Los productos que has guardado para volver a verlos cuando quieras.</p>
+
+    @if (errorQuitar(); as mensaje) {
+      <p class="aviso aviso-error" role="alert">{{ mensaje }}</p>
+    }
+
+    @if (cargando()) {
+      <p class="estado" role="status">Cargando tus favoritos…</p>
+    } @else if (error(); as mensaje) {
+      <section class="estado estado-error" role="alert">
+        <p>{{ mensaje }}</p>
+        <button type="button" class="esi-boton" (click)="cargar()">Reintentar</button>
+      </section>
+    } @else if (productos().length === 0) {
+      <section class="estado" role="status">
+        <h2>Todavía no tienes favoritos</h2>
+        <p>Pulsa el corazón de un producto del catálogo para guardarlo aquí.</p>
+        <a class="esi-boton" routerLink="/products">Ir al catálogo</a>
+      </section>
+    } @else {
+      <p class="contador" role="status">
+        {{ productos().length }} {{ productos().length === 1 ? 'producto guardado' : 'productos guardados' }}
+      </p>
+      <ul class="lista-favoritos">
+        @for (producto of productos(); track producto.id) {
+          <li class="tarjeta-favorito">
+            <div class="imagen">
+              @if (producto.urlImagen) {
+                <img [src]="producto.urlImagen" [alt]="producto.nombre" loading="lazy" />
+              } @else {
+                <span class="sin-imagen" aria-label="Producto sin imagen">Sin imagen</span>
+              }
+            </div>
+            <div class="datos">
+              <p class="categoria">{{ producto.categoria }}</p>
+              <h2>{{ producto.nombre }}</h2>
+              <p class="precio">
+                @if (producto.descuento > 0) {
+                  <del>{{ formatearPrecio(producto.precioCent) }}</del>
+                }
+                <strong>{{ formatearPrecio(producto.precioCent, producto.descuento) }}</strong>
+                @if (producto.descuento > 0) {
+                  <span class="descuento">-{{ producto.descuento }}%</span>
+                }
+              </p>
+              <button
+                type="button"
+                class="quitar"
+                [disabled]="estaQuitando(producto.id)"
+                [attr.aria-label]="'Quitar ' + producto.nombre + ' de favoritos'"
+                (click)="quitar(producto)"
+              >
+                {{ estaQuitando(producto.id) ? 'Quitando…' : 'Quitar de favoritos' }}
+              </button>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+</app-marco-pagina>

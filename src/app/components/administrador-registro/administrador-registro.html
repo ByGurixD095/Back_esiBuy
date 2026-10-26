@@ -27,6 +27,16 @@
           @if (esInvalido('email')) {
           <small class="esi-ayuda esi-error">Introduce un correo electrónico válido.</small>
           }
+          @if (form.controls.contrasena.hasError('contieneNombre')) {
+            <small class="esi-ayuda esi-error">
+              La contraseña no puede contener tu nombre.
+            </small>
+          }
+          @if (form.controls.contrasena.hasError('contieneEmail')) {
+            <small class="esi-ayuda esi-error">
+              La contraseña no puede contener tu correo electrónico.
+            </small>
+          }
         </div>
 
         <div class="esi-campo">
@@ -43,10 +53,18 @@
             class="esi-ayuda"
             [class.esi-error]="esInvalido('contrasena')"
           >
-            Entre 8 y 72 caracteres, con mayúsculas, minúsculas, dígitos y símbolos.
+            Entre 8 y 72 caracteres, con mayúsculas, minúsculas, números y símbolos.
           </small>
         </div>
 
+        <div class="esi-campo">
+          <label for="confirmarContrasena">Repetir contraseña</label>
+          <input id="confirmarContrasena" type="password" formControlName="confirmarContrasena" autocomplete="new-password" />
+          @if (esInvalido('confirmarContrasena')) {
+          <small class="esi-ayuda esi-error">Las contraseñas no coinciden.</small>
+          }
+        </div>
+        
         <div class="esi-campo">
           <label for="sede">Sede (opcional)</label>
           <input id="sede" type="text" formControlName="sede" />

@@ -105,11 +105,6 @@
                 <small class="esi-ayuda">Déjalo vacío para conservar el teléfono actual.</small>
               }
             </div>
-            <app-avatar-selector
-              [value]="form.controls.imagenPerfil.value"
-              [esVendedor]="actual.rol === 'VENDEDOR'"
-              (valueChange)="form.controls.imagenPerfil.setValue($event)"
-            />
           </div>
         </section>
 
@@ -206,6 +201,12 @@
             </div>
           </section>
         }
+
+          <app-avatar-selector
+            [value]="form.controls.imagenPerfil.value"
+            [esVendedor]="actual.rol === 'VENDEDOR'"
+            (valueChange)="form.controls.imagenPerfil.setValue($event)"
+          />
 
         @if (mensajeError()) {
           <p class="esi-alerta esi-alerta--error" role="alert">{{ mensajeError() }}</p>

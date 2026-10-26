@@ -12,7 +12,7 @@
 
     @if (estaAutenticado()) {
     <a class="account-link" routerLink="/account">Mi cuenta</a>
-    @if (tieneRol(['ADMINISTRADOR', 'VENDEDOR'])) {
+    @if (tieneRol(['ADMINISTRADOR', 'VENDEDOR', 'CLIENTE'])) {
     <a class="account-link" routerLink="/manage">Gestionar</a>
     }
     } @else {

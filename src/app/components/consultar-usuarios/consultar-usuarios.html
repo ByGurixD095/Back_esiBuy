@@ -6,26 +6,38 @@
 
     <div class="filtros">
       <div class="busqueda esi-campo">
-        <label for="buscar-id">🔎 Buscar por ID</label>
+        <label for="buscar-nombre">🔎 Buscar por nombre</label>
         <input
-          id="buscar-id"
+          id="buscar-nombre"
           type="search"
-          [value]="busquedaId()"
-          (input)="actualizarBusquedaId($event)"
-          placeholder="Introduce el ID del usuario"
+          [value]="busquedaNombre()"
+          (input)="actualizarBusquedaNombre($event)"
+          placeholder="Nombre o apellidos"
           autocomplete="off"
         />
       </div>
-      <div class="filtro-eliminados esi-campo">
-        <label for="filtro-eliminados">Filtrar por eliminación</label>
+      <div class="busqueda esi-campo">
+        <label for="buscar-email">📧 Buscar por correo</label>
+        <input
+          id="buscar-email"
+          type="search"
+          [value]="busquedaEmail()"
+          (input)="actualizarBusquedaEmail($event)"
+          placeholder="Correo electrónico"
+          autocomplete="off"
+        />
+      </div>
+      <div class="filtro-rol esi-campo">
+        <label for="filtro-rol">Filtrar por rol</label>
         <select
-          id="filtro-eliminados"
-          [value]="filtroEliminados()"
-          (change)="actualizarFiltroEliminados($event)"
+          id="filtro-rol"
+          [value]="filtroRol()"
+          (change)="actualizarFiltroRol($event)"
         >
-          <option value="todos">Todos</option>
-          <option value="no-eliminados">No eliminados</option>
-          <option value="eliminados">Solo eliminados</option>
+          <option value="TODOS">Todos los roles</option>
+          <option value="CLIENTE">Cliente</option>
+          <option value="VENDEDOR">Vendedor</option>
+          <option value="ADMINISTRADOR">Administrador</option>
         </select>
       </div>
     </div>
@@ -60,7 +72,6 @@
             <th scope="col">Rol</th>
             <th scope="col">Actividad</th>
             <th scope="col">Bloqueado</th>
-            <th scope="col">Eliminado</th>
             <th scope="col">Acciones</th>
           </tr>
         </thead>
@@ -96,15 +107,6 @@
                 [class.activo]="!usuario.bloqueado"
               >
                 {{ usuario.bloqueado ? 'Sí' : 'No' }}
-              </span>
-            </td>
-            <td data-label="Eliminado">
-              <span
-                class="estado-cuenta"
-                [class.eliminado]="usuario.eliminado"
-                [class.activo]="!usuario.eliminado"
-              >
-                {{ usuario.eliminado ? 'Sí' : 'No' }}
               </span>
             </td>
             <td data-label="Acciones" (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()">
@@ -161,26 +163,26 @@
                 </button>
                 }
                 <button
-                  type="button"
-                  class="accion-eliminar"
-                  [disabled]="usuario.eliminado || esUsuarioActual(usuario) || accionandoId() !== null"
-                  [attr.aria-label]="
-                    usuario.eliminado
-                      ? 'Usuario ya eliminado'
-                      : esUsuarioActual(usuario)
-                        ? 'No puedes eliminar tu propia cuenta'
-                        : 'Eliminar usuario'
-                  "
-                  [title]="
-                    usuario.eliminado
-                      ? 'El usuario ya está eliminado'
-                      : esUsuarioActual(usuario)
-                        ? 'No puedes eliminar tu propia cuenta'
-                        : 'Eliminar usuario'
-                  "
-                  (click)="eliminarUsuario(usuario)"
-                >
-                  {{ eliminandoId() === usuario.id ? '⏳' : '🗑️' }}
+                    type="button"
+                    class="accion-eliminar"
+                    [disabled]="usuario.rol !== 'ADMINISTRADOR' || esUsuarioActual(usuario) || accionandoId() !== null"
+                    [attr.aria-label]="
+                      usuario.rol !== 'ADMINISTRADOR'
+                        ? 'Solo puedes eliminar a otros administradores'
+                        : esUsuarioActual(usuario)
+                          ? 'No puedes eliminar tu propia cuenta'
+                          : 'Eliminar administrador'
+                    "
+                    [title]="
+                      usuario.rol !== 'ADMINISTRADOR'
+                        ? 'Solo puedes eliminar a otros administradores'
+                        : esUsuarioActual(usuario)
+                          ? 'No puedes eliminar tu propia cuenta'
+                          : 'Eliminar administrador'
+                    "
+                    (click)="eliminarUsuario(usuario)"
+                  >
+                    {{ eliminandoId() === usuario.id ? '⏳' : '🗑️' }}
                 </button>
               </div>
             </td>
@@ -273,13 +275,13 @@
         (keydown.escape)="cancelarEliminacion()"
       >
         @if (pendiente.accion === 'eliminar') {
-        <h2 id="confirmacion-titulo">¿Eliminar usuario?</h2>
-        <p id="confirmacion-descripcion">
-          ¿Estás segura de que quieres eliminar a
-          <strong>{{ pendiente.usuario.name }} {{ pendiente.usuario.apellidos }}</strong>?
-          Su cuenta se marcará como eliminada, pero no se borrará físicamente.
-        </p>
-        } @else if (pendiente.accion === 'bloquear') {
+          <h2 id="confirmacion-titulo">¿Eliminar administrador?</h2>
+          <p id="confirmacion-descripcion">
+            ¿Estás segura de que quieres eliminar a
+            <strong>{{ pendiente.usuario.name }} {{ pendiente.usuario.apellidos }}</strong>?
+            Su cuenta se borrarán definitivamente del sistema de manera irreversible.
+          </p>
+        }@else if (pendiente.accion === 'bloquear') {
         <h2 id="confirmacion-titulo">¿Bloquear usuario?</h2>
         <p id="confirmacion-descripcion">
           ¿Quieres bloquear a

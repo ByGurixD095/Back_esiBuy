@@ -11,6 +11,7 @@ interface DatosComunesRegistro {
   apellidos: string;
   email: string;
   contrasena: string;
+  confirmarContrasena: string;
   telefono: string;
   imagenPerfil: string;
 }

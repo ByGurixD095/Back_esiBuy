@@ -1,14 +1,14 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-
-const API_URL = 'http://localhost:8080';
+import { environment } from '../../../environments/environment';
 
 export interface NuevoAdministrador {
   nombre: string;
   apellidos: string;
   email: string;
   contrasena: string;
+  confirmarContrasena: string;
   sede: string;
   imagenPerfil: string;
 }
@@ -30,7 +30,7 @@ export class Administradores {
   private readonly http = inject(HttpClient);
 
   crear(datos: NuevoAdministrador): Observable<AdministradorCreado> {
-    return this.http.post<AdministradorCreado>(`${API_URL}/admin`, datos, {
+    return this.http.post<AdministradorCreado>(`${environment.apiUrl}/admin`, datos, {
       withCredentials: true,
     });
   }

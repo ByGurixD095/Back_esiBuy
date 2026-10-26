@@ -160,21 +160,41 @@ h1 em { color: var(--orange); font-style: italic; }
   .main-nav { display: none; }
   .search-field { width: min(45vw, 380px); }
   .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .catalog-header {
+    flex-direction: column;
+    gap: 12px;
+    min-height: auto;
+    padding: 16px 20px;
+  }
+  .brand {
+    position: relative;
+    left: 0;
+    width: 120px;
+  }
+  .header-context { display: none; }
+  .catalog-header .header-actions {
+    position: static;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 0;
+  }
+  .account-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 14px;
+  }
 }
 
 @media (max-width: 680px) {
-  .catalog-header { gap: 0.75rem; min-height: 64px; }
-  .brand { left: 1rem; width: 112px; }
   .search-field { width: auto; flex: 1; margin-left: 0; }
-  .header-context { max-width: 125px; font-size: 0.62rem; letter-spacing: 0.08em; text-align: center; }
   .header-actions { gap: 0.45rem; }
-  .account-link { display: none; }
   .cart-link { font-size: 0; }
   .cart-link span { font-size: 1.3rem; }
   .sell-link { padding: 0.5rem; font-size: 0; }
   .sell-link span { font-size: 1.2rem; }
   .search-field kbd { display: none; }
-  .header-actions { gap: 0; }
   .icon-button { font-size: 1.25rem; }
   .avatar { display: none; }
   .catalog-content { width: min(100% - 2rem, 520px); padding-top: 3rem; }
@@ -197,3 +217,9 @@ h1 em { color: var(--orange); font-style: italic; }
 @media (prefers-reduced-motion: reduce) {
   .product-card, .product-image-wrap img { animation: none; transition: none; }
 }
+
+/* HU 15: corazón de favoritos (objetivo táctil de 44 px) */
+.favorite-button { width: 44px; height: 44px; }
+.favorite-button:disabled { opacity: 0.6; cursor: progress; }
+.favorite-button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.favorite-error { margin: 0 0 1rem; padding: 0.75rem 1rem; border: 1px solid #d9a3a3; color: #8f1f1f; background: #fbe4e4; font: 0.8rem Arial, sans-serif; }
