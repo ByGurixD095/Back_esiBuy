@@ -26,6 +26,10 @@
       </a>
       }
       @if (auth.hasRole(['CLIENTE'])) {
+      <a class="opcion esi-tarjeta" routerLink="/favoritos">
+        <strong>Favoritos</strong>
+        <span>Consultar y quitar los productos que has guardado.</span>
+      </a>
       <a class="opcion esi-tarjeta" routerLink="/account/metodos-pago">
         <strong>Métodos de pago</strong>
         <span>Registrar y consultar tus métodos de pago.</span>
@@ -33,7 +37,7 @@
       }
     </div>
 
-    @if (auth.hasRole(['ADMINISTRADOR', 'VENDEDOR'])) {
+    @if (auth.hasRole(['ADMINISTRADOR', 'VENDEDOR', 'CLIENTE'])) {
     <p class="nota">Más opciones de gestión estarán disponibles próximamente.</p>
     }
   </section>
