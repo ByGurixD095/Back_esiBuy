@@ -5,7 +5,6 @@ import { environment } from '../../environments/environment';
 
 export interface NuevaCategoria {
   nombre: string;
-  activo: boolean;
 }
 
 export interface CategoriaCreada extends NuevaCategoria {
