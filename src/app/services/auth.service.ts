@@ -167,9 +167,10 @@ export class AuthService {
   isAccessTokenExpired(): boolean {
     if (typeof sessionStorage === 'undefined') return false;
     const expStr = sessionStorage.getItem('esiBuy.expiresAt');
-    if (!expStr) return true;
+    if (!expStr) return false;
+    const expiresAt = Number(expStr);
     // Damos un margen de seguridad de 5 segundos antes de la caducidad real
-    return Date.now() > (parseInt(expStr, 10) - 5000);
+    return !Number.isFinite(expiresAt) || Date.now() > expiresAt - 5000;
   }
 
   private getTokenExpiration(token: string): number {
