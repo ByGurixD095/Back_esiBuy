@@ -5,8 +5,6 @@ import esi.grupo5.esiBuy.Dto.FiltroCatalogoDTO;
 import esi.grupo5.esiBuy.Dto.ProductInfoDTO;
 import esi.grupo5.esiBuy.Exception.NotFoundException;
 import esi.grupo5.esiBuy.Model.Producto;
-import esi.grupo5.esiBuy.Model.Usuario;
-import esi.grupo5.esiBuy.Model.Vendedor;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +41,9 @@ class ProductoServiceTest {
 
     @Mock
     private MongoTemplate mongoTemplate;
+
+    @Mock
+    private UserService usuarioService;
 
     @InjectMocks
     private ProductoService productoService;
@@ -148,17 +149,22 @@ class ProductoServiceTest {
         Producto producto = new Producto(
                 "Camiseta ESI", "REF-1", 2, 1999, "Descripción", "Ropa", "imagen.jpg", 5, 10);
         producto.setIdVendedor("vendedor-1");
-        Vendedor vendedor = new Vendedor();
-        vendedor.setNombreComercial("Tienda ESI");
         when(productoRepository.findById("producto-1")).thenReturn(Optional.of(producto));
-        when(mongoTemplate.findById("vendedor-1", Usuario.class)).thenReturn(vendedor);
+        when(usuarioService.getNombreComercialById("vendedor-1")).thenReturn("Tienda ESI");
 
         ProductInfoDTO resultado = productoService.infoProducto("producto-1");
 
         assertEquals("Camiseta ESI", resultado.nombre());
+        assertEquals(2, resultado.numStock());
+        assertEquals(1999, resultado.precioCent());
+        assertEquals("Descripción", resultado.descripcion());
+        assertEquals("Ropa", resultado.categoria());
+        assertEquals("imagen.jpg", resultado.urlImagen());
+        assertEquals(5, resultado.descuento());
+        assertEquals(10, resultado.descuentoPremium());
         assertEquals("Tienda ESI", resultado.vendedor());
         verify(productoRepository).findById("producto-1");
-        verify(mongoTemplate).findById("vendedor-1", Usuario.class);
+        verify(usuarioService).getNombreComercialById("vendedor-1");
     }
 
     @Test
@@ -171,6 +177,17 @@ class ProductoServiceTest {
                 NotFoundException.class,
                 () -> productoService.infoProducto("producto-inactivo"));
         verify(productoRepository).findById("producto-inactivo");
+        org.mockito.Mockito.verifyNoInteractions(usuarioService);
+    }
+
+    @Test
+    void infoProducto_noDevuelveProductosInexistentes() {
+        when(productoRepository.findById("producto-inexistente")).thenReturn(Optional.empty());
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                NotFoundException.class,
+                () -> productoService.infoProducto("producto-inexistente"));
+        org.mockito.Mockito.verifyNoInteractions(usuarioService);
     }
 
     @Test
