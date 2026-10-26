@@ -1,3 +1,4 @@
 export const environment = {
-  apiUrl: '',
+  apiUrl: 'https://back-esibuy.onrender.com',
+  csrfEnabled: true,
 };
