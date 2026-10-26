@@ -1,17 +1,22 @@
-name: CI/CD
+name: CI/CD - Firebase Hosting
 
 on:
   pull_request:
     branches:
-      - main
+      - master
       - develop
   push:
     branches:
-      - main
-      - develop
+      - master
 
 permissions:
+  checks: write
   contents: read
+  pull-requests: write
+
+concurrency:
+  group: firebase-hosting-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-deploy:
@@ -31,32 +36,27 @@ jobs:
         run: npm ci
 
       - name: Configure production API URL
-        if: github.event_name == 'push'
+        if: vars.API_URL != ''
         env:
           API_URL: ${{ vars.API_URL }}
         run: |
-          if [ -z "$API_URL" ]; then
-            echo "::error::Set the API_URL Actions variable before merging to main or develop."
-            exit 1
-          fi
           node -e 'const fs = require("node:fs"); fs.writeFileSync("src/environments/environment.production.ts", `export const environment = { apiUrl: ${JSON.stringify(process.env.API_URL)} };\n`);'
 
       - name: Build Angular application
         run: npm run build
 
-      - name: Deploy production to Firebase Hosting
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: Deploy pull request preview
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          projectId: ${{ vars.FIREBASE_PROJECT_ID }}
-          channelId: live
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ESIBUY }}
+          projectId: esibuy
 
-      - name: Deploy develop preview to Firebase Hosting
-        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+      - name: Deploy live site
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          projectId: ${{ vars.FIREBASE_PROJECT_ID }}
-          channelId: develop
-          expires: 30d
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ESIBUY }}
+          projectId: esibuy
+          channelId: live

@@ -38,15 +38,11 @@ This will compile your project and store the build artifacts in the `dist/` dire
 
 ## CI/CD with GitHub Actions and Firebase Hosting
 
-The workflow in `.github/workflows/ci-cd.yml` runs a production build for pull requests targeting `main` or `develop`. After a push to `develop`, it deploys a preview to the Firebase Hosting channel `develop`; after a push to `main`, it deploys to the live Hosting site.
+The workflow in `.github/workflows/firebase-hosting.yml` builds pull requests targeting `master` or `develop` and publishes a Firebase Hosting preview for pull requests from this repository. After a push to `master`, it deploys the production site to Firebase Hosting. The Hosting configuration serves the Angular build from `dist/Front_esiBuy/browser` and routes application paths back to `index.html`.
 
-Before merging changes to either branch, configure these values in **GitHub → Settings → Secrets and variables → Actions**:
+In **GitHub → Settings → Secrets and variables → Actions**, create the repository secret `FIREBASE_SERVICE_ACCOUNT_ESIBUY` with the JSON service-account key that has permission to deploy to Firebase project `esibuy`. The project reference is stored in `.firebaserc`.
 
-- Repository variable `FIREBASE_PROJECT_ID`: the Firebase project ID.
-- Repository variable `API_URL`: the base URL of the deployed backend API, without a trailing slash. This is included in the public frontend bundle, so it must not contain credentials or other secrets.
-- Repository secret `FIREBASE_SERVICE_ACCOUNT`: the JSON key for a service account with permission to deploy Firebase Hosting.
-
-The production build uses `API_URL` instead of the local `http://localhost:8080` URL. The workflow intentionally fails before deployment if this variable is missing. The backend must also allow requests, including credentialed requests if applicable, from the Firebase Hosting domains.
+You can optionally set the repository variable `API_URL` to the public backend base URL, without a trailing slash. If it is not set, the website still deploys but API calls will not reach the production backend. This URL is included in the public frontend bundle and must not contain credentials or other secrets. Configure the backend CORS policy to allow the Firebase Hosting domain.
 
 ## Running unit tests
 
