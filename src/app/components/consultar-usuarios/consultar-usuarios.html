@@ -6,15 +6,39 @@
 
     <div class="filtros">
       <div class="busqueda esi-campo">
-        <label for="buscar-id">🔎 Buscar por ID</label>
+        <label for="buscar-nombre">🔎 Buscar por nombre</label>
         <input
-          id="buscar-id"
+          id="buscar-nombre"
           type="search"
-          [value]="busquedaId()"
-          (input)="actualizarBusquedaId($event)"
-          placeholder="Introduce el ID del usuario"
+          [value]="busquedaNombre()"
+          (input)="actualizarBusquedaNombre($event)"
+          placeholder="Nombre o apellidos"
           autocomplete="off"
         />
+      </div>
+      <div class="busqueda esi-campo">
+        <label for="buscar-email">📧 Buscar por correo</label>
+        <input
+          id="buscar-email"
+          type="search"
+          [value]="busquedaEmail()"
+          (input)="actualizarBusquedaEmail($event)"
+          placeholder="Correo electrónico"
+          autocomplete="off"
+        />
+      </div>
+      <div class="filtro-rol esi-campo">
+        <label for="filtro-rol">Filtrar por rol</label>
+        <select
+          id="filtro-rol"
+          [value]="filtroRol()"
+          (change)="actualizarFiltroRol($event)"
+        >
+          <option value="TODOS">Todos los roles</option>
+          <option value="CLIENTE">Cliente</option>
+          <option value="VENDEDOR">Vendedor</option>
+          <option value="ADMINISTRADOR">Administrador</option>
+        </select>
       </div>
     </div>
     @if (mensajeErrorAccion()) {

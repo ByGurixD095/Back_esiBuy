@@ -54,6 +54,11 @@ the frontend signs in with `POST /users/login`, sends credentials with cookies e
 the products page when `mfaStatus` is `SUCCESS`. MFA setup and verification are not yet implemented;
 the frontend reports when the backend requires either step.
 
+## Category administration
+
+Administrators can create a category at `/admin/categorias/nueva` using
+`POST /admin/categorias`. Category names must be unique.
+
 ## Running end-to-end tests
 
 For end-to-end (e2e) testing, run:

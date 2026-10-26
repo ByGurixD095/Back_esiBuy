@@ -12,7 +12,7 @@ import { DatePipe } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { map, type Observable } from 'rxjs';
-import { AuthService } from '../../services/auth.service';
+import { AuthService, Rol } from '../../services/auth.service';
 import {
   Usuarios,
   type Usuario,
@@ -20,7 +20,6 @@ import {
 } from '../../services/consultar-usuarios-service/usuarios';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
 
-type FiltroEliminados = 'todos' | 'eliminados' | 'no-eliminados';
 type AccionUsuario = 'eliminar' | 'bloquear' | 'desbloquear' | 'activar';
 
 @Component({
@@ -43,7 +42,9 @@ export class ConsultarUsuarios implements OnInit {
   }
 
   readonly usuarios = signal<Usuario[]>([]);
-  readonly busquedaId = signal('');
+  readonly busquedaNombre = signal('');
+  readonly busquedaEmail = signal('');
+  readonly filtroRol = signal<Rol | 'TODOS'>('TODOS');
   readonly cargando = signal(true);
   readonly mensajeError = signal('');
   readonly mensajeErrorAccion = signal('');
@@ -57,12 +58,18 @@ export class ConsultarUsuarios implements OnInit {
   readonly accionPendiente = signal<{ usuario: Usuario; accion: AccionUsuario } | null>(null);
   readonly paginaActual = signal(0);
   readonly usuariosFiltrados = computed(() => {
-    const idBuscado = this.busquedaId().trim().toLocaleLowerCase();
-    if (!idBuscado) return this.usuarios();
-    
-    return this.usuarios().filter((usuario) => 
-      usuario.id.toLocaleLowerCase().includes(idBuscado)
-    );
+    const nombreBuscado = this.busquedaNombre().trim().toLowerCase();
+    const emailBuscado = this.busquedaEmail().trim().toLowerCase();
+    const rolBuscado = this.filtroRol();
+
+    return this.usuarios().filter((usuario) => {
+      const nombreCompleto = `${usuario.name} ${usuario.apellidos}`.toLowerCase();
+      const coincideNombre = !nombreBuscado || nombreCompleto.includes(nombreBuscado);
+      const coincideEmail = !emailBuscado || usuario.email.toLowerCase().includes(emailBuscado);
+      const coincideRol = rolBuscado === 'TODOS' || usuario.rol === rolBuscado;
+
+      return coincideNombre && coincideEmail && coincideRol;
+    });
   });
   readonly totalPaginas = computed(() =>
     Math.ceil(this.usuariosFiltrados().length / this.tamanoPagina),
@@ -92,8 +99,18 @@ export class ConsultarUsuarios implements OnInit {
     });
   }
 
-  actualizarBusquedaId(event: Event): void {
-    this.busquedaId.set((event.target as HTMLInputElement).value);
+  actualizarBusquedaNombre(event: Event): void {
+    this.busquedaNombre.set((event.target as HTMLInputElement).value);
+    this.paginaActual.set(0);
+  }
+
+  actualizarBusquedaEmail(event: Event): void {
+    this.busquedaEmail.set((event.target as HTMLInputElement).value);
+    this.paginaActual.set(0);
+  }
+
+  actualizarFiltroRol(event: Event): void {
+    this.filtroRol.set((event.target as HTMLSelectElement).value as Rol | 'TODOS');
     this.paginaActual.set(0);
   }
 
