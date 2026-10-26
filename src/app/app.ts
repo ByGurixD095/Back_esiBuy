@@ -53,15 +53,16 @@ export class App implements AfterViewInit, OnDestroy {
     private ngZone: NgZone,
     private router: Router,
   ) {
-    this.mostrarPortada.set(this.router.url === '/');
+    this.mostrarPortada.set(this.esRutaInicio(this.router.url));
     this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
-      .subscribe((event) => this.mostrarPortada.set(event.urlAfterRedirects === '/'));
+      .subscribe((event) => this.mostrarPortada.set(this.esRutaInicio(event.urlAfterRedirects)));
   }
 
   ngAfterViewInit(): void {
     if (!this.mostrarPortada()) return;
-    const canvas = this.canvasRef.nativeElement;
+    const canvas = this.canvasRef?.nativeElement;
+    if (!canvas) return;
     const context = canvas.getContext('2d');
     if (!context) return;
     this.ctx = context;
@@ -87,8 +88,13 @@ export class App implements AfterViewInit, OnDestroy {
     this.resizeCanvas();
   };
 
+  private esRutaInicio(url: string): boolean {
+    return url.split(/[?#]/, 1)[0] === '/';
+  }
+
   private resizeCanvas(): void {
-    const canvas = this.canvasRef.nativeElement;
+    const canvas = this.canvasRef?.nativeElement;
+    if (!canvas) return;
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
   }
@@ -115,8 +121,14 @@ export class App implements AfterViewInit, OnDestroy {
   }
 
   private renderLoop = (): void => {
+    const canvas = this.canvasRef?.nativeElement;
+    if (!canvas?.isConnected) {
+      this.animationFrameId = null;
+      return;
+    }
+
     this.update();
-    this.draw();
+    this.draw(canvas);
     this.animationFrameId = requestAnimationFrame(this.renderLoop);
   };
 
@@ -154,8 +166,7 @@ export class App implements AfterViewInit, OnDestroy {
     };
   }
 
-  private draw(): void {
-    const canvas = this.canvasRef.nativeElement;
+  private draw(canvas: HTMLCanvasElement): void {
     const ctx = this.ctx;
     const width = canvas.width;
     const height = canvas.height;

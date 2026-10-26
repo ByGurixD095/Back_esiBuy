@@ -15,7 +15,24 @@ describe('AuthService', () => {
     http = TestBed.inject(HttpTestingController);
   });
 
-  afterEach(() => http.verify());
+  afterEach(() => {
+    http.verify();
+    sessionStorage.removeItem('esiBuy.rol');
+    sessionStorage.removeItem('esiBuy.email');
+    sessionStorage.removeItem('esiBuy.expiresAt');
+  });
+
+  it('no fuerza una renovación si la sesión no almacena un vencimiento de token', () => {
+    sessionStorage.removeItem('esiBuy.expiresAt');
+
+    expect(service.isAccessTokenExpired()).toBe(false);
+  });
+
+  it('considera vencido un token cuya fecha de expiración ya pasó', () => {
+    sessionStorage.setItem('esiBuy.expiresAt', (Date.now() - 10_000).toString());
+
+    expect(service.isAccessTokenExpired()).toBe(true);
+  });
 
   it('restaura la sesión desde el perfil usando el token de acceso actual', () => {
     let resultado: unknown;
@@ -35,10 +52,9 @@ describe('AuthService', () => {
     let resultado: unknown;
     service.checkSessionOnLoad().subscribe((perfil) => (resultado = perfil));
 
-    http.expectOne('http://localhost:8080/users/me').flush(
-      { message: 'Token expirado' },
-      { status: 401, statusText: 'Unauthorized' },
-    );
+    http
+      .expectOne('http://localhost:8080/users/me')
+      .flush({ message: 'Token expirado' }, { status: 401, statusText: 'Unauthorized' });
 
     expect(resultado).toBeNull();
     expect(service.isAuthenticated()).toBe(false);
