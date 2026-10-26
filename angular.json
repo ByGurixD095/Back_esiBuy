@@ -23,6 +23,11 @@
               "src/assets",
               "public/logo.ico",
               {
+                "glob": "favicon.ico",
+                "input": "src/assets/images/svg",
+                "output": "/"
+              },
+              {
                 "glob": "**/*",
                 "input": "public",
                 "output": "/assets"
