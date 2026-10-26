@@ -113,7 +113,7 @@ class AdminServiceTest {
         AdministradorRegistroDTO dto = administradorDTO();
         when(usuarioRepository.findByEmail(dto.email())).thenReturn(Optional.empty());
         doThrow(new ValidationException("Contraseña débil"))
-                .when(passwordValidatorService).validateRegistrationPassword(dto.contrasena());
+                .when(passwordValidatorService).validatePassword(dto.contrasena(), dto.confirmarContrasena(), dto.nombre(), dto.email(),null);
 
         assertThrows(ValidationException.class, () -> service.crearAdministrador(dto));
 
@@ -122,7 +122,7 @@ class AdminServiceTest {
 
     private AdministradorRegistroDTO administradorDTO() {
         return new AdministradorRegistroDTO(
-                "Ana", "Pérez", "ana@esibuy.com", "Clave#2026x", "Madrid",
+                "Ana", "Pérez", "ana@esibuy.com", "Clave#2026x", "Clave#2026x", "Madrid",
                 "/assets/avatares/avatar-01.svg");
     }
 

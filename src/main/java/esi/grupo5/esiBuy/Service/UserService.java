@@ -76,7 +76,7 @@ public class UserService {
      */
     @Transactional
     public LoginResponseDTO registrarCliente(ClienteRegistroDTO dto) {
-        passwordValidatorService.validateRegistrationPassword(dto.contrasena());
+        passwordValidatorService.validatePassword(dto.contrasena(), dto.confirmarContrasena(), dto.nombre(), dto.email() ,null);
         validarMayorDeEdad(dto.fechaNacimiento());
         
         Cliente cliente = Cliente.builder()
@@ -111,7 +111,7 @@ public class UserService {
      */
     @Transactional
     public LoginResponseDTO registrarVendedor(VendedorRegisterRequest dto) {
-        passwordValidatorService.validateRegistrationPassword(dto.contrasena());
+        passwordValidatorService.validatePassword(dto.contrasena(), dto.confirmarContrasena(), dto.nombre(), dto.email() ,null);
 
         Vendedor vendedor = Vendedor.builder()
                 .nombre(dto.nombre())
@@ -132,13 +132,24 @@ public class UserService {
     /**
      * Recupera todos los usuarios y los convierte a DTO de respuesta.
      *
+     * @param nombre filtro por nombre
+     * @param email filtro por email
+     * @param rol filtro por rol
      * @return lista de usuarios representados para la API
      */
-    public List<UsuarioResponseDTO> getAllUsers() {
-        return usuarioRepository.findAll().stream()
-                .map(this::toResponseDto)
-                .collect(Collectors.toCollection(ArrayList::new));
-    }
+    public List<UsuarioResponseDTO> getAllUsers(String nombre, String email, Rol rol) {
+    return usuarioRepository.findAll().stream()
+            .filter(u -> {
+                String nombreCompleto = u.getNombre() + " " + u.getApellidos();
+                return nombre == null || nombre.isBlank()
+                        || nombreCompleto.toLowerCase().contains(nombre.trim().toLowerCase());
+            })
+            .filter(u -> email == null || email.isBlank()
+                    || u.getEmail().toLowerCase().contains(email.trim().toLowerCase()))
+            .filter(u -> rol == null || u.getRol() == rol)
+            .map(this::toResponseDto)
+            .collect(Collectors.toCollection(ArrayList::new));
+}
 
     /**
      * Recupera una cuenta que no haya sido eliminada lógicamente.
@@ -148,7 +159,7 @@ public class UserService {
      * @throws NotFoundException si no existe o está eliminada
      */
     public UsuarioResponseDTO getUserById(String id) {
-        return usuarioRepository.findByIdAndEliminadoFalse(id)
+        return usuarioRepository.findById(id)
                 .map(this::toResponseDto)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND_MESSAGE));
     }
@@ -175,18 +186,16 @@ public class UserService {
      * @throws ForbiddenException si es el último administrador activo y desbloqueado
      */
     public void eliminarCuenta(String id) {
-        Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
+        Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND_MESSAGE));
 
         if (esAdministradorDisponible(usuario)
-                && usuarioRepository.countByRolAndActivoTrueAndBloqueadoFalseAndEliminadoFalse(
+                && usuarioRepository.countByRolAndActivoTrueAndBloqueadoFalse(
                         Rol.ADMINISTRADOR) <= 1) {
             throw new ForbiddenException("No se puede eliminar su cuenta.");
         }
 
-        usuario.setEliminado(true);
-        usuario.setActivo(false);
-        usuarioRepository.save(usuario);
+        usuarioRepository.delete(usuario);
         authService.revocarRefreshTokens(id);
     }
 
@@ -207,7 +216,7 @@ public class UserService {
      */
     @Transactional
     public void modificarMiPerfil(String id, UserSelfUpdateDTO dto) {
-        Usuario usuario = usuarioRepository.findByIdAndEliminadoFalse(id)
+        Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND_MESSAGE));
 
         actualizarDatosComunes(usuario, dto);
@@ -411,7 +420,6 @@ public class UserService {
                 .rol(usuario.getRol())
                 .activo(usuario.isActivo())
                 .bloqueado(usuario.isBloqueado())
-                .eliminado(usuario.isEliminado())
                 .fechaAlta(usuario.getFechaAlta())
                 .fechaModificacion(usuario.getFechaModificacion())
                 .fechaCambioContrasena(usuario.getFechaCambioContrasena())
@@ -430,5 +438,16 @@ public class UserService {
         if (valor != null && !valor.isBlank()) {
             setter.accept(valor);
         }
+    }
+
+    protected String getNombreComercialById(String vendedorId){
+        Usuario user = usuarioRepository.findById(vendedorId)
+        .orElseThrow(() -> new NotFoundException("Vendedor no encontrado"));
+
+        if (!(user instanceof Vendedor)){
+            throw new NotFoundException("No se encontró el vendedor");
+        }
+
+        return ((Vendedor) user).getNombreComercial();
     }
 }

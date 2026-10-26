@@ -71,7 +71,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (token != null && this.jwtService.isTokenValid(token)
                 && SecurityContextHolder.getContext().getAuthentication() == null) {
             String id = this.jwtService.extractId(token);
-            if (usuarioRepository.existsByIdAndActivoTrueAndBloqueadoFalseAndEliminadoFalse(id)) {
+            if (usuarioRepository.existsByIdAndActivoTrueAndBloqueadoFalse(id)) {
                 String rol = this.jwtService.extractRol(token);
                 List<GrantedAuthority> authorities =
                         Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + rol));

@@ -110,7 +110,7 @@ class AuthServiceTest {
     @Test
     void loginDeUsuarioEliminado_esProhibido() {
         Cliente usuario = cliente();
-        usuario.setEliminado(true);
+        usuario.setActivo(false);
         when(usuarioRepository.findByEmail(usuario.getEmail())).thenReturn(Optional.of(usuario));
         when(encoder.matches("Password#1", "hash")).thenReturn(true);
 

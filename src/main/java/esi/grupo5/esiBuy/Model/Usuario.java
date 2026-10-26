@@ -62,8 +62,6 @@ public abstract class Usuario {
     private boolean activo;
     /** Indica si la cuenta está bloqueada. */
     private boolean bloqueado;
-    /** Indica si la cuenta se ha eliminado lógicamente. */
-    private boolean eliminado;
 
     /** Fecha de creación registrada automáticamente. */
     @CreatedDate
@@ -116,7 +114,6 @@ public abstract class Usuario {
         this.rol = rol;
         this.activo = activo;
         this.bloqueado = false;
-        this.eliminado = false;
         this.fechaCambioContrasena = LocalDateTime.now().plusDays(30);
         this.historialContrasenas = new ArrayList<>();
     }
@@ -207,11 +204,6 @@ public abstract class Usuario {
     public boolean isBloqueado() { return bloqueado; }
     /** @param bloqueado nuevo estado de bloqueo */
     public void setBloqueado(boolean bloqueado) { this.bloqueado = bloqueado; }
-
-    /** @return {@code true} si la cuenta está eliminada lógicamente */
-    public boolean isEliminado() { return eliminado; }
-    /** @param eliminado nuevo estado de eliminación lógica */
-    public void setEliminado(boolean eliminado) { this.eliminado = eliminado; }
 
     /** @return fecha de alta */
     public LocalDateTime getFechaAlta() { return fechaAlta; }

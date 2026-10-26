@@ -1,4 +1,4 @@
-name: Java CI with Maven
+name: CI/CD API
 
 on:
   push:
@@ -7,9 +7,16 @@ on:
     branches: [ "main", "develop" ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
 jobs:
   build:
-    name: Build
+    name: Test and build Docker image
     runs-on: ubuntu-latest
 
     steps:
@@ -25,3 +32,28 @@ jobs:
 
       - name: Build and test
         run: mvn -B verify
+
+      - name: Build production Docker image
+        run: docker build --tag esibuy-api:${{ github.sha }} .
+
+  deploy:
+    name: Deploy to Render
+    runs-on: ubuntu-latest
+    needs: build
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    environment: production
+
+    steps:
+      - name: Trigger Render deployment
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "::error::Add the RENDER_DEPLOY_HOOK_URL secret to the production GitHub environment."
+            exit 1
+          fi
+          curl --fail --silent --show-error \
+            --request POST \
+            "$RENDER_DEPLOY_HOOK_URL&ref=$GITHUB_SHA"

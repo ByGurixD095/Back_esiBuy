@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import esi.grupo5.esiBuy.Dto.FiltroCatalogoDTO;
+import esi.grupo5.esiBuy.Dto.ProductInfoDTO;
 import esi.grupo5.esiBuy.Dto.ProductoDTO;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
@@ -309,6 +310,28 @@ class ProductoControllerTest {
                 .principal(new UsernamePasswordAuthenticationToken("vendedor-1", null)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value("producto-1"));
+    }
+
+    @Test
+    void obtenerInfoProducto_devuelveLaInformacionPublicaSinAutenticacion() throws Exception {
+        ProductInfoDTO info = new ProductInfoDTO(
+                "Camiseta ESI", 12, 1999, "Descripción", "Ropa",
+                "imagen.jpg", 5, 10, "Tienda ESI");
+        when(productoService.infoProducto("producto-1")).thenReturn(info);
+
+        mockMvc.perform(get("/products/producto-1/info"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombre").value("Camiseta ESI"))
+                .andExpect(jsonPath("$.numStock").value(12))
+                .andExpect(jsonPath("$.precioCent").value(1999))
+                .andExpect(jsonPath("$.descripcion").value("Descripción"))
+                .andExpect(jsonPath("$.categoria").value("Ropa"))
+                .andExpect(jsonPath("$.urlImagen").value("imagen.jpg"))
+                .andExpect(jsonPath("$.descuento").value(5))
+                .andExpect(jsonPath("$.descuentoPremium").value(10))
+                .andExpect(jsonPath("$.vendedor").value("Tienda ESI"));
+
+        verify(productoService).infoProducto("producto-1");
     }
 
     @Test

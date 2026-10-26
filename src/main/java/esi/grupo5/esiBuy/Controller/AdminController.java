@@ -4,6 +4,7 @@ import esi.grupo5.esiBuy.Dto.AdministradorRegistroDTO;
 import esi.grupo5.esiBuy.Dto.AdministradorResponseDTO;
 import esi.grupo5.esiBuy.Dto.UserPatchDTO;
 import esi.grupo5.esiBuy.Dto.UsuarioResponseDTO;
+import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Service.UserService;
 import esi.grupo5.esiBuy.Service.AdminService;
 import jakarta.validation.Valid;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -46,11 +48,18 @@ public class AdminController {
     /**
      * Lista todos los usuarios.
      *
+     * @param nombre filtro por nombre
+     * @param email filtro por email
+     * @param rol filtro por rol
      * @return usuarios en una respuesta HTTP 200
+     * 
      */
     @GetMapping("/users")
-    public ResponseEntity<List<UsuarioResponseDTO>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
+    public ResponseEntity<List<UsuarioResponseDTO>> getAllUsers(
+            @RequestParam(required = false) String nombre,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) Rol rol) {
+        return ResponseEntity.ok(userService.getAllUsers(nombre, email, rol));
     }
 
     /**
@@ -100,7 +109,7 @@ public class AdminController {
      *
      * @param id identificador del usuario que se bloqueará
      * @return usuario actualizado con estado HTTP 200
-     * @throws esi.grupo5.esiBuy.Exception.NotFoundException si el usuario no existe o está eliminado
+     * @throws esi.grupo5.esiBuy.Exception.NotFoundException si el usuario no existe
      */
     @PatchMapping("/bloquear/{id}")
     public ResponseEntity<UsuarioResponseDTO> bloquearUsuario(@PathVariable String id) {
@@ -112,7 +121,7 @@ public class AdminController {
      *
      * @param id identificador del usuario que se desbloqueará
      * @return usuario actualizado con estado HTTP 200
-     * @throws esi.grupo5.esiBuy.Exception.NotFoundException si el usuario no existe o está eliminado
+     * @throws esi.grupo5.esiBuy.Exception.NotFoundException si el usuario no existe
      */
     @PatchMapping("/desbloquear/{id}")
     public ResponseEntity<UsuarioResponseDTO> desbloquearUsuario(@PathVariable String id) {
@@ -120,13 +129,13 @@ public class AdminController {
     }
 
     /**
-     * Elimina lógicamente a un usuario.
+     * Elimina físicamente a un usuario.
      *
      * @param id identificador del usuario que se eliminará
      * @param usuarioActualId identificador del administrador autenticado
      * @return respuesta sin cuerpo con estado HTTP 204
      * @throws esi.grupo5.esiBuy.Exception.ForbiddenException si se intenta eliminar la propia cuenta
-     * @throws esi.grupo5.esiBuy.Exception.NotFoundException si el usuario no existe o está eliminado
+     * @throws esi.grupo5.esiBuy.Exception.NotFoundException si el usuario no existe
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable String id, @AuthenticationPrincipal String usuarioActualId) {

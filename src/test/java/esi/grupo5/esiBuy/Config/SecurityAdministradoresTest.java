@@ -30,7 +30,8 @@ class SecurityAdministradoresTest {
 
     private static final String BODY = """
             {"nombre":"Ana","apellidos":"Lopez","email":"ana@esi.es",
-             "contrasena":"Abcdef1!x","sede":"Ciudad Real"}
+             "contrasena":"Abcdef1!x","confirmarContrasena":"Abcdef1!x",
+             "sede":"Ciudad Real"}
             """;
 
     @Autowired
@@ -58,7 +59,7 @@ class SecurityAdministradoresTest {
         when(jwtService.isTokenValid(any())).thenReturn(true);
         when(jwtService.extractId(any())).thenReturn("1");
         when(jwtService.extractRol(any())).thenReturn(rol);
-        when(usuarioRepository.existsByIdAndActivoTrueAndBloqueadoFalseAndEliminadoFalse("1")).thenReturn(true);
+        when(usuarioRepository.existsByIdAndActivoTrueAndBloqueadoFalse("1")).thenReturn(true);
     }
 
     @Test

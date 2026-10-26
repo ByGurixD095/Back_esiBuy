@@ -2,6 +2,7 @@ package esi.grupo5.esiBuy.Util;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
@@ -12,24 +13,30 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class CookieUtil {
 
-    /** Política SameSite aplicada a las cookies. */
-    private static final String STRICT = "Strict";
     /** Servicio que proporciona las duraciones configuradas de los tokens. */
     private final JwtService jwtService;
+    private final boolean secure;
+    private final String sameSite;
 
     /**
      * Crea la utilidad de cookies.
      *
      * @param jwtService servicio de tokens JWT
+     * @param secure indica si las cookies requieren HTTPS
+     * @param sameSite política SameSite aplicada a las cookies
      */
-    public CookieUtil(JwtService jwtService) {
+    public CookieUtil(
+            JwtService jwtService,
+            @Value("${app.cookie.secure:false}") boolean secure,
+            @Value("${app.cookie.same-site:Strict}") String sameSite) {
         this.jwtService = jwtService;
+        this.secure = secure;
+        this.sameSite = sameSite;
     }
 
     /**
-     * Añade cookies HttpOnly para los tokens de acceso y refresco. En esta configuración
-     * el atributo {@code Secure} está desactivado y debe activarse en despliegues de producción
-     * detrás de HTTPS.
+     * Añade cookies HttpOnly para los tokens de acceso y refresco, aplicando los atributos
+     * de seguridad configurados para el entorno.
      *
      * @param response respuesta en la que se añaden las cabeceras {@code Set-Cookie}
      * @param lr respuesta de autenticación que contiene ambos tokens
@@ -39,16 +46,16 @@ public class CookieUtil {
                 .httpOnly(true)
                 .path("/")
                 .maxAge(jwtService.getAccessTokenExpirationSeconds())
-                .sameSite(STRICT)
-                .secure(false)
+                .sameSite(sameSite)
+                .secure(secure)
                 .build();
 
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", lr.refreshToken())
                 .httpOnly(true)
                 .path("/")
                 .maxAge(jwtService.getRefreshTokenExpirationSeconds())
-                .sameSite(STRICT)
-                .secure(false)
+                .sameSite(sameSite)
+                .secure(secure)
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
@@ -78,16 +85,16 @@ public class CookieUtil {
                 .httpOnly(true)
                 .path("/")
                 .maxAge(0)
-                .sameSite(STRICT)
-                .secure(false)
+                .sameSite(sameSite)
+                .secure(secure)
                 .build();
 
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", "")
                 .httpOnly(true)
                 .path("/")
                 .maxAge(0)
-                .sameSite(STRICT)
-                .secure(false)
+                .sameSite(sameSite)
+                .secure(secure)
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());

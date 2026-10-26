@@ -68,7 +68,7 @@ class UserControllerTest {
                         .content(objectMapper.writeValueAsString(
                                 new LoginRequestDTO("cliente@test.com", "Password#1"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").value("access-token"))
+                .andExpect(jsonPath("$.accessToken").doesNotExist())
                 .andExpect(jsonPath("$.mfaStatus").value("SUCCESS"));
 
         verify(authService).login(any(LoginRequestDTO.class), eq("127.0.0.1"));
@@ -84,8 +84,8 @@ class UserControllerTest {
         mockMvc.perform(post("/users/refresh").cookie(new jakarta.servlet.http.Cookie(
                         "refreshToken", "refresh-token")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").value("new-access-token"))
-                .andExpect(jsonPath("$.refreshToken").value("refresh-token"));
+                .andExpect(jsonPath("$.accessToken").doesNotExist())
+                .andExpect(jsonPath("$.refreshToken").doesNotExist());
 
         verify(authService).refreshToken("refresh-token");
         verify(cookieUtil).setTokenCookies(any(), eq(response));
@@ -152,10 +152,10 @@ class UserControllerTest {
         LoginResponseDTO withToken = new LoginResponseDTO("access", "refresh", "CLIENTE", "NORMAL");
         LoginResponseDTO withoutToken = new LoginResponseDTO(null, null, "CLIENTE", "NORMAL");
         ClienteRegistroDTO cliente = new ClienteRegistroDTO(
-                "Ana", "López", "ana@test.com", "Strong#2026", null, null,
+                "Ana", "López", "ana@test.com", "Strong#2026", "Strong#2026", null, null,
                 "12345678A", java.time.LocalDate.of(2000, 1, 1), null);
         VendedorRegisterRequest vendedor = new VendedorRegisterRequest(
-                "Luis", "García", "luis@test.com", "Strong#2026", null, null,
+                "Luis", "García", "luis@test.com", "Strong#2026", "Strong#2026", null, null,
                 "Tienda", "B12345678", "electronica");
         when(userService.registrarCliente(cliente)).thenReturn(withToken);
         when(userService.registrarVendedor(vendedor)).thenReturn(withoutToken);
@@ -236,10 +236,10 @@ class UserControllerTest {
     void registroConservaErroresDeValidacionYReenvuelveErroresInternos() {
         HttpServletResponse response = mock(HttpServletResponse.class);
         ClienteRegistroDTO cliente = new ClienteRegistroDTO(
-                "Ana", "López", "ana@test.com", "Strong#2026", null, null,
+                "Ana", "López", "ana@test.com", "Strong#2026", "Strong#2026", null, null,
                 "12345678A", java.time.LocalDate.of(2000, 1, 1), null);
         VendedorRegisterRequest vendedor = new VendedorRegisterRequest(
-                "Luis", "García", "luis@test.com", "Strong#2026", null, null,
+                "Luis", "García", "luis@test.com", "Strong#2026", "Strong#2026", null, null,
                 "Tienda", "B12345678", "electronica");
 
         when(userService.registrarCliente(cliente)).thenThrow(new ConflictException("email exists"));

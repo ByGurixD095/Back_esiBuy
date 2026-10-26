@@ -36,7 +36,7 @@ class AdminControllerConsultaUsuariosEndpointTest {
 
     @Test
     void consultarUsuarios_devuelveListado() throws Exception {
-        when(userService.getAllUsers()).thenReturn(List.of(
+        when(userService.getAllUsers(null, null, null)).thenReturn(List.of(
                 ClienteResponseDTO.builder()
                         .id("cliente-1")
                         .name("Ana")
@@ -57,7 +57,6 @@ class AdminControllerConsultaUsuariosEndpointTest {
                         .email("luis@test.com")
                         .rol(Rol.CLIENTE)
                         .bloqueado(true)
-                        .eliminado(true)
                         .build(),
                 AdministradorResponseDTO.builder()
                         .id("admin-1")
@@ -80,27 +79,26 @@ class AdminControllerConsultaUsuariosEndpointTest {
                 .andExpect(jsonPath("$[0].tipoCliente").value("NORMAL"))
                 .andExpect(jsonPath("$[0].rol").value("CLIENTE"))
                 .andExpect(jsonPath("$[0].activo").value(true))
-                .andExpect(jsonPath("$[0].eliminado").value(false))
                 .andExpect(jsonPath("$[0].bloqueado").value(false))
                 .andExpect(jsonPath("$[1].id").value("cliente-eliminado"))
+                .andExpect(jsonPath("$[1].activo").value(false))
                 .andExpect(jsonPath("$[1].bloqueado").value(true))
-                .andExpect(jsonPath("$[1].eliminado").value(true))
                 .andExpect(jsonPath("$[2].rol").value("ADMINISTRADOR"))
                 .andExpect(jsonPath("$[2].sede").value("Madrid"))
                 .andExpect(jsonPath("$[2].fechaIncorporacion").value("2024-02-01"));
 
-        verify(userService).getAllUsers();
+        verify(userService).getAllUsers(null, null, null);
     }
 
     @Test
     void consultarUsuarios_sinUsuariosDevuelveListaVacia() throws Exception {
-        when(userService.getAllUsers()).thenReturn(List.of());
+        when(userService.getAllUsers(null, null, null)).thenReturn(List.of());
 
         mockMvc.perform(get("/admin/users"))
                 .andExpect(status().isOk())
                 .andExpect(content().json("[]"));
 
-        verify(userService).getAllUsers();
+        verify(userService).getAllUsers(null, null, null);
     }
 
     @Test

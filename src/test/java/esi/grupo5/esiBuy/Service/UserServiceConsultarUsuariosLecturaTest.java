@@ -69,10 +69,9 @@ class UserServiceConsultarUsuariosLecturaTest {
         cliente.setIs2faActivoCliente(true);
         cliente.setIs3faActivoCliente(true);
         Cliente usuarioEliminado = cliente("cliente-eliminado", "Luis", "luis@test.com");
-        usuarioEliminado.setEliminado(true);
         when(usuarioRepository.findAll()).thenReturn(List.of(cliente, usuarioEliminado));
 
-        List<UsuarioResponseDTO> resultado = service.getAllUsers();
+        List<UsuarioResponseDTO> resultado = service.getAllUsers(null, null, null);
 
         assertEquals(2, resultado.size());
         assertEquals("cliente-1", resultado.get(0).getId());
@@ -89,7 +88,6 @@ class UserServiceConsultarUsuariosLecturaTest {
         assertEquals(true, resultado.get(0).isDosFactorActivoCliente());
         assertEquals(true, resultado.get(0).isTresFactorActivoCliente());
         assertEquals("cliente-eliminado", resultado.get(1).getId());
-        assertEquals(true, resultado.get(1).isEliminado());
         verify(usuarioRepository).findAll();
     }
 
@@ -103,7 +101,7 @@ class UserServiceConsultarUsuariosLecturaTest {
         vendedor.setCategoriaPrincipalId("electronica");
         when(usuarioRepository.findAll()).thenReturn(List.of(vendedor));
 
-        List<UsuarioResponseDTO> resultado = service.getAllUsers();
+        List<UsuarioResponseDTO> resultado = service.getAllUsers(null, null, null);
 
         VendedorResponseDTO dto = (VendedorResponseDTO) resultado.get(0);
         assertEquals("Tienda Luis", dto.getNombreComercial());
@@ -125,7 +123,7 @@ class UserServiceConsultarUsuariosLecturaTest {
         when(usuarioRepository.findAll()).thenReturn(List.of(administrador));
 
         AdministradorResponseDTO resultado =
-                (AdministradorResponseDTO) service.getAllUsers().get(0);
+                (AdministradorResponseDTO) service.getAllUsers(null, null, null).get(0);
 
         assertEquals("admin-1", resultado.getId());
         assertEquals(Rol.ADMINISTRADOR, resultado.getRol());
@@ -139,7 +137,7 @@ class UserServiceConsultarUsuariosLecturaTest {
     void consultarUsuarios_sinUsuariosDevuelveListaVacia() {
         when(usuarioRepository.findAll()).thenReturn(List.of());
 
-        List<UsuarioResponseDTO> resultado = service.getAllUsers();
+        List<UsuarioResponseDTO> resultado = service.getAllUsers(null, null, null);
 
         assertEquals(List.of(), resultado);
         verify(usuarioRepository).findAll();
@@ -149,7 +147,7 @@ class UserServiceConsultarUsuariosLecturaTest {
     void consultarUsuarioPorId_existenteDevuelveSusDatosPublicos() {
         Cliente cliente = cliente("cliente-1", "Ana", "ana@test.com");
         cliente.setActivo(true);
-        when(usuarioRepository.findByIdAndEliminadoFalse("cliente-1"))
+        when(usuarioRepository.findById("cliente-1"))
                 .thenReturn(Optional.of(cliente));
 
         UsuarioResponseDTO resultado = service.getUserById("cliente-1");
@@ -160,37 +158,35 @@ class UserServiceConsultarUsuariosLecturaTest {
         assertEquals(Rol.CLIENTE, resultado.getRol());
         assertEquals(true, resultado.isActivo());
         assertEquals(TipoCliente.NORMAL, ((ClienteResponseDTO) resultado).getTipoCliente());
-        verify(usuarioRepository).findByIdAndEliminadoFalse("cliente-1");
+        verify(usuarioRepository).findById("cliente-1");
     }
 
     @Test
     void consultarUsuarioPorId_inexistenteOLoEliminadoLanzaNotFound() {
-        when(usuarioRepository.findByIdAndEliminadoFalse("no-existe"))
+        when(usuarioRepository.findById("no-existe"))
                 .thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> service.getUserById("no-existe"));
 
-        verify(usuarioRepository).findByIdAndEliminadoFalse("no-existe");
+        verify(usuarioRepository).findById("no-existe");
     }
     
     @Test
     void consultarUsuarioAdminPorId_permiteConsultarUsuarioEliminado() {
         Cliente cliente = cliente("cliente-eliminado", "Ana", "ana@test.com");
-        cliente.setEliminado(true);
         when(usuarioRepository.findById("cliente-eliminado"))
                 .thenReturn(Optional.of(cliente));
 
         UsuarioResponseDTO resultado = service.getAdminUserById("cliente-eliminado");
 
         assertEquals("cliente-eliminado", resultado.getId());
-        assertEquals(true, resultado.isEliminado());
         verify(usuarioRepository).findById("cliente-eliminado");
     }
 
     @Test
     void registrarCliente_guardaInactivoYPideActivacionSinAutenticar() {
         ClienteRegistroDTO dto = new ClienteRegistroDTO(
-                "Ana", "López", "ana@test.com", "Strong#2026", "123456789",
+                "Ana", "López", "ana@test.com", "Strong#2026", "Strong#2026", "123456789",
                 null, "12345678A", LocalDate.of(2000, 1, 1), null);
         doReturn(false).when(usuarioRepository).existsByEmail(dto.email());
         when(usuarioRepository.save(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -201,7 +197,7 @@ class UserServiceConsultarUsuariosLecturaTest {
         assertEquals("ana@test.com", resultado.email());
         assertNull(resultado.accessToken());
         assertNull(resultado.refreshToken());
-        verify(passwordValidatorService).validateRegistrationPassword(dto.contrasena());
+        verify(passwordValidatorService).validatePassword(dto.contrasena(), dto.confirmarContrasena(), dto.nombre(), dto.email(), null);
 
         ArgumentCaptor<Cliente> captor = ArgumentCaptor.forClass(Cliente.class);
         verify(usuarioRepository).save(captor.capture());
@@ -212,7 +208,7 @@ class UserServiceConsultarUsuariosLecturaTest {
     @Test
     void registrarVendedor_guardaInactivoYPideActivacionSinAutenticar() {
         VendedorRegisterRequest dto = new VendedorRegisterRequest(
-                "Luis", "García", "luis@test.com", "Strong#2026", null, null,
+                "Luis", "García", "luis@test.com", "Strong#2026", "Strong#2026", null, null,
                 "Tienda Luis", "B12345678", "electronica");
         doReturn(false).when(usuarioRepository).existsByEmail(dto.email());
         when(usuarioRepository.save(any(Vendedor.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -231,13 +227,13 @@ class UserServiceConsultarUsuariosLecturaTest {
     @Test
     void registrarVendedor_emailExistenteImpideGuardar() {
          VendedorRegisterRequest dto = new VendedorRegisterRequest(
-                        "Luis", "García", "luis@test.com", "Strong#2026", null, null,
+                        "Luis", "García", "luis@test.com", "Strong#2026", "Strong#2026", null, null,
                         "Tienda Luis", "B12345678", "electronica");
         when(usuarioRepository.existsByEmail(dto.email())).thenReturn(true);
 
         assertThrows(ConflictException.class, () -> service.registrarVendedor(dto));
 
-        verify(passwordValidatorService).validateRegistrationPassword(dto.contrasena());
+        verify(passwordValidatorService).validatePassword(dto.contrasena(), dto.confirmarContrasena(), dto.nombre(), dto.email(), null);
         verify(usuarioRepository, never()).save(any());
         verify(authService, never()).completarAutenticacion(any());
     }
@@ -245,7 +241,7 @@ class UserServiceConsultarUsuariosLecturaTest {
     @Test
     void registrarVendedor_nombreComercialExistenteImpideGuardar() {
         VendedorRegisterRequest dto = new VendedorRegisterRequest(
-                "Luis", "García", "luis@test.com", "Strong#2026", null, null,
+                "Luis", "García", "luis@test.com", "Strong#2026", "Strong#2026", null, null,
                 "Tienda Luis", "B12345678", "electronica");
         when(usuarioRepository.existsByEmail(dto.email())).thenReturn(false);
         when(usuarioRepository.existsByNombreComercial(dto.nombreComercial())).thenReturn(true);
@@ -261,7 +257,7 @@ class UserServiceConsultarUsuariosLecturaTest {
     @Test
     void registrarCliente_erroresDeRepositorioSeTraducenAErrorDeNegocio() {
         ClienteRegistroDTO dto = new ClienteRegistroDTO(
-                "Ana", "López", "ana@test.com", "Strong#2026", null, null,
+                "Ana", "López", "ana@test.com", "Strong#2026", "Strong#2026", null, null,
                 "12345678A", LocalDate.of(2000, 1, 1), TipoCliente.NORMAL);
         when(usuarioRepository.existsByEmail(dto.email())).thenThrow(
                 new org.springframework.dao.DataAccessResourceFailureException("database unavailable"));
@@ -277,10 +273,10 @@ class UserServiceConsultarUsuariosLecturaTest {
     @Test
     void registrarCliente_errorDeValidacionDePasswordSeTraduce() {
         ClienteRegistroDTO dto = new ClienteRegistroDTO(
-                "Ana", "López", "ana@test.com", "weak", null, null,
+                "Ana", "López", "ana@test.com", "weak", "weak", null, null,
                 "12345678A", LocalDate.of(2000, 1, 1), TipoCliente.NORMAL);
         doThrow(new esi.grupo5.esiBuy.Exception.ValidationException("password policy"))
-                .when(passwordValidatorService).validateRegistrationPassword(dto.contrasena());
+                .when(passwordValidatorService).validatePassword(dto.contrasena(), dto.confirmarContrasena(), dto.nombre(), dto.email(), null);
 
         assertThrows(esi.grupo5.esiBuy.Exception.ValidationException.class,
                 () -> service.registrarCliente(dto));
@@ -291,7 +287,7 @@ class UserServiceConsultarUsuariosLecturaTest {
     @Test
     void modificarPerfil_actualizaCamposValidosYTraduceErroresDeGuardado() {
         Cliente cliente = cliente("cliente-1", "Ana", "ana@test.com");
-        when(usuarioRepository.findByIdAndEliminadoFalse("cliente-1")).thenReturn(Optional.of(cliente));
+        when(usuarioRepository.findById("cliente-1")).thenReturn(Optional.of(cliente));
 
         service.modificarMiPerfil("cliente-1", new UserSelfUpdateDTO(
                 "Eva", "Gómez", "987654321", "avatar.png", TipoCliente.PREMIUM, null, null, null));
@@ -317,7 +313,7 @@ class UserServiceConsultarUsuariosLecturaTest {
     void modificarPerfilVendedor_actualizaDatosComercialesYUsuarioInexistenteFalla() {
         Vendedor vendedor = new Vendedor();
         vendedor.setId("vendedor-1");
-        when(usuarioRepository.findByIdAndEliminadoFalse("vendedor-1")).thenReturn(Optional.of(vendedor));
+        when(usuarioRepository.findById("vendedor-1")).thenReturn(Optional.of(vendedor));
 
         service.modificarMiPerfil("vendedor-1", new UserSelfUpdateDTO(
                 "Luis", null, null, null, null, "tecnologia", "Tienda Luis", null));
@@ -327,7 +323,7 @@ class UserServiceConsultarUsuariosLecturaTest {
         assertEquals("Tienda Luis", vendedor.getNombreComercial());
         verify(usuarioRepository).save(vendedor);
 
-        when(usuarioRepository.findByIdAndEliminadoFalse("missing")).thenReturn(Optional.empty());
+        when(usuarioRepository.findById("missing")).thenReturn(Optional.empty());
         assertThrows(NotFoundException.class, () -> service.modificarMiPerfil(
                 "missing", new UserSelfUpdateDTO(null, null, null, null, null, null, null, null)));
     }
@@ -342,7 +338,7 @@ class UserServiceConsultarUsuariosLecturaTest {
                 .sede("Madrid")
                 .build();
         administrador.setId("admin-1");
-        when(usuarioRepository.findByIdAndEliminadoFalse("admin-1"))
+        when(usuarioRepository.findById("admin-1"))
                 .thenReturn(Optional.of(administrador));
 
         service.modificarMiPerfil("admin-1", new UserSelfUpdateDTO(
@@ -357,7 +353,7 @@ class UserServiceConsultarUsuariosLecturaTest {
         Vendedor vendedor = new Vendedor();
         vendedor.setId("vendedor-1");
         vendedor.setNombreComercial("Tienda original");
-        when(usuarioRepository.findByIdAndEliminadoFalse("vendedor-1")).thenReturn(Optional.of(vendedor));
+        when(usuarioRepository.findById("vendedor-1")).thenReturn(Optional.of(vendedor));
         when(usuarioRepository.existsByNombreComercialAndIdNot("Tienda ocupada", "vendedor-1"))
                 .thenReturn(true);
 
@@ -376,7 +372,7 @@ class UserServiceConsultarUsuariosLecturaTest {
         cliente.setApellidos("López");
         cliente.setTelefono("123456789");
         cliente.setImagenPerfil("avatar.png");
-        when(usuarioRepository.findByIdAndEliminadoFalse("cliente-1"))
+        when(usuarioRepository.findById("cliente-1"))
                 .thenReturn(Optional.of(cliente));
 
         service.modificarMiPerfil("cliente-1", new UserSelfUpdateDTO(

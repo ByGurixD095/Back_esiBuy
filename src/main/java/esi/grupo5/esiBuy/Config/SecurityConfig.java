@@ -2,11 +2,15 @@ package esi.grupo5.esiBuy.Config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
 import org.springframework.http.HttpMethod;
+
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -15,6 +19,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.beans.factory.annotation.Value;
 
 /** Configura la cadena de seguridad, el codificador y la autenticación JWT. */
 @Configuration
@@ -22,6 +27,14 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 public class SecurityConfig {
 
     private static final String ROL_ADMINISTRADOR = "ADMINISTRADOR";
+    private static final String ROL_CLIENTE = "CLIENTE";
+    private static final String ROL_VENDEDOR = "VENDEDOR";
+    @Value("${app.security.csrf-enabled:false}")
+    private boolean csrfEnabled;
+    @Value("${app.cookie.secure:false}")
+    private boolean secureCookies;
+    @Value("${app.cookie.same-site:Strict}")
+    private String cookieSameSite;
 
     /** Filtro que establece la identidad y el rol a partir de la cookie JWT. */
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -76,7 +89,18 @@ public class SecurityConfig {
 
         http
             .cors(Customizer.withDefaults())
-            .csrf(csrf -> csrf.disable())
+            .csrf(csrf -> {
+                if (csrfEnabled) {
+                    CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+                    repository.setCookieCustomizer(cookie -> cookie
+                            .secure(secureCookies)
+                            .sameSite(cookieSameSite));
+                    csrf.csrfTokenRepository(repository)
+                            .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler());
+                } else {
+                    csrf.disable();
+                }
+            })
 
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -90,6 +114,7 @@ public class SecurityConfig {
                 auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
 
                 auth.requestMatchers("/error").permitAll();
+                auth.requestMatchers("/csrf").permitAll();
 
                 auth.requestMatchers(
                     "/users/login",
@@ -103,6 +128,7 @@ public class SecurityConfig {
                 ).permitAll();
 
                 auth.requestMatchers(HttpMethod.GET, "/products/disponibles").permitAll();
+                auth.requestMatchers(HttpMethod.GET, "/products/*/info").permitAll();
 
                 auth.requestMatchers(HttpMethod.POST, "/users/administradores")
                     .hasRole(ROL_ADMINISTRADOR);
@@ -115,8 +141,13 @@ public class SecurityConfig {
                 auth.requestMatchers("/admin/**")
                     .hasRole(ROL_ADMINISTRADOR);
 
+                auth.requestMatchers("/favoritos/**")
+                    .hasRole(ROL_CLIENTE);
+                auth.requestMatchers("/users/me/metodoPago/**")
+                    .hasRole(ROL_CLIENTE);
+                    
                 auth.requestMatchers("/products/**")
-                    .hasRole("VENDEDOR");
+                    .hasRole(ROL_VENDEDOR);
 
                 auth.anyRequest().authenticated();
             });

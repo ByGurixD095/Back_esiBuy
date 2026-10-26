@@ -78,7 +78,7 @@ class AdminControllerEliminarUsuarioTest {
         when(jwtService.isTokenValid(any())).thenReturn(true);
         when(jwtService.extractId(any())).thenReturn(id);
         when(jwtService.extractRol(any())).thenReturn(rol);
-        when(usuarioRepository.existsByIdAndActivoTrueAndBloqueadoFalseAndEliminadoFalse(id))
+        when(usuarioRepository.existsByIdAndActivoTrueAndBloqueadoFalse(id))
                 .thenReturn(true);
     }
 }
