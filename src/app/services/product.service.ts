@@ -106,7 +106,7 @@ function mensajeParaStatus(error: HttpErrorResponse): string {
     case 500:
       return 'El servidor no ha podido cargar el catálogo. Inténtalo de nuevo más tarde.';
     case 0:
-      return 'No se puede conectar con el backend en http://localhost:8080.';
+      return 'No se ha podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.';
     default:
       return `No se ha podido cargar el catálogo (HTTP ${error.status}).`;
   }
@@ -121,7 +121,7 @@ function mensajeParaCatalogoVendedor(error: HttpErrorResponse): string {
     case 500:
       return 'El servidor no ha podido cargar tus productos. Inténtalo de nuevo más tarde.';
     case 0:
-      return 'No se puede conectar con el backend en http://localhost:8080.';
+      return 'No se ha podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.';
     default:
       return `No se han podido cargar tus productos (HTTP ${error.status}).`;
   }

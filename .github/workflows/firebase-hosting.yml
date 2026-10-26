@@ -40,7 +40,7 @@ jobs:
         env:
           API_URL: ${{ vars.API_URL }}
         run: |
-          node -e 'const fs = require("node:fs"); fs.writeFileSync("src/environments/environment.production.ts", `export const environment = { apiUrl: ${JSON.stringify(process.env.API_URL)} };\n`);'
+          node -e 'const fs = require("node:fs"); fs.writeFileSync("src/environments/environment.production.ts", `export const environment = { apiUrl: ${JSON.stringify(process.env.API_URL)}, csrfEnabled: true };\n`);'
 
       - name: Build Angular application
         run: npm run build
