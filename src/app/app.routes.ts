@@ -34,7 +34,7 @@ export const routes: Routes = [
   {
     path: 'manage',
     component: Gestionar,
-    canActivate: [roleGuard(['ADMINISTRADOR', 'VENDEDOR'])],
+    canActivate: [roleGuard(['ADMINISTRADOR', 'VENDEDOR', 'CLIENTE'])],
   },
   {
     path: 'administradores/nuevo',

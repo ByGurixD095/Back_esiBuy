@@ -6,10 +6,7 @@
       <a class="account-link" routerLink="/products">Catálogo</a>
       @if (auth.isAuthenticated()) {
         <a class="account-link" routerLink="/account">Mi cuenta</a>
-        @if (esCliente()) {
-          <a class="account-link" routerLink="/favoritos">Mis favoritos</a>
-        }
-        @if (auth.hasRole(['ADMINISTRADOR', 'VENDEDOR'])) {
+        @if (auth.hasRole(['ADMINISTRADOR', 'VENDEDOR', 'CLIENTE'])) {
           <a class="account-link" routerLink="/manage">Gestionar</a>
         }
       } @else {
