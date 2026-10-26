@@ -7,6 +7,7 @@
       @if (auth.isAuthenticated()) {
         <a class="account-link" routerLink="/account">Mi cuenta</a>
         @if (esCliente()) {
+          <a class="account-link" routerLink="/cart">Mi cesta</a>
           <a class="account-link" routerLink="/favoritos">Mis favoritos</a>
         }
         @if (auth.hasRole(['ADMINISTRADOR', 'VENDEDOR'])) {
@@ -46,6 +47,13 @@
     </div>
 
     <app-panel-filtros-productos [productos]="productos()" (filtrosChange)="aplicarFiltros($event)" />
+
+    @if (mensajeCarrito(); as mensaje) {
+      <p class="cart-feedback" role="status">{{ mensaje }}</p>
+    }
+    @if (errorCarrito(); as mensaje) {
+      <p class="cart-feedback cart-feedback-error" role="alert">{{ mensaje }}</p>
+    }
 
     @if (cargando()) {
       <section class="state-panel loading-state" aria-live="polite" aria-busy="true">
@@ -127,7 +135,17 @@
                     }
                   </div>
                 </div>
-                <span class="reference">{{ producto.referencia }}</span>
+                <div class="product-actions">
+                  <span class="reference">{{ producto.referencia }}</span>
+                  @if (esCliente()) {
+                    <button
+                      type="button"
+                      class="add-cart-button"
+                      [disabled]="estaAnadiendoAlCarrito(producto.id)"
+                      (click)="anadirAlCarrito(producto)"
+                    >{{ estaAnadiendoAlCarrito(producto.id) ? 'Añadiendo...' : 'Añadir a la cesta' }}</button>
+                  }
+                </div>
               </div>
             </div>
           </article>

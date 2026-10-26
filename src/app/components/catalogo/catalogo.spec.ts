@@ -5,6 +5,7 @@ import { vi } from 'vitest';
 import { PaginaProducto, Producto } from '../../models/producto.model';
 import { AuthService } from '../../services/auth.service';
 import { Favoritos, FavoritosApiError } from '../../services/favoritos-service/favoritos';
+import { CarritoService } from '../../services/carrito.service';
 import { ProductService } from '../../services/product.service';
 import { Catalogo } from './catalogo';
 
@@ -35,6 +36,7 @@ describe('Catalogo (favoritos HU 15)', () => {
   let fixture: ComponentFixture<Catalogo>;
   const productServiceFalso = { obtenerDisponibles: vi.fn() };
   const favoritosFalso = { listar: vi.fn(), marcar: vi.fn(), quitar: vi.fn() };
+  const carritoFalso = { anadirProducto: vi.fn() };
   const authFalso = { isAuthenticated: vi.fn(), hasRole: vi.fn() };
 
   async function crear(rol: 'CLIENTE' | 'VENDEDOR' | null): Promise<void> {
@@ -47,6 +49,7 @@ describe('Catalogo (favoritos HU 15)', () => {
         provideRouter([]),
         { provide: ProductService, useValue: productServiceFalso },
         { provide: Favoritos, useValue: favoritosFalso },
+        { provide: CarritoService, useValue: carritoFalso },
         { provide: AuthService, useValue: authFalso },
       ],
     }).compileComponents();
@@ -67,6 +70,7 @@ describe('Catalogo (favoritos HU 15)', () => {
     favoritosFalso.listar.mockReturnValue(of([producto('p1', 'Lámpara')]));
     favoritosFalso.marcar.mockReset();
     favoritosFalso.quitar.mockReset();
+    carritoFalso.anadirProducto.mockReset();
   });
 
   it('no muestra el corazón ni pide favoritos a un visitante', async () => {
@@ -92,6 +96,17 @@ describe('Catalogo (favoritos HU 15)', () => {
     expect(corazones()[0].getAttribute('aria-pressed')).toBe('true');
     expect(corazones()[0].classList).toContain('is-favorite');
     expect(corazones()[1].getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('permite añadir un producto a la cesta y confirma la acción', async () => {
+    carritoFalso.anadirProducto.mockReturnValue(of(undefined));
+    await crear('CLIENTE');
+
+    html().querySelector<HTMLButtonElement>('.add-cart-button')?.click();
+    fixture.detectChanges();
+
+    expect(carritoFalso.anadirProducto).toHaveBeenCalledWith('p1');
+    expect(html().textContent).toContain('Lámpara se ha añadido a tu cesta.');
   });
 
   it('guarda un producto como favorito al pulsar el corazón vacío', async () => {
