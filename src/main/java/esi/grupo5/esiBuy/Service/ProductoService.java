@@ -1,9 +1,12 @@
 package esi.grupo5.esiBuy.Service;
 
 import esi.grupo5.esiBuy.Dto.FiltroCatalogoDTO;
+import esi.grupo5.esiBuy.Dto.ProductInfoDTO;
 import esi.grupo5.esiBuy.Dto.ProductoDTO;
 import esi.grupo5.esiBuy.Exception.NotFoundException;
 import esi.grupo5.esiBuy.Model.Producto;
+import esi.grupo5.esiBuy.Model.Usuario;
+import esi.grupo5.esiBuy.Model.Vendedor;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
 
 import java.util.List;
@@ -40,15 +43,18 @@ public class ProductoService {
     /** Motor de consultas MongoDB para filtros del catálogo. */
     private final MongoTemplate mongoTemplate;
 
+    private final UserService usuarioService;
+
     /**
      * Crea el servicio de productos.
      *
      * @param productoRepository repositorio de productos
      * @param mongoTemplate motor de consultas MongoDB
      */
-    public ProductoService(ProductoRepository productoRepository, MongoTemplate mongoTemplate) {
+    public ProductoService(ProductoRepository productoRepository, MongoTemplate mongoTemplate, UserService usuarioService) {
         this.productoRepository = productoRepository;
         this.mongoTemplate = mongoTemplate;
+        this.usuarioService = usuarioService;
     }
 
     /**
@@ -294,6 +300,32 @@ public class ProductoService {
         Producto producto = buscarProductoPropio(id, idVendedor);
         producto.setActivo(false);
         productoRepository.save(producto);
+    }
+
+    /**
+     * Obtiene los datos públicos de un producto activo y el nombre comercial de su vendedor.
+     *
+     * @param id identificador del producto
+     * @return información pública del producto
+     * @throws NotFoundException si el producto no existe, está inactivo o no tiene vendedor
+     */
+    public ProductInfoDTO infoProducto(String id) {
+        Producto producto = productoRepository.findById(id)
+                .filter(Producto::isActivo)
+                .orElseThrow(() -> new NotFoundException("Producto no encontrado"));
+
+        String nombreComercial = usuarioService.getNombreComercialById(producto.getIdVendedor());
+
+        return new ProductInfoDTO(
+                producto.getNombre(),
+                producto.getNumStock(),
+                producto.getPrecioCent(),
+                producto.getDescripcion(),
+                producto.getCategoria(),
+                producto.getUrlImagen(),
+                producto.getDescuento(),
+                producto.getDescuentoPremium(),
+                nombreComercial);
     }
 
     /**

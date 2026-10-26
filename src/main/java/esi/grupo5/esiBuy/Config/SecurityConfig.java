@@ -25,6 +25,7 @@ public class SecurityConfig {
 
     private static final String ROL_ADMINISTRADOR = "ADMINISTRADOR";
     private static final String ROL_CLIENTE = "CLIENTE";
+    private static final String ROL_VENDEDOR = "VENDEDOR";
 
     /** Filtro que establece la identidad y el rol a partir de la cookie JWT. */
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -106,6 +107,7 @@ public class SecurityConfig {
                 ).permitAll();
 
                 auth.requestMatchers(HttpMethod.GET, "/products/disponibles").permitAll();
+                auth.requestMatchers(HttpMethod.GET, "/products/*/info").permitAll();
 
                 auth.requestMatchers(HttpMethod.POST, "/users/administradores")
                     .hasRole(ROL_ADMINISTRADOR);
@@ -124,7 +126,7 @@ public class SecurityConfig {
                     .hasRole(ROL_CLIENTE);
                     
                 auth.requestMatchers("/products/**")
-                    .hasRole("VENDEDOR");
+                    .hasRole(ROL_VENDEDOR);
 
                 auth.anyRequest().authenticated();
             });

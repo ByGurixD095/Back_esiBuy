@@ -2,7 +2,11 @@ package esi.grupo5.esiBuy.Service;
 
 import esi.grupo5.esiBuy.Dto.ProductoDTO;
 import esi.grupo5.esiBuy.Dto.FiltroCatalogoDTO;
+import esi.grupo5.esiBuy.Dto.ProductInfoDTO;
+import esi.grupo5.esiBuy.Exception.NotFoundException;
 import esi.grupo5.esiBuy.Model.Producto;
+import esi.grupo5.esiBuy.Model.Usuario;
+import esi.grupo5.esiBuy.Model.Vendedor;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
 import java.util.List;
 import java.util.Map;
@@ -137,6 +141,36 @@ class ProductoServiceTest {
                 .thenReturn(Optional.of(producto));
 
         assertEquals(producto, productoService.obtenerProducto("producto-1", "vendedor-1"));
+    }
+
+    @Test
+    void infoProducto_soloBuscaProductosActivosYDevuelveElNombreComercial() {
+        Producto producto = new Producto(
+                "Camiseta ESI", "REF-1", 2, 1999, "Descripción", "Ropa", "imagen.jpg", 5, 10);
+        producto.setIdVendedor("vendedor-1");
+        Vendedor vendedor = new Vendedor();
+        vendedor.setNombreComercial("Tienda ESI");
+        when(productoRepository.findById("producto-1")).thenReturn(Optional.of(producto));
+        when(mongoTemplate.findById("vendedor-1", Usuario.class)).thenReturn(vendedor);
+
+        ProductInfoDTO resultado = productoService.infoProducto("producto-1");
+
+        assertEquals("Camiseta ESI", resultado.nombre());
+        assertEquals("Tienda ESI", resultado.vendedor());
+        verify(productoRepository).findById("producto-1");
+        verify(mongoTemplate).findById("vendedor-1", Usuario.class);
+    }
+
+    @Test
+    void infoProducto_noDevuelveProductosInactivos() {
+        Producto producto = new Producto();
+        producto.setActivo(false);
+        when(productoRepository.findById("producto-inactivo")).thenReturn(Optional.of(producto));
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                NotFoundException.class,
+                () -> productoService.infoProducto("producto-inactivo"));
+        verify(productoRepository).findById("producto-inactivo");
     }
 
     @Test
