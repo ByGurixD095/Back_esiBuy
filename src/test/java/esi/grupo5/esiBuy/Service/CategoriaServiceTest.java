@@ -34,8 +34,8 @@ class CategoriaServiceTest {
 
     @Test
     void crearCategoria_categoriaValidaLaGuardaYDevuelveLaGuardada() {
-        Categoria solicitada = new Categoria(null, "  Ropa  ", false);
-        Categoria guardada = new Categoria("categoria-1", "  Ropa  ", false);
+        Categoria solicitada = new Categoria(null, "  Ropa  ");
+        Categoria guardada = new Categoria("categoria-1", "  Ropa  ");
         when(categoriaRepository.save(solicitada)).thenReturn(guardada);
 
         Categoria resultado = categoriaService.crearCategoria(solicitada);
@@ -46,7 +46,7 @@ class CategoriaServiceTest {
 
     @Test
     void crearCategoria_nombreDuplicadoIgnorandoMayusculasLanzaConflicto() {
-        Categoria categoria = new Categoria(null, "  ROPA  ", true);
+        Categoria categoria = new Categoria(null, "  ROPA  ");
         when(categoriaRepository.existsByNombreRegexIgnoreCase(anyString())).thenReturn(true);
 
         assertThrows(ConflictException.class, () -> categoriaService.crearCategoria(categoria));
@@ -55,12 +55,23 @@ class CategoriaServiceTest {
         verify(categoriaRepository, never()).save(categoria);
     }
 
+    @Test
+    void crearCategoria_nombreConCaracteresRegexSeBuscaComoTextoLiteral() {
+        Categoria categoria = new Categoria(null, "Hogar (kids)+");
+        when(categoriaRepository.existsByNombreRegexIgnoreCase(anyString())).thenReturn(true);
+
+        assertThrows(ConflictException.class, () -> categoriaService.crearCategoria(categoria));
+
+        verify(categoriaRepository).existsByNombreRegexIgnoreCase("^\\QHogar (kids)+\\E$");
+        verify(categoriaRepository, never()).save(categoria);
+    }
+
     @ParameterizedTest
     @NullSource
     @EmptySource
     @ValueSource(strings = { "   ", "\t" })
     void crearCategoria_nombreVacioOLlenoDeEspaciosLanzaValidacion(String nombre) {
-        Categoria categoria = new Categoria(null, nombre, true);
+        Categoria categoria = new Categoria(null, nombre);
 
         assertThrows(ValidationException.class, () -> categoriaService.crearCategoria(categoria));
 

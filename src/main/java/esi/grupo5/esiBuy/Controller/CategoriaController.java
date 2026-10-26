@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Expone las operaciones administrativas de categorías. */
+/** Expone la creación administrativa de categorías. */
 @RestController
 @RequestMapping("/admin/categorias")
 public class CategoriaController {
