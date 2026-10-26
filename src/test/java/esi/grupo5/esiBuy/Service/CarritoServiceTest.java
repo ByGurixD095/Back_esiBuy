@@ -2,11 +2,13 @@ package esi.grupo5.esiBuy.Service;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 
 import java.util.Optional;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.ArrayList;
 
 import org.junit.jupiter.api.Test;
@@ -21,6 +23,8 @@ import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Model.Carrito;
 import esi.grupo5.esiBuy.Model.ItemCarrito;
 import esi.grupo5.esiBuy.Dto.ItemCarritoResponseDTO;
+import esi.grupo5.esiBuy.Exception.NotFoundException;
+import esi.grupo5.esiBuy.Exception.ValidationException;
 
 @ExtendWith(MockitoExtension.class)
 class CarritoServiceTest {
@@ -81,6 +85,47 @@ class CarritoServiceTest {
         carritoService.listarCarrito("cliente-1");
 
         verify(productoRepository).findById("producto-1");
+    }
+
+    @Test
+    void actualizarCantidad_guardaLaNuevaCantidadDelProducto() {
+        Carrito carrito = new Carrito("cliente-1");
+        carrito.setItems(new ArrayList<>(List.of(new ItemCarrito("producto-1", 1))));
+        Producto producto = new Producto();
+        producto.setId("producto-1");
+        producto.setNumStock(5);
+        when(carritoRepository.findByClienteId("cliente-1")).thenReturn(Optional.of(carrito));
+        when(productoRepository.findById("producto-1")).thenReturn(Optional.of(producto));
+
+        carritoService.actualizarCantidad("cliente-1", "producto-1", 2);
+
+        assertEquals(2, carrito.getItems().get(0).getCantidad());
+        verify(carritoRepository).save(carrito);
+    }
+
+    @Test
+    void actualizarCantidad_rechazaCantidadMayorQueElStock() {
+        Carrito carrito = new Carrito("cliente-1");
+        carrito.setItems(new ArrayList<>(List.of(new ItemCarrito("producto-1", 1))));
+        Producto producto = new Producto();
+        producto.setId("producto-1");
+        producto.setNumStock(1);
+        when(carritoRepository.findByClienteId("cliente-1")).thenReturn(Optional.of(carrito));
+        when(productoRepository.findById("producto-1")).thenReturn(Optional.of(producto));
+
+        assertThrows(ValidationException.class,
+                () -> carritoService.actualizarCantidad("cliente-1", "producto-1", 2));
+        assertEquals(1, carrito.getItems().get(0).getCantidad());
+    }
+
+    @Test
+    void actualizarCantidad_rechazaProductoQueNoEstaEnElCarrito() {
+        Carrito carrito = new Carrito("cliente-1");
+        carrito.setItems(new ArrayList<>(List.of(new ItemCarrito("producto-1", 1))));
+        when(carritoRepository.findByClienteId("cliente-1")).thenReturn(Optional.of(carrito));
+
+        assertThrows(NotFoundException.class,
+                () -> carritoService.actualizarCantidad("cliente-1", "producto-2", 2));
     }
 
     @Test

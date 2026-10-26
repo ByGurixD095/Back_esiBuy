@@ -71,6 +71,17 @@ public class CarritoControllerTest {
                 .contentType("application/json")
                 .content("{\"cantidad\":2}"))
             .andExpect(status().isNoContent());
+
+        verify(carritoService).actualizarCantidad("cliente-1", "producto-1", 2);
+    }
+
+    @Test
+    void actualizarCantidad_rechazaCantidadCero() throws Exception {
+        mockMvc.perform(patch("/carrito/producto-1")
+                .principal(new UsernamePasswordAuthenticationToken("cliente-1", null))
+                .contentType("application/json")
+                .content("{\"cantidad\":0}"))
+            .andExpect(status().isBadRequest());
     }
     
 }

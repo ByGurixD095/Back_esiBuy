@@ -14,6 +14,7 @@ import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Repository.CarritoRepository;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
 import esi.grupo5.esiBuy.Exception.NotFoundException;
+import esi.grupo5.esiBuy.Exception.ValidationException;
 
 @Service
 public class CarritoService {
@@ -70,6 +71,29 @@ public class CarritoService {
         } else {
             carrito.getItems().add(new ItemCarrito(producto.getId(), 1));
         }
+        carritoRepository.save(carrito);
+    }
+
+    public void actualizarCantidad(String clienteId, String productoId, int cantidad) {
+        if (cantidad < 1) {
+            throw new ValidationException("La cantidad debe ser al menos 1");
+        }
+
+        Carrito carrito = carritoRepository.findByClienteId(clienteId)
+                .orElseThrow(() -> new NotFoundException("Carrito no encontrado"));
+        Producto producto = productoRepository.findById(productoId)
+                .filter(Producto::isActivo)
+                .orElseThrow(() -> new NotFoundException("Producto no encontrado o no disponible"));
+        ItemCarrito item = carrito.getItems().stream()
+                .filter(actual -> actual.getProductoId().equals(productoId))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("El producto no está en el carrito"));
+
+        if (cantidad > producto.getNumStock()) {
+            throw new ValidationException("La cantidad supera el stock disponible");
+        }
+
+        item.setCantidad(cantidad);
         carritoRepository.save(carrito);
     }
 
