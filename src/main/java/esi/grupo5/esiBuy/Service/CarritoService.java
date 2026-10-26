@@ -13,6 +13,7 @@ import esi.grupo5.esiBuy.Model.Carrito;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Repository.CarritoRepository;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
+import esi.grupo5.esiBuy.Exception.NotFoundException;
 
 @Service
 public class CarritoService {
@@ -51,6 +52,16 @@ public class CarritoService {
 
         return resultado;
 
+    }
+
+    public void anadirProducto(String clienteId, String productoId) {
+        Producto producto = productoRepository.findById(productoId)
+                .filter(Producto::isActivo)
+                .orElseThrow(() -> new NotFoundException("Producto no encontrado o no disponible"));
+        Carrito carrito = carritoRepository.findByClienteId(clienteId)
+                .orElseGet(() -> new Carrito(clienteId));
+        carrito.getItems().add(new ItemCarrito(producto.getId(), 1));
+        carritoRepository.save(carrito);
     }
 
 }
