@@ -42,7 +42,9 @@ The workflow in `.github/workflows/firebase-hosting.yml` builds pull requests ta
 
 In **GitHub → Settings → Secrets and variables → Actions**, create the repository secret `FIREBASE_SERVICE_ACCOUNT_ESIBUY` with the JSON service-account key that has permission to deploy to Firebase project `esibuy`. The project reference is stored in `.firebaserc`.
 
-You can optionally set the repository variable `API_URL` to the public backend base URL, without a trailing slash. If it is not set, the website still deploys but API calls will not reach the production backend. This URL is included in the public frontend bundle and must not contain credentials or other secrets. Configure the backend CORS policy to allow the Firebase Hosting domain.
+The production build uses `https://back-esibuy.onrender.com` as its API URL. To override it for GitHub Actions, open **GitHub → Settings → Secrets and variables → Actions → Variables**, create a repository variable named `API_URL`, and set it to the public backend base URL without a trailing slash. Do not create it as a secret: the URL is included in the public frontend bundle and must not contain credentials or other secrets. Configure the backend CORS policy to allow the Firebase Hosting domain.
+
+The frontend sends cookies with API requests and, in production, automatically fetches a CSRF token before each `POST`, `PUT`, `PATCH`, or `DELETE` request. Local development skips CSRF because the backend `dev` profile disables it. The production backend must remain configured with the Firebase origin in `CORS_ALLOWED_ORIGINS`, credentials enabled, and HTTPS cookies.
 
 ## Running unit tests
 

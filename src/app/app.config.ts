@@ -5,6 +5,7 @@ import { provideClientHydration, withEventReplay } from '@angular/platform-brows
 
 import { routes } from './app.routes';
 import { authSessionInterceptor } from './interceptors/auth-session.interceptor';
+import { csrfInterceptor } from './interceptors/csrf.interceptor';
 import { AuthService } from './services/auth.service';
 import { provideAppInitializer, inject } from '@angular/core';
 
@@ -13,7 +14,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     provideClientHydration(withEventReplay()),
-    provideHttpClient(withFetch(), withInterceptors([authSessionInterceptor])),
+    provideHttpClient(withFetch(), withInterceptors([csrfInterceptor, authSessionInterceptor])),
     provideAppInitializer(() => inject(AuthService).checkSessionOnLoad()),
   ],
 };
