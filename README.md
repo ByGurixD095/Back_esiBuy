@@ -23,6 +23,11 @@ configurada en `MONGODB_URI`; la configuración de correo debe ser válida para
 enviar correos de recuperación. El fichero `.env` está excluido de Git para no
 publicar credenciales.
 
+## Categorías
+
+Los administradores pueden crear categorías mediante `POST /admin/categorias`.
+Los nombres duplicados se responden con HTTP 409.
+
 ## Cobertura con JaCoCo
 
 La cobertura se genera durante la fase `verify`, junto con la ejecución de los

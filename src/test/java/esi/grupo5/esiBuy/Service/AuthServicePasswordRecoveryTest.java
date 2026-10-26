@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -108,11 +109,27 @@ class AuthServicePasswordRecoveryTest {
     }
 
     @Test
-    void resetPassword_contrasenasDiferentesNoConsultaToken() {
-        assertThrows(ValidationException.class, () -> service.resetPassword(
-                new PasswordResetConfirmDTO("token", "NuevaClave1!", "OtraClave1!")));
+    void resetPassword_contrasenasDiferentes_LanzaValidacionSinGuardar() {
+        Cliente usuario = cliente();
+        String token = "token";
+        usuario.setTokenRecuperacionContrasena(hash(token));
+        usuario.setFechaExpiracionTokenRecuperacion(LocalDateTime.now().plusMinutes(5));
+        when(usuarioRepository.findByTokenRecuperacionContrasena(hash(token)))
+                .thenReturn(Optional.of(usuario));
+        doThrow(new ValidationException("Las contraseñas no coinciden"))
+                .when(passwordValidatorService)
+                .validatePassword(
+                        "NuevaClave1!",
+                        "OtraClave1!",
+                        usuario.getNombre(),
+                        usuario.getEmail(),
+                        usuario.getHistorialContrasenas());
 
-        verify(usuarioRepository, never()).findByTokenRecuperacionContrasena(any());
+        assertThrows(ValidationException.class, () -> service.resetPassword(
+                new PasswordResetConfirmDTO(token, "NuevaClave1!", "OtraClave1!")));
+
+        verify(usuarioRepository).findByTokenRecuperacionContrasena(hash(token));
+        verify(usuarioRepository, never()).save(any(Usuario.class));
     }
 
     @Test

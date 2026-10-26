@@ -40,8 +40,8 @@ class AdminControllerCrearAdministradorTest {
 
         private String json(String email, String contrasena) {
                 return """
-                                {"nombre":"Ana","apellidos":"Perez","email":"%s","contrasena":"%s","sede":"Madrid"}
-                                """.formatted(email, contrasena);
+                                {"nombre":"Ana","apellidos":"Perez","email":"%s","contrasena":"%s","confirmarContrasena":"%s","sede":"Madrid"}
+                                """.formatted(email, contrasena, contrasena);
         }
 
         @Test
