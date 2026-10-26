@@ -36,6 +36,18 @@ ng build
 
 This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
 
+## CI/CD with GitHub Actions and Firebase Hosting
+
+The workflow in `.github/workflows/ci-cd.yml` runs a production build for pull requests targeting `main` or `develop`. After a push to `develop`, it deploys a preview to the Firebase Hosting channel `develop`; after a push to `main`, it deploys to the live Hosting site.
+
+Before merging changes to either branch, configure these values in **GitHub → Settings → Secrets and variables → Actions**:
+
+- Repository variable `FIREBASE_PROJECT_ID`: the Firebase project ID.
+- Repository variable `API_URL`: the base URL of the deployed backend API, without a trailing slash. This is included in the public frontend bundle, so it must not contain credentials or other secrets.
+- Repository secret `FIREBASE_SERVICE_ACCOUNT`: the JSON key for a service account with permission to deploy Firebase Hosting.
+
+The production build uses `API_URL` instead of the local `http://localhost:8080` URL. The workflow intentionally fails before deployment if this variable is missing. The backend must also allow requests, including credentialed requests if applicable, from the Firebase Hosting domains.
+
 ## Running unit tests
 
 To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
