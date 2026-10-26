@@ -5,8 +5,6 @@ import esi.grupo5.esiBuy.Dto.ProductInfoDTO;
 import esi.grupo5.esiBuy.Dto.ProductoDTO;
 import esi.grupo5.esiBuy.Exception.NotFoundException;
 import esi.grupo5.esiBuy.Model.Producto;
-import esi.grupo5.esiBuy.Model.Usuario;
-import esi.grupo5.esiBuy.Model.Vendedor;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
 
 import java.util.List;
