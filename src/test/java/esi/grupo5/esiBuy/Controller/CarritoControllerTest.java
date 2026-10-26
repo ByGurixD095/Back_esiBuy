@@ -3,6 +3,7 @@ package esi.grupo5.esiBuy.Controller;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -60,6 +61,15 @@ public class CarritoControllerTest {
     void anadirProducto_alCarritoDevuelveSinContenido() throws Exception {
         mockMvc.perform(post("/carrito/producto-1")
                 .principal(new UsernamePasswordAuthenticationToken("cliente-1", null)))
+            .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void actualizarCantidad_delProductoDevuelveSinContenido() throws Exception {
+        mockMvc.perform(patch("/carrito/producto-1")
+                .principal(new UsernamePasswordAuthenticationToken("cliente-1", null))
+                .contentType("application/json")
+                .content("{\"cantidad\":2}"))
             .andExpect(status().isNoContent());
     }
     
