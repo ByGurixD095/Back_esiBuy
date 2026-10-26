@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 
 import java.util.Optional;
 import java.util.List;
+import java.util.ArrayList;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -80,6 +81,22 @@ class CarritoServiceTest {
         carritoService.listarCarrito("cliente-1");
 
         verify(productoRepository).findById("producto-1");
+    }
+
+    @Test
+    void anadirProducto_existenteIncrementaCantidadSinDuplicarLinea() {
+        Producto producto = new Producto();
+        producto.setId("producto-1");
+        Carrito carrito = new Carrito("cliente-1");
+        carrito.setItems(new ArrayList<>(List.of(new ItemCarrito("producto-1", 1))));
+
+        when(productoRepository.findById("producto-1")).thenReturn(Optional.of(producto));
+        when(carritoRepository.findByClienteId("cliente-1")).thenReturn(Optional.of(carrito));
+
+        carritoService.anadirProducto("cliente-1", "producto-1");
+
+        assertEquals(1, carrito.getItems().size());
+        assertEquals(2, carrito.getItems().get(0).getCantidad());
     }
 
 }
