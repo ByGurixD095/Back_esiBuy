@@ -19,6 +19,9 @@ import { ProductoDetalle } from './components/producto-detalle/producto-detalle'
 import { guestGuard } from './guards/guest.guard';
 import { MetodosPagoComponent } from './components/metodos-pago/metodos-pago';
 import { CrearCategoria } from './components/crear-categoria/crear-categoria';
+import { ListarCategorias } from './components/listar-categorias/listar-categorias';
+import { Carrito } from './components/carrito/carrito';
+import { CrearListaDeseos } from './components/crear-lista-deseos/crear-lista-deseos';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', component: Inicio },
