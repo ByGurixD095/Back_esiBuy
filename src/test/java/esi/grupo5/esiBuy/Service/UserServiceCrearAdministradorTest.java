@@ -53,7 +53,7 @@ class AdminServiceCrearAdministradorTest {
         AdministradorResponseDTO dtoRespuesta = AdministradorResponseDTO.builder()
                 .email("ana@esibuy.com").rol(Rol.ADMINISTRADOR)
                 .mensaje("Administrador creado correctamente").build();
-        when(usuarioRepository.findByEmail("ana@esibuy.com")).thenReturn(Optional.empty());
+        when(usuarioRepository.existsByEmail("ana@esibuy.com")).thenReturn(false);
         when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
         when(userService.toAdministradorResponseDto(any(Administrador.class), eq("Administrador creado correctamente")))
                 .thenReturn(dtoRespuesta);
@@ -74,7 +74,7 @@ class AdminServiceCrearAdministradorTest {
 
     @Test
     void crearAdministrador_emailYaRegistrado_lanzaErrorYNoGuarda() {
-        when(usuarioRepository.findByEmail("ana@esibuy.com")).thenReturn(Optional.of(new Administrador()));
+        when(usuarioRepository.existsByEmail("ana@esibuy.com")).thenReturn(true);
 
         BusinessException error = assertThrows(ConflictException.class,
                 () -> adminService.crearAdministrador(dto));
@@ -84,8 +84,17 @@ class AdminServiceCrearAdministradorTest {
     }
 
     @Test
+    void crearAdministrador_emailDeCuentaInactivaImpideGuardar() {
+        when(usuarioRepository.existsByEmail("ana@esibuy.com")).thenReturn(true);
+
+        assertThrows(ConflictException.class, () -> adminService.crearAdministrador(dto));
+
+        verify(usuarioRepository, never()).save(any());
+    }
+
+    @Test
     void crearAdministrador_contrasenaNoValida_lanza400YNoGuarda() {
-        when(usuarioRepository.findByEmail("ana@esibuy.com")).thenReturn(Optional.empty());
+        when(usuarioRepository.existsByEmail("ana@esibuy.com")).thenReturn(false);
         doThrow(new ValidationException("demasiado débil"))
                 .when(passwordValidatorService).validatePassword(anyString(), anyString(), anyString(), anyString(), any());
 

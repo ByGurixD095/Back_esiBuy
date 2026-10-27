@@ -14,11 +14,13 @@ import java.util.Optional;
 public interface UsuarioRepository extends MongoRepository<Usuario, String> {
 
     /**
-     * Comprueba si ya existe una cuenta con el correo indicado.
+     * Comprueba si ya existe una cuenta con el correo indicado, sin filtrar por rol
+     * ni por estado de activación.
      *
      * @param email correo que se consulta
      * @return {@code true} si existe
      */
+    @Query(value = "{ 'email': ?0 }", exists = true)
     boolean existsByEmail(String email);
     /**
      * Comprueba si otro vendedor ya utiliza el nombre comercial indicado.

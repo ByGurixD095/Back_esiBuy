@@ -202,7 +202,7 @@ public class AdminService {
      * @throws ValidationException si la contraseña no cumple los requisitos
      */
     public AdministradorResponseDTO crearAdministrador(AdministradorRegistroDTO dto) {
-        if (usuarioRepository.findByEmail(dto.email()).isPresent()) {
+        if (usuarioRepository.existsByEmail(dto.email())) {
             throw new ConflictException("El email ya está registrado");
         }
 
@@ -217,7 +217,12 @@ public class AdminService {
                 .imagenPerfil(dto.imagenPerfil())
                 .build();
 
-        Administrador guardado = usuarioRepository.save(admin);
+        Administrador guardado;
+        try {
+            guardado = usuarioRepository.save(admin);
+        } catch (DuplicateKeyException e) {
+            throw new ConflictException("El email ya está registrado", e);
+        }
 
         return userService.toAdministradorResponseDto(guardado, "Administrador creado correctamente");
     }
