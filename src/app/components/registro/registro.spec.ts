@@ -66,6 +66,7 @@ describe('RegistroComponent', () => {
       apellidos: 'López',
       email: 'ana@example.es',
       contrasena: 'Clave123!',
+      confirmarContrasena: 'Clave123!',
     });
     expect(component.form.valid).toBe(false);
 
@@ -86,6 +87,7 @@ describe('RegistroComponent', () => {
       apellidos: 'López',
       email: 'ana@example.es',
       contrasena: 'Clave123!',
+      confirmarContrasena: 'Clave123!',
       telefono: '600123456',
       imagenPerfil: 'https://example.es/ana.png',
       dni: '12345678A',
@@ -100,6 +102,7 @@ describe('RegistroComponent', () => {
       apellidos: 'López',
       email: 'ana@example.es',
       contrasena: 'Clave123!',
+      confirmarContrasena: 'Clave123!',
       telefono: '600123456',
       imagenPerfil: 'https://example.es/ana.png',
       dni: '12345678A',
@@ -117,6 +120,7 @@ describe('RegistroComponent', () => {
       apellidos: 'López',
       email: 'ana@example.es',
       contrasena: 'Clave123!',
+      confirmarContrasena: 'Clave123!',
       dni: '12345678A',
       fechaNacimiento: '2000-01-01',
     });
@@ -141,6 +145,7 @@ describe('RegistroComponent', () => {
       apellidos: 'López',
       email: 'ana@example.es',
       contrasena: 'Clave123!',
+      confirmarContrasena: 'Clave123!',
     });
     expect(component.form.valid).toBe(false);
 
@@ -159,6 +164,7 @@ describe('RegistroComponent', () => {
       apellidos: 'López',
       email: 'ana@example.es',
       contrasena: 'Clave123!',
+      confirmarContrasena: 'Clave123!',
       telefono: '',
       imagenPerfil: expect.stringMatching(/^\/assets\/avatares\/vendedor-\d{2}\.svg$/),
       nombreComercial: 'Tienda Ana',
@@ -179,6 +185,7 @@ describe('RegistroComponent', () => {
       apellidos: 'López',
       email: 'ana@example.es',
       contrasena: 'Clave123!',
+      confirmarContrasena: 'Clave123!',
       dni: '12345678A',
       fechaNacimiento: '2000-01-01',
     });
@@ -212,6 +219,7 @@ describe('RegistroComponent', () => {
       apellidos: 'López',
       email: 'ana@example.es',
       contrasena: 'Clave123!',
+      confirmarContrasena: 'Clave123!',
       nombreComercial: 'Tienda Ana',
       cifNif: 'B12345678',
       categoriaPrincipalId: 'categoria-1',
@@ -240,6 +248,7 @@ describe('RegistroComponent', () => {
       apellidos: 'López',
       email: 'ana@example.es',
       contrasena: 'Clave123!',
+      confirmarContrasena: 'Clave123!',
       dni: '12345678A',
       fechaNacimiento: '2000-01-01',
     });
@@ -265,6 +274,7 @@ describe('RegistroComponent', () => {
       apellidos: 'López',
       email: 'ana@example.es',
       contrasena: 'Clave123!',
+      confirmarContrasena: 'Clave123!',
       nombreComercial: 'Tienda existente',
       cifNif: 'B12345678',
       categoriaPrincipalId: 'categoria-1',
