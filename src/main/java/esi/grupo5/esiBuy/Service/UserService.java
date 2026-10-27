@@ -439,4 +439,15 @@ public class UserService {
             setter.accept(valor);
         }
     }
+
+    protected String getNombreComercialById(String vendedorId){
+        Usuario user = usuarioRepository.findById(vendedorId)
+        .orElseThrow(() -> new NotFoundException("Vendedor no encontrado"));
+
+        if (!(user instanceof Vendedor)){
+            throw new NotFoundException("No se encontró el vendedor");
+        }
+
+        return ((Vendedor) user).getNombreComercial();
+    }
 }

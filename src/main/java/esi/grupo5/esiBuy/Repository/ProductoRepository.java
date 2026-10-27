@@ -36,4 +36,12 @@ public interface ProductoRepository extends MongoRepository<Producto, String> {
      */
     Optional<Producto> findByIdAndIdVendedor(String id, String idVendedor);
 
+    /**
+     * Indica si algún producto usa la categoría indicada (los productos guardan el nombre).
+     *
+     * @param categoria nombre de la categoría
+     * @return true si hay al menos un producto con esa categoría
+     */
+    boolean existsByCategoria(String categoria);
+
 }

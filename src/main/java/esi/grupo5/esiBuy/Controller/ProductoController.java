@@ -2,6 +2,7 @@ package esi.grupo5.esiBuy.Controller;
 
 import esi.grupo5.esiBuy.Dto.ProductoDTO;
 import esi.grupo5.esiBuy.Dto.FiltroCatalogoDTO;
+import esi.grupo5.esiBuy.Dto.ProductInfoDTO;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Service.ProductoService;
 
@@ -142,4 +143,17 @@ public class ProductoController {
         productoService.eliminarProducto(id, idVendedor);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Consulta la información pública de un producto activo.
+     *
+     * @param id identificador del producto
+     * @return información pública del producto con estado HTTP 200
+     */
+    @GetMapping("/{id}/info")
+    public ResponseEntity<ProductInfoDTO> obtenerInfoProducto(
+            @PathVariable String id) {
+        return ResponseEntity.ok(productoService.infoProducto(id));
+    }
+
 }

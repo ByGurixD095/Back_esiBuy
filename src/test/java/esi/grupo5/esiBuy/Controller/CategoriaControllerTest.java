@@ -39,7 +39,7 @@ class CategoriaControllerTest {
 
     @Test
     void crearCategoria_devuelve201ConCategoriaCreada() throws Exception {
-        Categoria categoria = new Categoria("categoria-1", "Ropa", true);
+        Categoria categoria = new Categoria("categoria-1", "Ropa");
         when(categoriaService.crearCategoria(org.mockito.ArgumentMatchers.any(Categoria.class)))
                 .thenReturn(categoria);
 
@@ -49,7 +49,7 @@ class CategoriaControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value("categoria-1"))
                 .andExpect(jsonPath("$.nombre").value("Ropa"))
-                .andExpect(jsonPath("$.activo").value(true));
+                .andExpect(jsonPath("$.activo").doesNotExist());
     }
 
     @Test
@@ -59,7 +59,7 @@ class CategoriaControllerTest {
 
         mockMvc.perform(post("/admin/categorias")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new Categoria(null, "Ropa", true))))
+                        .content(objectMapper.writeValueAsString(new Categoria(null, "Ropa"))))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Ya existe una categoría con ese nombre"));
     }
