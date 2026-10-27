@@ -1,5 +1,7 @@
 package esi.grupo5.esiBuy.Dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  * Resultado de autenticación, que puede contener tokens o indicar un paso MFA pendiente.
  *
@@ -12,7 +14,9 @@ package esi.grupo5.esiBuy.Dto;
  * @param mfaSetupToken token temporal para configurar MFA cuando corresponde
  */
 public record LoginResponseDTO(
+        @JsonIgnore
         String accessToken,
+        @JsonIgnore
         String refreshToken,
         String rol,
         String tipoCliente,

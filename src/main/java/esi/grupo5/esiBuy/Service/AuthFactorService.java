@@ -38,6 +38,7 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -65,7 +66,7 @@ public class AuthFactorService {
     private static final String INTERNAL_ERROR_CODE = "INTERNAL_ERROR";
 
     /** Clave configurada para cifrar y descifrar secretos TOTP. */
-    @Value("${mfa.encryption.key:1234567890123456}")
+    @Value("${mfa.encryption.key}")
     private String encryptionKey;
 
     /** Codificador de hashes de códigos OTP y de respaldo. */
@@ -90,6 +91,14 @@ public class AuthFactorService {
         this.emailService = emailService;
         this.passwordEncoder = passwordEncoder;
         this.usuarioRepository = usuarioRepository;
+    }
+
+    @PostConstruct
+    void validateEncryptionKey() {
+        int keyLength = encryptionKey.getBytes(StandardCharsets.UTF_8).length;
+        if (keyLength != 16 && keyLength != 24 && keyLength != 32) {
+            throw new IllegalStateException("mfa.encryption.key must be 16, 24, or 32 UTF-8 bytes");
+        }
     }
 
     /**
@@ -377,7 +386,8 @@ public class AuthFactorService {
             byte[] iv = new byte[GCM_IV_LENGTH_BYTES];
             new SecureRandom().nextBytes(iv);
             GCMParameterSpec parameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv);
-            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(encryptionKey.getBytes(), "AES"), parameterSpec);
+            cipher.init(Cipher.ENCRYPT_MODE,
+                    new SecretKeySpec(encryptionKey.getBytes(StandardCharsets.UTF_8), "AES"), parameterSpec);
             
             byte[] cifrado = cipher.doFinal(textoPlano.getBytes());
             
@@ -410,7 +420,8 @@ public class AuthFactorService {
             
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
             GCMParameterSpec parameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv);
-            cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(encryptionKey.getBytes(), "AES"), parameterSpec);
+            cipher.init(Cipher.DECRYPT_MODE,
+                    new SecretKeySpec(encryptionKey.getBytes(StandardCharsets.UTF_8), "AES"), parameterSpec);
             
             return new String(cipher.doFinal(cifrado));
         } catch (GeneralSecurityException | IllegalArgumentException | NegativeArraySizeException e) {
