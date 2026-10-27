@@ -15,6 +15,18 @@ export interface Producto extends ProductoDTO {
   id: string;
 }
 
+export interface ProductInfo {
+  nombre: string;
+  numStock: number;
+  precioCent: number;
+  descripcion: string | null;
+  categoria: string;
+  urlImagen: string | null;
+  descuento: number;
+  descuentoPremium: number;
+  vendedor: string;
+}
+
 export interface PaginaProducto {
   content: Producto[];
   totalElements: number;

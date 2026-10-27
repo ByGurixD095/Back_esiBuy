@@ -76,6 +76,13 @@ describe('Catalogo (favoritos HU 15)', () => {
     expect(favoritosFalso.listar).not.toHaveBeenCalled();
   });
 
+  it('permite abrir el detalle desde la imagen o la información del producto', async () => {
+    await crear(null);
+
+    expect(html().querySelector('.product-image-link[href="/products/p1"]')).not.toBeNull();
+    expect(html().querySelector('.product-info-link[href="/products/p1"]')).not.toBeNull();
+  });
+
   it('no muestra el corazón a un vendedor', async () => {
     await crear('VENDEDOR');
 

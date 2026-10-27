@@ -3,7 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { ProductApiError, ProductService } from './product.service';
-import { PaginaProducto } from '../models/producto.model';
+import { PaginaProducto, ProductInfo } from '../models/producto.model';
 
 describe('ProductService', () => {
   let service: ProductService;
@@ -99,6 +99,30 @@ describe('ProductService', () => {
       totalPages: 0,
       number: 1,
     });
+  });
+
+  it('consulta la información pública del producto con credenciales', () => {
+    const respuesta: ProductInfo = {
+      nombre: 'Camiseta ESI',
+      numStock: 3,
+      precioCent: 1999,
+      descripcion: 'Camiseta oficial',
+      categoria: 'Ropa',
+      urlImagen: null,
+      descuento: 10,
+      descuentoPremium: 5,
+      vendedor: 'Tienda ESI',
+    };
+
+    let resultado: ProductInfo | undefined;
+    service.obtenerInfo('producto/1').subscribe((info) => (resultado = info));
+
+    const request = httpTesting.expectOne('http://localhost:8080/products/producto%2F1/info');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.withCredentials).toBe(true);
+    request.flush(respuesta);
+
+    expect(resultado).toEqual(respuesta);
   });
 
   it('propaga un 403 como ProductApiError sin sustituirlo por datos falsos', () => {

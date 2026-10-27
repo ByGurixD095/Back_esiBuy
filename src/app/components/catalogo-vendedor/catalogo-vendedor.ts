@@ -152,7 +152,7 @@ export class CatalogoVendedor implements OnInit {
       precioCent: 4590,
       descripcion: 'Mochila resistente con compartimento acolchado para portátil.',
       categoria: 'Accesorios',
-      urlImagen: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=900&q=85',
+      urlImagen: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=max&w=900&q=85',
       descuento: 0,
       descuentoPremium: 8,
       activo: true,
@@ -265,4 +265,3 @@ export class CatalogoVendedor implements OnInit {
     return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(precioCent / 100);
   }
 }
-
