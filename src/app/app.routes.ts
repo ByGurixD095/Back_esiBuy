@@ -19,6 +19,7 @@ import { ProductoDetalle } from './components/producto-detalle/producto-detalle'
 import { guestGuard } from './guards/guest.guard';
 import { MetodosPagoComponent } from './components/metodos-pago/metodos-pago';
 import { CrearCategoria } from './components/crear-categoria/crear-categoria';
+import { CrearListaDeseos } from './components/crear-lista-deseos/crear-lista-deseos';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', component: Inicio },
@@ -32,6 +33,7 @@ export const routes: Routes = [
   { path: 'register/vendedor', component: RegistroComponent, data: { tipoRegistro: 'vendedor' }, canActivate: [guestGuard] },
   { path: 'cart', children: [] },
   { path: 'favoritos', component: MisFavoritos, canActivate: [roleGuard(['CLIENTE'])] },
+  { path: 'listas-deseos/nueva', component: CrearListaDeseos, canActivate: [roleGuard(['CLIENTE'])] },
   { path: 'account/metodos-pago', component: MetodosPagoComponent, canActivate: [roleGuard(['CLIENTE'])] },
   { path: 'account', component: Cuenta, canActivate: [roleGuard(['ADMINISTRADOR', 'VENDEDOR', 'CLIENTE'])] },
   {
