@@ -148,6 +148,16 @@
                     }
                     <span class="visually-hidden">{{ producto.activo ? 'Desactivar' : 'Activar' }}</span>
                   </button>
+                  <button class="icon-action delete-action" type="button" (click)="borrarDefinitivamente(producto)" [disabled]="productoBorrandoFisico() === producto.id" [attr.aria-label]="'Eliminar definitivamente ' + producto.nombre" title="Eliminar producto">
+                    @if (productoBorrandoFisico() === producto.id) {
+                      <span class="icon-spinner" aria-hidden="true"></span>
+                    } @else {
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" stroke-linejoin="round" stroke-linecap="round"></path>
+                      </svg>
+                    }
+                    <span class="visually-hidden">Eliminar producto</span>
+                  </button>
                 </td>
               </tr>
             }

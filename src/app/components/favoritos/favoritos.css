@@ -30,6 +30,14 @@
 .quitar:focus-visible { outline: 3px solid #1a2b4a; outline-offset: 2px; }
 .quitar:disabled { opacity: 0.6; cursor: progress; }
 
+.imagen {position: relative; aspect-ratio: 1 / 0.9; background: #e8ecf1; }
+.overlay-inactivo { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(247, 245, 239, 0.6); z-index: 10; }
+.overlay-inactivo span { padding: 4px 12px; background: #172126; color: #fff; font-size: 12px; border-radius: 99px; font-weight: 700; }
+.tarjeta-favorito.inactivo .imagen img { filter: grayscale(1); opacity: 0.6; }
+.tarjeta-favorito.inactivo .datos h2,
+.tarjeta-favorito.inactivo .datos .precio,
+.tarjeta-favorito.inactivo .datos .categoria { color: #8b918f; }
+
 @media (max-width: 600px) {
   .lista-favoritos { grid-template-columns: 1fr; }
 }
