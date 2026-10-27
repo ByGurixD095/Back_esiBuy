@@ -27,8 +27,11 @@
       </p>
       <ul class="lista-favoritos">
         @for (producto of productos(); track producto.id) {
-          <li class="tarjeta-favorito">
+<li class="tarjeta-favorito" [class.inactivo]="!producto.activo">
             <div class="imagen">
+              @if (!producto.activo) {
+                <div class="overlay-inactivo"><span>No disponible</span></div>
+              }
               @if (producto.urlImagen) {
                 <img [src]="producto.urlImagen" [alt]="producto.nombre" loading="lazy" />
               } @else {

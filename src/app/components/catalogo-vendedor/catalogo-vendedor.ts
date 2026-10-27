@@ -27,6 +27,7 @@ export class CatalogoVendedor implements OnInit {
   readonly cargandoDemo = signal(false);
   readonly demoResultado = signal<string | null>(null);
   readonly productoEliminando = signal<string | null>(null);
+  readonly productoBorrandoFisico = signal<string | null>(null);
   private readonly filtros = signal<FiltrosProductos>({});
 
   ngOnInit(): void {
@@ -103,6 +104,24 @@ export class CatalogoVendedor implements OnInit {
       },
       error: (error: ProductoApiError) => {
         this.productoEliminando.set(null);
+        this.error.set({ status: error.status, message: error.message });
+      },
+    });
+  }
+
+  borrarDefinitivamente(producto: Producto): void {
+    if (this.productoBorrandoFisico()) return;
+    
+    if (!window.confirm(`¿Estás seguro de que quieres eliminar "${producto.nombre}"? Desaparecerá de tu catálogo y de las listas de los clientes. Esta acción es irreversible.`)) return;
+
+    this.productoBorrandoFisico.set(producto.id);
+    this.productoService.eliminarProducto(producto.id).subscribe({
+      next: () => {
+        this.productoBorrandoFisico.set(null);
+        this.cargarCatalogo();
+      },
+      error: (error: ProductoApiError) => {
+        this.productoBorrandoFisico.set(null);
         this.error.set({ status: error.status, message: error.message });
       },
     });
