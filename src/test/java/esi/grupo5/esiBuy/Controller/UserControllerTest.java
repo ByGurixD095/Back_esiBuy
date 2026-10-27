@@ -68,7 +68,7 @@ class UserControllerTest {
                         .content(objectMapper.writeValueAsString(
                                 new LoginRequestDTO("cliente@test.com", "Password#1"))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").value("access-token"))
+                .andExpect(jsonPath("$.accessToken").doesNotExist())
                 .andExpect(jsonPath("$.mfaStatus").value("SUCCESS"));
 
         verify(authService).login(any(LoginRequestDTO.class), eq("127.0.0.1"));
@@ -84,8 +84,8 @@ class UserControllerTest {
         mockMvc.perform(post("/users/refresh").cookie(new jakarta.servlet.http.Cookie(
                         "refreshToken", "refresh-token")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").value("new-access-token"))
-                .andExpect(jsonPath("$.refreshToken").value("refresh-token"));
+                .andExpect(jsonPath("$.accessToken").doesNotExist())
+                .andExpect(jsonPath("$.refreshToken").doesNotExist());
 
         verify(authService).refreshToken("refresh-token");
         verify(cookieUtil).setTokenCookies(any(), eq(response));

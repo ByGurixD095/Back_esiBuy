@@ -32,7 +32,7 @@ class CookieUtilTest {
         LoginResponseDTO loginResponse = new LoginResponseDTO(
                 "access-token", "refresh-token", "CLIENTE", "NORMAL", "SUCCESS", null, null);
 
-        new CookieUtil(jwtService).setTokenCookies(response, loginResponse);
+        new CookieUtil(jwtService, true, "None").setTokenCookies(response, loginResponse);
 
         var cookies = org.mockito.ArgumentCaptor.forClass(String.class);
         verify(response, org.mockito.Mockito.times(2)).addHeader(
@@ -45,7 +45,8 @@ class CookieUtilTest {
         assertTrue(values.get(1).contains("Max-Age=3600"));
         for (String value : values) {
             assertTrue(value.contains("HttpOnly"));
-            assertTrue(value.contains("SameSite=Strict"));
+            assertTrue(value.contains("SameSite=None"));
+            assertTrue(value.contains("Secure"));
             assertTrue(value.contains("Path=/"));
         }
     }
@@ -55,14 +56,14 @@ class CookieUtilTest {
         LoginResponseDTO loginResponse = new LoginResponseDTO(
                 null, null, "VENDEDOR", null, "REQUIRES_MFA_SETUP", "seller@test.com");
 
-        new CookieUtil(jwtService).setTokenCookiesIfPresent(response, loginResponse);
+        new CookieUtil(jwtService, false, "Strict").setTokenCookiesIfPresent(response, loginResponse);
 
         org.mockito.Mockito.verifyNoInteractions(response, jwtService);
     }
 
     @Test
     void clearTokenCookies_expiresBothAuthenticationCookies() {
-        new CookieUtil(jwtService).clearTokenCookies(response);
+        new CookieUtil(jwtService, true, "None").clearTokenCookies(response);
 
         var cookies = org.mockito.ArgumentCaptor.forClass(String.class);
         verify(response, org.mockito.Mockito.times(2)).addHeader(
@@ -73,7 +74,8 @@ class CookieUtilTest {
         for (String value : values) {
             assertTrue(value.contains("Max-Age=0"));
             assertTrue(value.contains("HttpOnly"));
-            assertTrue(value.contains("SameSite=Strict"));
+            assertTrue(value.contains("SameSite=None"));
+            assertTrue(value.contains("Secure"));
         }
     }
 }

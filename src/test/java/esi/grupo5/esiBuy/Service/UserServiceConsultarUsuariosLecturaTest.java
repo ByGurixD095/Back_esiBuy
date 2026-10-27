@@ -229,6 +229,7 @@ class UserServiceConsultarUsuariosLecturaTest {
          VendedorRegisterRequest dto = new VendedorRegisterRequest(
                         "Luis", "García", "luis@test.com", "Strong#2026", "Strong#2026", null, null,
                         "Tienda Luis", "B12345678", "electronica");
+        // A pending account is still an owner of its email, regardless of its role.
         when(usuarioRepository.existsByEmail(dto.email())).thenReturn(true);
 
         assertThrows(ConflictException.class, () -> service.registrarVendedor(dto));
@@ -236,6 +237,18 @@ class UserServiceConsultarUsuariosLecturaTest {
         verify(passwordValidatorService).validatePassword(dto.contrasena(), dto.confirmarContrasena(), dto.nombre(), dto.email(), null);
         verify(usuarioRepository, never()).save(any());
         verify(authService, never()).completarAutenticacion(any());
+    }
+
+    @Test
+    void registrarCliente_emailDeCuentaInactivaImpideGuardar() {
+        ClienteRegistroDTO dto = new ClienteRegistroDTO(
+                "Ana", "López", "ana-inactiva@test.com", "Strong#2026", "Strong#2026", "123456789",
+                null, "12345678A", LocalDate.of(2000, 1, 1), null);
+        when(usuarioRepository.existsByEmail(dto.email())).thenReturn(true);
+
+        assertThrows(ConflictException.class, () -> service.registrarCliente(dto));
+
+        verify(usuarioRepository, never()).save(any());
     }
 
     @Test
