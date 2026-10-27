@@ -12,6 +12,7 @@ describe('Administradores', () => {
     apellidos: 'López García',
     email: 'ana.lopez@esi.es',
     contrasena: 'Admin123!x',
+    confirmarContrasena: 'Admin123!x',
     sede: 'Ciudad Real',
     imagenPerfil: '/assets/avatares/avatar-01.svg',
   };

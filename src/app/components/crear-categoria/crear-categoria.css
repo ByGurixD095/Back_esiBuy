@@ -18,19 +18,3 @@ form {
   flex-direction: column;
   gap: 16px;
 }
-
-.estado {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--esi-ink);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.estado input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--esi-orange);
-}

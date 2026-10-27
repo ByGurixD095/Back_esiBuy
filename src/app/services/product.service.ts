@@ -2,7 +2,7 @@ import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http'
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { PaginaProducto, Producto } from '../models/producto.model';
+import { PaginaProducto, ProductInfo, Producto } from '../models/producto.model';
 
 export class ProductApiError extends Error {
   constructor(
@@ -83,6 +83,14 @@ export class ProductService {
     );
   }
 
+  obtenerInfo(id: string): Observable<ProductInfo> {
+    return this.http.get<ProductInfo>(`${this.apiUrl}/${encodeURIComponent(id)}/info`, { withCredentials: true }).pipe(
+      catchError((error: HttpErrorResponse) => {
+        return throwError(() => new ProductApiError(error.status, mensajeParaInfoProducto(error)));
+      }),
+    );
+  }
+
   obtenerCatalogoVendedor(pagina = 0, tamanoPagina = 36, filtros: FiltrosProductos = {}): Observable<PaginaProducto> {
     const params = paramsDeFiltros(filtros, pagina, tamanoPagina).set('sort', 'activo,desc');
 
@@ -106,9 +114,22 @@ function mensajeParaStatus(error: HttpErrorResponse): string {
     case 500:
       return 'El servidor no ha podido cargar el catálogo. Inténtalo de nuevo más tarde.';
     case 0:
-      return 'No se puede conectar con el backend en http://localhost:8080.';
+      return 'No se ha podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.';
     default:
       return `No se ha podido cargar el catálogo (HTTP ${error.status}).`;
+  }
+}
+
+function mensajeParaInfoProducto(error: HttpErrorResponse): string {
+  switch (error.status) {
+    case 404:
+      return 'No se ha encontrado el producto o ya no está disponible.';
+    case 500:
+      return 'No se ha podido cargar la información del producto. Inténtalo de nuevo más tarde.';
+    case 0:
+      return 'No se ha podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.';
+    default:
+      return `No se ha podido cargar la información del producto (HTTP ${error.status}).`;
   }
 }
 
@@ -121,7 +142,7 @@ function mensajeParaCatalogoVendedor(error: HttpErrorResponse): string {
     case 500:
       return 'El servidor no ha podido cargar tus productos. Inténtalo de nuevo más tarde.';
     case 0:
-      return 'No se puede conectar con el backend en http://localhost:8080.';
+      return 'No se ha podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.';
     default:
       return `No se han podido cargar tus productos (HTTP ${error.status}).`;
   }

@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { AuthService } from '../../services/auth.service';
@@ -13,20 +13,34 @@ describe('InicioSesion', () => {
     login: vi.fn(),
   };
   const routerFalso = {
-    navigate: vi.fn().mockResolvedValue(true),
+    navigateByUrl: vi.fn().mockResolvedValue(true),
+    parseUrl: vi.fn((url: string) => url),
   };
+  let returnUrl: string | null;
 
   const rellenar = (usuario: string, contrasena: string) =>
     component.form.setValue({ usuario, contrasena });
 
   beforeEach(async () => {
     authServiceFalso.login.mockReset();
-    routerFalso.navigate.mockReset();
+    routerFalso.navigateByUrl.mockReset();
+    routerFalso.parseUrl.mockImplementation((url: string) => url);
+    returnUrl = null;
     await TestBed.configureTestingModule({
       imports: [InicioSesion],
       providers: [
         { provide: AuthService, useValue: authServiceFalso },
         { provide: Router, useValue: routerFalso },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: {
+                get: (name: string) => (name === 'returnUrl' ? returnUrl : null),
+              },
+            },
+          },
+        },
       ],
     }).compileComponents();
 
@@ -87,7 +101,7 @@ describe('InicioSesion', () => {
     component.enviar();
 
     expect(emitidas).toEqual([{ username: 'ana@esi.es', password: 'Clave#2026x' }]);
-    expect(routerFalso.navigate).toHaveBeenCalledWith(['/products']);
+    expect(routerFalso.navigateByUrl).toHaveBeenCalledWith('/products');
   });
 
   it('mantiene a los administradores fuera del flujo de catálogo', () => {
@@ -106,7 +120,48 @@ describe('InicioSesion', () => {
 
     component.enviar();
 
-    expect(routerFalso.navigate).toHaveBeenCalledWith(['/']);
+    expect(routerFalso.navigateByUrl).toHaveBeenCalledWith('/');
+  });
+
+  it('vuelve a la ruta protegida solicitada antes del inicio de sesión', () => {
+    returnUrl = '/account?tab=profile';
+    authServiceFalso.login.mockReturnValue(
+      of({
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        rol: 'CLIENTE',
+        tipoCliente: null,
+        mfaStatus: 'SUCCESS',
+        email: 'ana@esi.es',
+        mfaSetupToken: null,
+      }),
+    );
+    rellenar('ana@esi.es', 'Clave#2026x');
+
+    component.enviar();
+
+    expect(routerFalso.parseUrl).toHaveBeenCalledWith('/account?tab=profile');
+    expect(routerFalso.navigateByUrl).toHaveBeenCalledWith('/account?tab=profile');
+  });
+
+  it('ignora returnUrl externos y utiliza el destino normal por rol', () => {
+    returnUrl = '//example.com/cuenta';
+    authServiceFalso.login.mockReturnValue(
+      of({
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        rol: 'CLIENTE',
+        tipoCliente: null,
+        mfaStatus: 'SUCCESS',
+        email: 'ana@esi.es',
+        mfaSetupToken: null,
+      }),
+    );
+    rellenar('ana@esi.es', 'Clave#2026x');
+
+    component.enviar();
+
+    expect(routerFalso.navigateByUrl).toHaveBeenCalledWith('/products');
   });
 
   it('no emite nada si el formulario es inválido', () => {

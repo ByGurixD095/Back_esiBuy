@@ -8,7 +8,7 @@ describe('Categorias', () => {
   let servicio: Categorias;
   let http: HttpTestingController;
 
-  const datos = { nombre: 'Ropa', activo: true };
+  const datos = { nombre: 'Ropa' };
 
   beforeEach(() => {
     TestBed.configureTestingModule({

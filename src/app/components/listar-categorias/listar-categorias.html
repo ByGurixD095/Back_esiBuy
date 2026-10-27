@@ -1,0 +1,90 @@
+<app-marco-pagina panel="Panel de administración" [volver]="true">
+  <div class="pagina" [attr.aria-busy]="cargando()">
+    <p class="esi-eyebrow">Categorías</p>
+    <h1 class="esi-titulo">Categorías del <em>catálogo.</em></h1>
+
+    <div class="acciones">
+      <a class="esi-boton" routerLink="/admin/categorias/nueva">Nueva categoría</a>
+    </div>
+
+    @if (mensajeExito()) {
+    <p class="esi-alerta esi-alerta--ok" role="status">{{ mensajeExito() }}</p>
+    }
+    @if (errorEliminar()) {
+    <p class="esi-alerta esi-alerta--error" role="alert">{{ errorEliminar() }}</p>
+    }
+
+    @if (cargando()) {
+    <p class="estado" role="status">Cargando las categorías…</p>
+    } @else if (error()) {
+    <section class="esi-tarjeta estado" role="alert">
+      <p class="esi-alerta esi-alerta--error">{{ error() }}</p>
+      <button type="button" class="esi-boton" (click)="cargar()">Reintentar</button>
+    </section>
+    } @else if (categorias().length === 0) {
+    <section class="esi-tarjeta estado" role="status">
+      <h2>Todavía no hay categorías</h2>
+      <p>Crea la primera para que los vendedores puedan clasificar sus productos.</p>
+    </section>
+    } @else {
+    <p class="contador" role="status">
+      {{ categorias().length }}
+      {{ categorias().length === 1 ? 'categoría' : 'categorías' }}
+    </p>
+    <ul class="lista esi-tarjeta">
+      @for (categoria of categorias(); track categoria.id) {
+      <li class="elemento">
+        <span class="nombre">{{ categoria.nombre }}</span>
+        <button
+          type="button"
+          class="esi-boton accion-eliminar"
+          [attr.aria-label]="'Eliminar la categoría ' + categoria.nombre"
+          [disabled]="eliminando()"
+          (click)="pedirEliminar(categoria)"
+        >
+          Eliminar
+        </button>
+      </li>
+      }
+    </ul>
+    }
+
+    @if (categoriaPendiente(); as pendiente) {
+    <div class="confirmacion-fondo">
+      <dialog
+        open
+        class="confirmacion-dialogo"
+        aria-modal="true"
+        aria-labelledby="confirmacion-titulo"
+        aria-describedby="confirmacion-descripcion"
+        (keydown.escape)="cancelarEliminar()"
+      >
+        <h2 id="confirmacion-titulo">¿Eliminar categoría?</h2>
+        <p id="confirmacion-descripcion">
+          ¿Seguro que quieres eliminar la categoría <strong>{{ pendiente.nombre }}</strong>?
+          Esta acción no se puede deshacer.
+        </p>
+        <div class="confirmacion-acciones">
+          <button
+            type="button"
+            class="esi-boton confirmacion-cancelar"
+            autofocus
+            [disabled]="eliminando()"
+            (click)="cancelarEliminar()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="esi-boton confirmacion-eliminar"
+            [disabled]="eliminando()"
+            (click)="confirmarEliminar()"
+          >
+            Sí, eliminar
+          </button>
+        </div>
+      </dialog>
+    </div>
+    }
+  </div>
+</app-marco-pagina>
