@@ -120,6 +120,12 @@ h1 em { color: var(--orange); font-style: italic; }
 .seller { margin: 0.6rem 0 0; color: var(--soft-ink); font: 0.67rem Arial, sans-serif; }
 .seller strong { color: var(--ink); font-weight: 500; }
 .product-footer { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-top: 0.9rem; }
+.product-actions { display: grid; justify-items: end; gap: 0.55rem; }
+.add-cart-button { min-height: 36px; padding: 0.5rem 0.75rem; border: 1px solid var(--ink); border-radius: 4px; color: #fff; background: var(--ink); font: 700 0.68rem Arial, sans-serif; cursor: pointer; }
+.add-cart-button:hover:not(:disabled) { border-color: var(--orange); background: var(--orange); }
+.add-cart-button:disabled { opacity: 0.6; cursor: wait; }
+.cart-feedback { padding: 0.85rem 1rem; margin: 0 0 1rem; border-left: 3px solid var(--teal); color: var(--ink); background: #e8f1ed; font: 0.85rem Arial, sans-serif; }
+.cart-feedback-error { border-color: #a52c2c; color: #7f1d1d; background: #fbe4e4; }
 .product-pricing { display: grid; justify-items: start; gap: 0.2rem; }
 .discount-note { color: #b42318; font: 700 0.62rem Arial, sans-serif; }
 .price-block { display: flex; align-items: baseline; gap: 0.5rem; }

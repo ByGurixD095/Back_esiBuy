@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { PaginaProducto, Producto } from '../../models/producto.model';
 import { Favoritos, FavoritosApiError } from '../../services/favoritos-service/favoritos';
+import { CarritoService } from '../../services/carrito.service';
 import { PanelFiltrosProductos } from '../panel-filtros-productos/panel-filtros-productos';
 import { FiltrosProductos, ProductApiError, ProductService, filtrarProductos } from '../../services/product.service';
 
@@ -16,6 +17,7 @@ import { FiltrosProductos, ProductApiError, ProductService, filtrarProductos } f
 export class Catalogo implements OnInit {
   private readonly productService = inject(ProductService);
   private readonly favoritosService = inject(Favoritos);
+  private readonly carritoService = inject(CarritoService);
   readonly auth = inject(AuthService);
 
   readonly productos = signal<Producto[]>([]);
@@ -32,6 +34,9 @@ export class Catalogo implements OnInit {
   readonly favoritosIds = signal<ReadonlySet<string>>(new Set());
   readonly favoritosProcesando = signal<ReadonlySet<string>>(new Set());
   readonly errorFavorito = signal<string | null>(null);
+  readonly carritoProcesando = signal<ReadonlySet<string>>(new Set());
+  readonly mensajeCarrito = signal<string | null>(null);
+  readonly errorCarrito = signal<string | null>(null);
 
   ngOnInit(): void {
     this.cargarCatalogo();
@@ -87,12 +92,50 @@ export class Catalogo implements OnInit {
     });
   }
 
+  anadirAlCarrito(producto: Producto): void {
+    if (this.carritoProcesando().has(producto.id)) return;
+
+    this.mensajeCarrito.set(null);
+    this.errorCarrito.set(null);
+    this.carritoProcesando.update((ids) => new Set(ids).add(producto.id));
+    this.carritoService.anadirProducto(producto.id).subscribe({
+      next: () => {
+        this.mensajeCarrito.set(`${producto.nombre} se ha añadido a tu cesta.`);
+        this.terminarAnadirAlCarrito(producto.id);
+      },
+      error: (error: { status: number }) => {
+        this.errorCarrito.set(this.mensajeParaErrorCarrito(error.status));
+        this.terminarAnadirAlCarrito(producto.id);
+      },
+    });
+  }
+
+  estaAnadiendoAlCarrito(productoId: string): boolean {
+    return this.carritoProcesando().has(productoId);
+  }
+
   private terminarProceso(productoId: string): void {
     this.favoritosProcesando.update((ids) => {
       const siguiente = new Set(ids);
       siguiente.delete(productoId);
       return siguiente;
     });
+  }
+
+  private terminarAnadirAlCarrito(productoId: string): void {
+    this.carritoProcesando.update((ids) => {
+      const siguientes = new Set(ids);
+      siguientes.delete(productoId);
+      return siguientes;
+    });
+  }
+
+  private mensajeParaErrorCarrito(status: number): string {
+    if (status === 0) return 'No se puede conectar con el servidor para añadir el producto.';
+    if (status === 401) return 'Inicia sesión como cliente para añadir productos a la cesta.';
+    if (status === 403) return 'Solo los clientes pueden añadir productos a la cesta.';
+    if (status === 404) return 'El producto ya no está disponible.';
+    return `No se ha podido añadir el producto a la cesta (HTTP ${status}).`;
   }
 
   cargarCatalogo(filtros: FiltrosProductos = this.filtros()): void {
