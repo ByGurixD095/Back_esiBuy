@@ -1,0 +1,34 @@
+<app-marco-pagina panel="Panel de administración" [volver]="true">
+  <div class="pagina" [attr.aria-busy]="cargando()">
+    <p class="esi-eyebrow">Categorías</p>
+    <h1 class="esi-titulo">Categorías del <em>catálogo.</em></h1>
+
+    <div class="acciones">
+      <a class="esi-boton" routerLink="/admin/categorias/nueva">Nueva categoría</a>
+    </div>
+
+    @if (cargando()) {
+    <p class="estado" role="status">Cargando las categorías…</p>
+    } @else if (error()) {
+    <section class="esi-tarjeta estado" role="alert">
+      <p class="esi-alerta esi-alerta--error">{{ error() }}</p>
+      <button type="button" class="esi-boton" (click)="cargar()">Reintentar</button>
+    </section>
+    } @else if (categorias().length === 0) {
+    <section class="esi-tarjeta estado" role="status">
+      <h2>Todavía no hay categorías</h2>
+      <p>Crea la primera para que los vendedores puedan clasificar sus productos.</p>
+    </section>
+    } @else {
+    <p class="contador" role="status">
+      {{ categorias().length }}
+      {{ categorias().length === 1 ? 'categoría' : 'categorías' }}
+    </p>
+    <ul class="lista esi-tarjeta">
+      @for (categoria of categorias(); track categoria.id) {
+      <li class="elemento">{{ categoria.nombre }}</li>
+      }
+    </ul>
+    }
+  </div>
+</app-marco-pagina>

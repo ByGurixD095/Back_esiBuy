@@ -1,0 +1,59 @@
+:host {
+  display: block;
+}
+
+.pagina {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.acciones {
+  display: flex;
+  justify-content: flex-end;
+  margin: 8px 0 20px;
+}
+
+.acciones a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.contador {
+  margin: 0 0 12px;
+  color: var(--esi-text-2);
+  font-size: 14px;
+}
+
+.estado {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 32px 20px;
+  text-align: center;
+}
+
+.estado h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.estado p {
+  margin: 0;
+}
+
+.lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.elemento {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--esi-border, #e1e6ed);
+}
+
+.elemento:last-child {
+  border-bottom: 0;
+}
