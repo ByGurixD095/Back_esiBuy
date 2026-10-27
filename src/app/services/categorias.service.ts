@@ -35,4 +35,10 @@ export class Categorias {
       withCredentials: true,
     });
   }
+  eliminar(id: string): Observable<void> {
+    return this.http.delete<void>(
+      `${environment.apiUrl}/admin/categorias/${encodeURIComponent(id)}`,
+      { withCredentials: true },
+    );
+  }
 }

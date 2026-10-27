@@ -9,7 +9,7 @@ import { ListarCategorias } from './listar-categorias';
 
 describe('ListarCategorias', () => {
   let fixture: ComponentFixture<ListarCategorias>;
-  const servicioFalso = { listar: vi.fn() };
+  const servicioFalso = { listar: vi.fn(), eliminar: vi.fn() };
   const authFalso = { isAuthenticated: () => true, hasRole: () => true };
 
   async function crear(): Promise<void> {
@@ -30,7 +30,10 @@ describe('ListarCategorias', () => {
 
   const html = () => fixture.nativeElement as HTMLElement;
 
-  beforeEach(() => servicioFalso.listar.mockReset());
+  beforeEach(() => {
+    servicioFalso.listar.mockReset();
+    servicioFalso.eliminar.mockReset();
+  });
 
   it('se crea y pide las categorías al servicio', async () => {
     servicioFalso.listar.mockReturnValue(of([]));
@@ -105,5 +108,126 @@ describe('ListarCategorias', () => {
     expect(html().querySelector('[role="alert"]')?.textContent).toContain(
       'No se ha podido conectar con el servidor',
     );
+  });
+
+  describe('eliminar categoría (HU 30)', () => {
+    const dosCategorias = [
+      { id: 'c1', nombre: 'Hogar' },
+      { id: 'c2', nombre: 'Ropa' },
+    ];
+
+    const botonEliminar = (nombre: string) =>
+      html().querySelector(`button[aria-label="Eliminar la categoría ${nombre}"]`) as HTMLButtonElement;
+    const dialogo = () => html().querySelector('dialog.confirmacion-dialogo');
+    const pulsar = (selector: string) => {
+      (html().querySelector(selector) as HTMLButtonElement).click();
+      fixture.detectChanges();
+    };
+
+    beforeEach(() => servicioFalso.listar.mockReturnValue(of(dosCategorias)));
+
+    it('muestra un botón Eliminar por cada categoría', async () => {
+      await crear();
+
+      expect(botonEliminar('Hogar')).toBeTruthy();
+      expect(botonEliminar('Ropa')).toBeTruthy();
+    });
+
+    it('pide confirmación antes de eliminar y no llama al servicio todavía', async () => {
+      await crear();
+      botonEliminar('Hogar').click();
+      fixture.detectChanges();
+
+      expect(dialogo()?.textContent).toContain('¿Eliminar categoría?');
+      expect(dialogo()?.textContent).toContain('Hogar');
+      expect(servicioFalso.eliminar).not.toHaveBeenCalled();
+    });
+
+    it('cancelar cierra el diálogo y no elimina nada', async () => {
+      await crear();
+      botonEliminar('Hogar').click();
+      fixture.detectChanges();
+      pulsar('.confirmacion-cancelar');
+
+      expect(dialogo()).toBeNull();
+      expect(servicioFalso.eliminar).not.toHaveBeenCalled();
+      expect(html().querySelectorAll('.elemento').length).toBe(2);
+    });
+
+    it('confirmar elimina la categoría, la quita de la lista y avisa', async () => {
+      servicioFalso.eliminar.mockReturnValue(of(undefined));
+      await crear();
+      botonEliminar('Hogar').click();
+      fixture.detectChanges();
+      pulsar('.confirmacion-eliminar');
+
+      expect(servicioFalso.eliminar).toHaveBeenCalledWith('c1');
+      expect(dialogo()).toBeNull();
+      expect(html().querySelectorAll('.elemento').length).toBe(1);
+      expect(html().querySelector('[role="status"].esi-alerta--ok')?.textContent).toContain(
+        'La categoría «Hogar» se ha eliminado.',
+      );
+    });
+
+    it('si hay productos que la usan (409) muestra el mensaje y mantiene la categoría', async () => {
+      servicioFalso.eliminar.mockReturnValue(
+        throwError(
+          () =>
+            new HttpErrorResponse({
+              status: 409,
+              error: {
+                error: 'Conflict',
+                message: 'No se puede eliminar la categoría porque hay productos que la usan',
+              },
+            }),
+        ),
+      );
+      await crear();
+      botonEliminar('Hogar').click();
+      fixture.detectChanges();
+      pulsar('.confirmacion-eliminar');
+
+      expect(html().querySelector('[role="alert"]')?.textContent).toContain('productos que la usan');
+      expect(html().querySelectorAll('.elemento').length).toBe(2);
+      expect(dialogo()).toBeNull();
+    });
+
+    it('si la categoría ya no existe (404) avisa y la quita de la lista', async () => {
+      servicioFalso.eliminar.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+      await crear();
+      botonEliminar('Hogar').click();
+      fixture.detectChanges();
+      pulsar('.confirmacion-eliminar');
+
+      expect(html().querySelector('[role="alert"]')?.textContent).toContain(
+        'La categoría ya no existe',
+      );
+      expect(html().querySelectorAll('.elemento').length).toBe(1);
+    });
+
+    it('avisa de falta de permisos (403)', async () => {
+      servicioFalso.eliminar.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 403 })));
+      await crear();
+      botonEliminar('Ropa').click();
+      fixture.detectChanges();
+      pulsar('.confirmacion-eliminar');
+
+      expect(html().querySelector('[role="alert"]')?.textContent).toContain(
+        'No tienes permisos para eliminar categorías',
+      );
+      expect(html().querySelectorAll('.elemento').length).toBe(2);
+    });
+
+    it('avisa si no hay conexión (0)', async () => {
+      servicioFalso.eliminar.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
+      await crear();
+      botonEliminar('Ropa').click();
+      fixture.detectChanges();
+      pulsar('.confirmacion-eliminar');
+
+      expect(html().querySelector('[role="alert"]')?.textContent).toContain(
+        'No se ha podido conectar con el servidor',
+      );
+    });
   });
 });
