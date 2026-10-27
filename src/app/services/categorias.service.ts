@@ -11,6 +11,11 @@ export interface CategoriaCreada extends NuevaCategoria {
   id: string;
 }
 
+export interface Categoria {
+  id: string;
+  nombre: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -23,5 +28,11 @@ export class Categorias {
       datos,
       { withCredentials: true },
     );
+  }
+
+  listar(): Observable<Categoria[]> {
+    return this.http.get<Categoria[]>(`${environment.apiUrl}/admin/categorias`, {
+      withCredentials: true,
+    });
   }
 }
