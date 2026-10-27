@@ -14,7 +14,7 @@ export const roleGuard = (roles: readonly Rol[]): CanActivateFn => (_route, stat
       : router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
 
   if (auth.sessionChecked()) {
-    // Si la sesión está cargada pero el token va a caducar, forzamos el refresh ANTES de entrar al panel
+    // Renovar solo cuando hay una expiración conocida; las sesiones por cookie no guardan este dato.
     if (auth.isAccessTokenExpired()) {
       return auth.refresh().pipe(
         map(() => checkRoles()),

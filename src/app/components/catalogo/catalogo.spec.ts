@@ -80,18 +80,25 @@ describe('Catalogo (favoritos HU 15)', () => {
     expect(favoritosFalso.listar).not.toHaveBeenCalled();
   });
 
+  it('permite abrir el detalle desde la imagen o la información del producto', async () => {
+    await crear(null);
+
+    expect(html().querySelector('.product-image-link[href="/products/p1"]')).not.toBeNull();
+    expect(html().querySelector('.product-info-link[href="/products/p1"]')).not.toBeNull();
+  });
+
   it('no muestra el corazón a un vendedor', async () => {
     await crear('VENDEDOR');
 
     expect(corazones().length).toBe(0);
     expect(favoritosFalso.listar).not.toHaveBeenCalled();
-    expect(html().textContent).not.toContain('Mis favoritos');
+    expect(html().querySelector('a[href="/favoritos"]')).toBeNull();
   });
 
-  it('a un cliente le muestra el enlace y marca los productos que ya son favoritos', async () => {
+  it('a un cliente le muestra Gestionar y marca los productos que ya son favoritos', async () => {
     await crear('CLIENTE');
 
-    expect(html().textContent).toContain('Mis favoritos');
+    expect(html().querySelector('a[href="/manage"]')).not.toBeNull();
     expect(corazones().length).toBe(2);
     expect(corazones()[0].getAttribute('aria-pressed')).toBe('true');
     expect(corazones()[0].classList).toContain('is-favorite');

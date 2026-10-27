@@ -24,16 +24,15 @@ describe('CrearCategoria', () => {
     await fixture.whenStable();
   });
 
-  it('inicia con nombre vacío y categoría activa', () => {
+  it('inicia con nombre vacío', () => {
     expect(component.form.controls.nombre.value).toBe('');
-    expect(component.form.controls.activo.value).toBe(true);
     expect(component.form.invalid).toBe(true);
   });
 
-  it('muestra el campo de nombre y el selector de estado', () => {
+  it('muestra el campo de nombre', () => {
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('[formControlName="nombre"]')).not.toBeNull();
-    expect(el.querySelector('[formControlName="activo"]')).not.toBeNull();
+    expect(el.querySelector('[formControlName="activo"]')).toBeNull();
   });
 
   it('rechaza un nombre vacío o compuesto solo por espacios', () => {
@@ -43,27 +42,27 @@ describe('CrearCategoria', () => {
     }
   });
 
-  it('envía el nombre original y el estado seleccionado al servicio', () => {
-    servicioFalso.crear.mockReturnValue(of({ id: 'categoria-1', nombre: '  Ropa  ', activo: false }));
-    component.form.setValue({ nombre: '  Ropa  ', activo: false });
+  it('envía solo el nombre al servicio', () => {
+    servicioFalso.crear.mockReturnValue(of({ id: 'categoria-1', nombre: '  Ropa  ' }));
+    component.form.setValue({ nombre: '  Ropa  ' });
 
     component.enviar();
 
-    expect(servicioFalso.crear).toHaveBeenCalledWith({ nombre: '  Ropa  ', activo: false });
+    expect(servicioFalso.crear).toHaveBeenCalledWith({ nombre: '  Ropa  ' });
   });
 
   it('muestra éxito y reinicia el formulario al crear', async () => {
     servicioFalso.crear.mockReturnValue(
-      of({ id: 'categoria-1', nombre: 'Ropa', activo: true }),
+      of({ id: 'categoria-1', nombre: 'Ropa' }),
     );
-    component.form.setValue({ nombre: 'Ropa', activo: true });
+    component.form.setValue({ nombre: 'Ropa' });
 
     component.enviar();
     await fixture.whenStable();
 
     expect((fixture.nativeElement as HTMLElement).querySelector('[role="status"]')?.textContent)
       .toContain('Categoría creada correctamente');
-    expect(component.form.getRawValue()).toEqual({ nombre: '', activo: true });
+    expect(component.form.getRawValue()).toEqual({ nombre: '' });
   });
 
   it('muestra un mensaje de conflicto si el nombre ya existe', async () => {
@@ -76,7 +75,7 @@ describe('CrearCategoria', () => {
           }),
       ),
     );
-    component.form.setValue({ nombre: 'Ropa', activo: true });
+    component.form.setValue({ nombre: 'Ropa' });
 
     component.enviar();
     await fixture.whenStable();
@@ -95,7 +94,7 @@ describe('CrearCategoria', () => {
           }),
       ),
     );
-    component.form.setValue({ nombre: 'Ropa', activo: true });
+    component.form.setValue({ nombre: 'Ropa' });
 
     component.enviar();
     await fixture.whenStable();
@@ -107,7 +106,7 @@ describe('CrearCategoria', () => {
     servicioFalso.crear.mockReturnValue(
       throwError(() => new HttpErrorResponse({ status: 404 })),
     );
-    component.form.setValue({ nombre: 'Ropa', activo: true });
+    component.form.setValue({ nombre: 'Ropa' });
 
     component.enviar();
     await fixture.whenStable();

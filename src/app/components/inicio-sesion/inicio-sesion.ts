@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, output, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService, Rol } from '../../services/auth.service';
 import { MfaAuth } from '../mfa-auth/mfa-auth';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
@@ -14,6 +14,7 @@ import { MarcoPagina } from '../marco-pagina/marco-pagina';
 })
 export class InicioSesion {
   private readonly authService = inject(AuthService);
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
   readonly iniciarSesion = output<{ username: string; password: string }>();
@@ -145,6 +146,13 @@ export class InicioSesion {
   }
 
   private navegarTrasLogin(rol: Rol): void {
-    void this.router.navigate(rol === 'ADMINISTRADOR' ? ['/'] : ['/products']);
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    const destinoPorDefecto = rol === 'ADMINISTRADOR' ? '/' : '/products';
+    const destino =
+      returnUrl?.startsWith('/') && !returnUrl.startsWith('//') && !returnUrl.includes('\\')
+        ? this.router.parseUrl(returnUrl)
+        : this.router.parseUrl(destinoPorDefecto);
+
+    void this.router.navigateByUrl(destino);
   }
 }

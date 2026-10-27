@@ -50,6 +50,16 @@ describe('ConsultarUsuarios', () => {
       bloqueado: true,
       eliminado: true,
     },
+    {
+      id: 'admin-2',
+      name: 'Beatriz',
+      apellidos: 'Martín',
+      email: 'beatriz@test.com',
+      rol: 'ADMINISTRADOR',
+      activo: true,
+      bloqueado: false,
+      eliminado: false,
+    },
   ];
 
   beforeEach(async () => {
@@ -103,7 +113,8 @@ describe('ConsultarUsuarios', () => {
     expect(el.textContent).toContain('user-db-2');
     expect(el.textContent).toContain('Inactivo');
     expect(el.querySelector('.bloqueado')?.textContent?.trim()).toBe('Sí');
-    expect(el.querySelector('.eliminado')?.textContent?.trim()).toBe('Sí');
+    expect(el.querySelector('.fila-eliminada')?.textContent).toContain('Luis Pérez');
+    expect(el.querySelector('[aria-label="No se puede modificar un usuario eliminado"]')).not.toBeNull();
   });
 
   it('pagina en el frontend y vuelve a la primera página al filtrar', () => {
@@ -130,8 +141,8 @@ describe('ConsultarUsuarios', () => {
     expect(el.querySelectorAll('tbody tr').length).toBe(4);
     expect(el.textContent).toContain('user-page-39');
 
-    const campoBusqueda = el.querySelector('#buscar-id') as HTMLInputElement;
-    campoBusqueda.value = 'user-page-0';
+    const campoBusqueda = el.querySelector('#buscar-nombre') as HTMLInputElement;
+    campoBusqueda.value = 'Usuario0';
     campoBusqueda.dispatchEvent(new Event('input'));
     fixture.detectChanges();
 
@@ -169,18 +180,18 @@ describe('ConsultarUsuarios', () => {
     buscarEmail.value = '';
     buscarEmail.dispatchEvent(new Event('input'));
     const filtroRol = el.querySelector('#filtro-rol') as HTMLSelectElement;
-    filtroRol.value = 'ADMINISTRADOR';
+    filtroRol.value = 'CLIENTE';
     filtroRol.dispatchEvent(new Event('change'));
     fixture.detectChanges();
     
     filas = el.querySelectorAll('tbody tr');
     expect(filas.length).toBe(1);
-    expect(filas[0].textContent).toContain('Admin');
+    expect(filas[0].textContent).toContain('Ana López');
   });
 
   it('muestra un mensaje si los filtros no tienen resultados', () => {
     const campoBusqueda = (fixture.nativeElement as HTMLElement).querySelector(
-      '#buscar-id',
+      '#buscar-nombre',
     ) as HTMLInputElement;
     campoBusqueda.value = 'no-existe';
     campoBusqueda.dispatchEvent(new Event('input'));
@@ -226,11 +237,14 @@ describe('ConsultarUsuarios', () => {
     expect(el.querySelector('[aria-label="Bloquear usuario Ana López"]')).not.toBeNull();
     expect(el.querySelector('[aria-label="Desbloquear usuario Luis Pérez"]')).not.toBeNull();
     expect(el.querySelectorAll('.accion-bloqueo:disabled').length).toBe(1);
-    expect(el.querySelector('[aria-label="Eliminar usuario"]:disabled')).toBeNull();
+    expect(el.querySelector('[aria-label="Eliminar administrador"]')).not.toBeNull();
+    expect(
+      el.querySelector('[aria-label="Solo puedes eliminar a otros administradores"]:disabled'),
+    ).not.toBeNull();
     expect(el.querySelector('.aviso-boceto')).toBeNull();
 
     expect(el.querySelectorAll('.bloqueado').length).toBe(1);
-    expect(el.querySelectorAll('.eliminado').length).toBe(1);
+    expect(el.querySelectorAll('.fila-eliminada').length).toBe(1);
     expect(
       el.querySelector('[aria-label="No puedes eliminar tu propia cuenta"]:disabled'),
     ).not.toBeNull();
@@ -314,30 +328,32 @@ describe('ConsultarUsuarios', () => {
 
   it('muestra una ventana en página y elimina tras confirmar', () => {
     const el = fixture.nativeElement as HTMLElement;
-    const botonEliminar = el.querySelector('[aria-label="Eliminar usuario"]') as HTMLButtonElement;
+    const botonEliminar = el.querySelector(
+      '[aria-label="Eliminar administrador"]',
+    ) as HTMLButtonElement;
 
     botonEliminar.click();
     fixture.detectChanges();
 
     expect(el.querySelector('dialog[open]')).not.toBeNull();
-    expect(el.textContent).toContain('¿Estás segura de que quieres eliminar a Ana López?');
+    expect(el.textContent).toContain('¿Estás segura de que quieres eliminar a Beatriz Martín?');
     expect(servicioFalso.eliminar).not.toHaveBeenCalled();
 
     (el.querySelector('.confirmacion-eliminar') as HTMLButtonElement).click();
     fixture.detectChanges();
 
-    expect(servicioFalso.eliminar).toHaveBeenCalledWith('user-db-1');
-    expect(el.textContent).toContain('Se ha marcado como eliminado a Ana López.');
+    expect(servicioFalso.eliminar).toHaveBeenCalledWith('admin-2');
+    expect(el.textContent).toContain('Se ha eliminado a Beatriz Martín.');
     expect(el.querySelector('.mensaje-accion')).not.toBeNull();
-    expect(el.querySelectorAll('.eliminado').length).toBe(2);
-    expect(el.querySelector('[aria-label="Usuario ya eliminado"]')).not.toBeNull();
+    expect(el.querySelectorAll('tbody tr').length).toBe(3);
+    expect(el.querySelector('tbody')?.textContent).not.toContain('Beatriz Martín');
     expect(el.querySelector('dialog[open]')).toBeNull();
   });
 
   it('oculta el mensaje de éxito a los cinco segundos', () => {
     vi.useFakeTimers();
     const el = fixture.nativeElement as HTMLElement;
-    (el.querySelector('[aria-label="Eliminar usuario"]') as HTMLButtonElement).click();
+    (el.querySelector('[aria-label="Eliminar administrador"]') as HTMLButtonElement).click();
     fixture.detectChanges();
     (el.querySelector('.confirmacion-eliminar') as HTMLButtonElement).click();
     fixture.detectChanges();
@@ -354,7 +370,7 @@ describe('ConsultarUsuarios', () => {
 
   it('cierra la ventana al cancelar sin eliminar al usuario', () => {
     const el = fixture.nativeElement as HTMLElement;
-    (el.querySelector('[aria-label="Eliminar usuario"]') as HTMLButtonElement).click();
+    (el.querySelector('[aria-label="Eliminar administrador"]') as HTMLButtonElement).click();
     fixture.detectChanges();
     (el.querySelector('.confirmacion-acciones button') as HTMLButtonElement).click();
     fixture.detectChanges();
@@ -374,7 +390,7 @@ describe('ConsultarUsuarios', () => {
       ),
     );
     const el = fixture.nativeElement as HTMLElement;
-    (el.querySelector('[aria-label="Eliminar usuario"]') as HTMLButtonElement).click();
+    (el.querySelector('[aria-label="Eliminar administrador"]') as HTMLButtonElement).click();
     fixture.detectChanges();
     (el.querySelector('.confirmacion-eliminar') as HTMLButtonElement).click();
     fixture.detectChanges();
@@ -382,7 +398,7 @@ describe('ConsultarUsuarios', () => {
     expect(el.querySelector('[role="alert"]')?.textContent).toContain(
       'No puedes eliminar tu propia cuenta',
     );
-    expect(el.querySelectorAll('.eliminado').length).toBe(1);
+    expect(el.querySelectorAll('.fila-eliminada').length).toBe(1);
   });
 
   it('muestra el estado vacío si el back devuelve una lista vacía', async () => {

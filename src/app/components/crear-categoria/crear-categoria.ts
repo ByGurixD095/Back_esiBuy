@@ -24,7 +24,6 @@ export class CrearCategoria {
       nonNullable: true,
       validators: [Validators.required, Validators.pattern(NO_VACIO)],
     }),
-    activo: new FormControl(true, { nonNullable: true }),
   });
 
   enviar(): void {
@@ -41,7 +40,7 @@ export class CrearCategoria {
       next: () => {
         this.enviando.set(false);
         this.mensajeExito.set('Categoría creada correctamente');
-        this.form.reset({ nombre: '', activo: true });
+        this.form.reset({ nombre: '' });
       },
       error: (error: HttpErrorResponse) => {
         this.enviando.set(false);

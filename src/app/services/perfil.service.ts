@@ -43,14 +43,14 @@ export class PerfilService {
   private readonly apiUrl = `${environment.apiUrl}/users`;
 
   obtenerMiPerfil(): Observable<PerfilUsuario> {
-    return this.http.get<PerfilUsuario>(`${this.apiUrl}/me`);
+    return this.http.get<PerfilUsuario>(`${this.apiUrl}/me`, { withCredentials: true });
   }
 
   actualizarMiPerfil(datos: ActualizarPerfilRequest): Observable<void> {
-    return this.http.patch<void>(`${this.apiUrl}/me/update`, datos);
+    return this.http.patch<void>(`${this.apiUrl}/me/update`, datos, { withCredentials: true });
   }
 
   eliminarMiCuenta(): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/me`);
+    return this.http.delete<void>(`${this.apiUrl}/me`, { withCredentials: true });
   }
 }

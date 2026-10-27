@@ -19,6 +19,7 @@ import { ProductoDetalle } from './components/producto-detalle/producto-detalle'
 import { guestGuard } from './guards/guest.guard';
 import { MetodosPagoComponent } from './components/metodos-pago/metodos-pago';
 import { CrearCategoria } from './components/crear-categoria/crear-categoria';
+import { ListarCategorias } from './components/listar-categorias/listar-categorias';
 import { Carrito } from './components/carrito/carrito';
 
 export const routes: Routes = [
@@ -27,7 +28,7 @@ export const routes: Routes = [
   { path: 'products/catalogo', component: CatalogoVendedor, canActivate: [roleGuard(['VENDEDOR'])] },
   { path: 'products/new', component: ProductoForm, canActivate: [roleGuard(['VENDEDOR'])] },
   { path: 'products/:id/editar', component: ProductoForm, canActivate: [roleGuard(['VENDEDOR'])] },
-  { path: 'products/:id', component: ProductoDetalle, canActivate: [roleGuard(['VENDEDOR'])] },
+  { path: 'products/:id', component: ProductoDetalle },
   { path: 'register', component: RegistroInicio, canActivate: [guestGuard] },
   { path: 'register/clientes', component: RegistroComponent, data: { tipoRegistro: 'cliente' }, canActivate: [guestGuard] },
   { path: 'register/vendedor', component: RegistroComponent, data: { tipoRegistro: 'vendedor' }, canActivate: [guestGuard] },
@@ -53,6 +54,11 @@ export const routes: Routes = [
   {
     path: 'admin/usuarios/:id/editar',
     component: AdminEditarUsuario,
+    canActivate: [roleGuard(['ADMINISTRADOR'])],
+  },
+  {
+    path: 'admin/categorias',
+    component: ListarCategorias,
     canActivate: [roleGuard(['ADMINISTRADOR'])],
   },
   {

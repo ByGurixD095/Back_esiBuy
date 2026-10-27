@@ -1,13 +1,20 @@
 <main class="detail-shell">
   <header class="detail-header">
-    <a routerLink="/products/catalogo" class="brand">Esi<strong>Buy</strong></a>
-    <a routerLink="/products/catalogo" class="back-link">← Volver a mis productos</a>
+    <a routerLink="/" class="brand">Esi<strong>Buy</strong></a>
+    <a routerLink="/products" class="back-link">← Volver al catálogo</a>
   </header>
 
   @if (cargando()) {
-    <section class="detail-state"><span class="loader"></span><p>Cargando producto...</p></section>
+    <section class="detail-state" aria-live="polite" aria-busy="true">
+      <span class="loader"></span>
+      <p>Cargando producto...</p>
+    </section>
   } @else if (error(); as mensaje) {
-    <section class="detail-state error-state"><h1>No se ha podido cargar</h1><p>{{ mensaje }}</p><a routerLink="/products/catalogo">Volver al catálogo</a></section>
+    <section class="detail-state error-state" role="alert">
+      <h1>No se ha podido cargar el producto</h1>
+      <p>{{ mensaje }}</p>
+      <a routerLink="/products">Volver al catálogo</a>
+    </section>
   } @else if (producto(); as item) {
     <section class="detail-card">
       <div class="detail-image">
@@ -20,16 +27,51 @@
       <div class="detail-content">
         <p class="eyebrow">{{ item.categoria }}</p>
         <h1>{{ item.nombre }}</h1>
-        <p class="reference">Referencia: {{ item.referencia }}</p>
         <p class="description">{{ item.descripcion || 'Este producto no tiene descripción.' }}</p>
-        <strong class="price">{{ formatearPrecio(item.precioCent) }}</strong>
-        <dl>
-          <div><dt>Stock</dt><dd>{{ item.numStock }}</dd></div>
-          <div><dt>Descuento</dt><dd>{{ item.descuento }}%</dd></div>
-          <div><dt>Premium</dt><dd>{{ item.descuentoPremium }}%</dd></div>
-          <div><dt>Estado</dt><dd>{{ item.activo ? 'Activo' : 'Inactivo' }}</dd></div>
-        </dl>
-        <a class="edit-button" [routerLink]="['/products', item.id, 'editar']">Editar producto</a>
+        <p class="seller">
+          Vendido por <strong>{{ item.vendedor }}</strong>
+        </p>
+
+        <div class="price-section">
+          @if (item.descuento > 0) {
+            <p class="discount-note">{{ item.descuento }}% de descuento</p>
+            <del>{{ formatearPrecio(item.precioCent) }}</del>
+            <strong class="price">{{
+              formatearPrecioConDescuento(item.precioCent, item.descuento)
+            }}</strong>
+          } @else {
+            <strong class="price">{{ formatearPrecio(item.precioCent) }}</strong>
+          }
+        </div>
+
+        <p class="stock" [class.out-of-stock]="item.numStock === 0">
+          {{ item.numStock > 0 ? 'Disponible' : 'Agotado' }}
+          <span>{{
+            item.numStock > 0 ? item.numStock + ' unidades en stock' : 'No hay unidades disponibles'
+          }}</span>
+        </p>
+
+        <section class="purchase-panel" aria-label="Opciones de compra">
+          <button type="button" class="buy-button" disabled>Comprar ahora</button>
+          <p>La compra online todavía no está disponible en EsiBuy.</p>
+        </section>
+
+        @if (item.descuentoPremium > 0) {
+          <p class="premium-note">
+            Descuento adicional para clientes premium: {{ item.descuentoPremium }}%
+          </p>
+        }
+
+        <section class="coming-soon" aria-labelledby="product-community-title">
+          <h2 id="product-community-title">Opiniones y estadísticas</h2>
+          <p>Los comentarios y las estadísticas estarán disponibles próximamente.</p>
+        </section>
+
+        @if (esVendedor()) {
+          @if (productoId(); as id) {
+            <a class="edit-button" [routerLink]="['/products', id, 'editar']">Editar producto</a>
+          }
+        }
       </div>
     </section>
   }

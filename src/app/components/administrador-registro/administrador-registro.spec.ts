@@ -16,6 +16,7 @@ describe('AdministradorRegistro', () => {
     apellidos: 'López García',
     email: 'ana.lopez@esi.es',
     contrasena: 'Admin123!x',
+    confirmarContrasena: 'Admin123!x',
     sede: 'Ciudad Real',
     imagenPerfil: '',
   };
@@ -79,9 +80,16 @@ describe('AdministradorRegistro', () => {
     }
   });
 
-  it('muestra los cinco campos del formulario', () => {
+  it('muestra los campos del formulario', () => {
     const el = fixture.nativeElement as HTMLElement;
-    for (const campo of ['nombre', 'apellidos', 'email', 'contrasena', 'sede']) {
+    for (const campo of [
+      'nombre',
+      'apellidos',
+      'email',
+      'contrasena',
+      'confirmarContrasena',
+      'sede',
+    ]) {
       expect(el.querySelector(`[formControlName="${campo}"]`)).not.toBeNull();
     }
     expect(el.querySelector('app-avatar-selector')).not.toBeNull();
