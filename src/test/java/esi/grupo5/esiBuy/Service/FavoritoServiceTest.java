@@ -139,18 +139,19 @@ class FavoritoServiceTest {
     }
 
     @Test
-    void listarFavoritos_ordenaDelMasRecienteAlMasAntiguoYOmiteProductosInactivos() {
+    void listarFavoritos_ordenaDelMasRecienteAlMasAntiguoEIncluyeProductosInactivos() {
         Favorito antiguo = favorito("c1", "p1", true, LocalDateTime.of(2026, 10, 1, 10, 0));
         Favorito reciente = favorito("c1", "p2", true, LocalDateTime.of(2026, 10, 2, 10, 0));
         Favorito deProductoInactivo = favorito("c1", "p3", true, LocalDateTime.of(2026, 10, 3, 10, 0));
+        
         when(favoritoRepository.findByClienteIdAndActivoTrue("c1"))
                 .thenReturn(List.of(antiguo, reciente, deProductoInactivo));
         when(productoRepository.findAllById(any()))
                 .thenReturn(List.of(producto("p1", true), producto("p2", true), producto("p3", false)));
-
+                
         List<Producto> resultado = favoritoService.listarFavoritos("c1");
-
-        assertEquals(List.of("p2", "p1"), resultado.stream().map(Producto::getId).toList());
+        
+        assertEquals(List.of("p3", "p2", "p1"), resultado.stream().map(Producto::getId).toList());
     }
 
     @Test

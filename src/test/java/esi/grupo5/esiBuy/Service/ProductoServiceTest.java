@@ -216,18 +216,16 @@ class ProductoServiceTest {
     }
 
     @Test
-    void eliminarProducto_realizaBorradoLogico() {
+    void eliminarProducto_realizaBorradoFisico() {
         Producto producto = new Producto();
         producto.setId("producto-1");
         producto.setIdVendedor("vendedor-1");
-        producto.setActivo(true);
         when(productoRepository.findByIdAndIdVendedor("producto-1", "vendedor-1"))
                 .thenReturn(Optional.of(producto));
-
+        
         productoService.eliminarProducto("producto-1", "vendedor-1");
-
-        assertFalse(producto.isActivo());
-        verify(productoRepository).save(producto);
+        
+        verify(productoRepository).delete(producto);
     }
 
     @Test
