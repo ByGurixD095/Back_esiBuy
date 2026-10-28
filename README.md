@@ -107,11 +107,10 @@ administradores pueden crear categorías mediante `POST /admin/categorias` y
 modificarlas mediante `PUT /admin/categorias/{id}` enviando el nuevo `nombre`,
 y eliminarlas mediante `DELETE /admin/categorias/{id}`. Los productos guardan
 el identificador de su categoría, por lo que un cambio de nombre no requiere
-actualizar los productos. Al iniciar, la aplicación migra en bloque los nombres
-antiguos de productos a referencias por ID y crea categorías para los nombres
-antiguos que aún no estén registrados. Las operaciones
-administrativas requieren el rol de administrador. Los nombres duplicados se
-responden con HTTP 409.
+actualizar los productos. Los datos existentes con categorías guardadas como
+texto no se migran automáticamente; deben actualizarse antes de usar este
+formato. Las operaciones administrativas requieren el rol de administrador.
+Los nombres duplicados se responden con HTTP 409.
 
 ## Cobertura con JaCoCo
 
