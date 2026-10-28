@@ -41,7 +41,7 @@ class CategoriaConsultaControllerTest {
                 new Categoria("c1", "Hogar"),
                 new Categoria("c2", "Ropa")));
 
-        mockMvc.perform(get("/admin/categorias"))
+        mockMvc.perform(get("/categorias"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].id").value("c1"))
@@ -53,8 +53,15 @@ class CategoriaConsultaControllerTest {
     void listarCategorias_sinCategoriasDevuelve200ConListaVacia() throws Exception {
         when(categoriaService.listarCategorias()).thenReturn(List.of());
 
-            mockMvc.perform(get("/admin/categorias"))
+        mockMvc.perform(get("/categorias"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }
+
+    @Test
+    void listarCategorias_noExponeUnaRutaAdministrativaDuplicada() throws Exception {
+        mockMvc.perform(get("/admin/categorias"))
+                .andExpect(status().isNotFound());
+    }
+
 }

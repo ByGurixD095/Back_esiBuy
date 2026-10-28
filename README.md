@@ -102,8 +102,11 @@ guardadas en Render.
 
 ## Categorías
 
-Los administradores pueden crear categorías mediante `POST /admin/categorias`.
-Los nombres duplicados se responden con HTTP 409.
+La lista ordenada de categorías está disponible en `GET /categorias`. Los
+administradores pueden crear categorías mediante `POST /admin/categorias` y
+eliminarlas mediante `DELETE /admin/categorias/{id}`. Las operaciones
+administrativas requieren el rol de administrador. Los nombres duplicados se
+responden con HTTP 409.
 
 ## Cobertura con JaCoCo
 
