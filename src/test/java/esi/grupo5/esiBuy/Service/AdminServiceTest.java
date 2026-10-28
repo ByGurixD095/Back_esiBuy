@@ -63,7 +63,7 @@ class AdminServiceTest {
     @Test
     void crearAdministrador_guardaElRolYUnaContrasenaHasheada() {
         AdministradorRegistroDTO dto = administradorDTO();
-        when(usuarioRepository.findByEmail(dto.email())).thenReturn(Optional.empty());
+        when(usuarioRepository.existsByEmail(dto.email())).thenReturn(false);
         when(usuarioRepository.save(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(userService.toAdministradorResponseDto(
                 any(Administrador.class), eq("Administrador creado correctamente")))
@@ -101,7 +101,7 @@ class AdminServiceTest {
     @Test
     void crearAdministrador_emailExistenteLanzaConflictoYSinGuardar() {
         AdministradorRegistroDTO dto = administradorDTO();
-        when(usuarioRepository.findByEmail(dto.email())).thenReturn(Optional.of(new Administrador()));
+        when(usuarioRepository.existsByEmail(dto.email())).thenReturn(true);
 
         assertThrows(ConflictException.class, () -> service.crearAdministrador(dto));
 
@@ -111,7 +111,7 @@ class AdminServiceTest {
     @Test
     void crearAdministrador_contrasenaQueNoCumplePoliticaNoGuarda() {
         AdministradorRegistroDTO dto = administradorDTO();
-        when(usuarioRepository.findByEmail(dto.email())).thenReturn(Optional.empty());
+        when(usuarioRepository.existsByEmail(dto.email())).thenReturn(false);
         doThrow(new ValidationException("Contraseña débil"))
                 .when(passwordValidatorService).validatePassword(dto.contrasena(), dto.confirmarContrasena(), dto.nombre(), dto.email(),null);
 

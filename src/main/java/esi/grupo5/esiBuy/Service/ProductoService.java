@@ -288,7 +288,7 @@ public class ProductoService {
     }
 
     /**
-     * Desactiva un producto propio sin eliminar su registro.
+     * Elimina un producto propio.
      *
      * @param id identificador del producto
      * @param idVendedor identificador del propietario
@@ -296,8 +296,7 @@ public class ProductoService {
      */
     public void eliminarProducto(String id, String idVendedor) {
         Producto producto = buscarProductoPropio(id, idVendedor);
-        producto.setActivo(false);
-        productoRepository.save(producto);
+        productoRepository.delete(producto);
     }
 
     /**
