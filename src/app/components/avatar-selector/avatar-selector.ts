@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import {environment} from '../../../environments/environment';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 
 export const AVATARES_PERFIL = [
   { nombre: 'Coral', ruta: '/assets/avatares/avatar-01.svg' },
@@ -34,6 +36,7 @@ export function avatarAleatorio(esVendedor = false): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AvatarSelector {
+  private readonly http = inject(HttpClient);
   readonly value = input('');
   readonly esVendedor = input(false);
   readonly valueChange = output<string>();
@@ -50,30 +53,35 @@ export class AvatarSelector {
     const archivo = inputArchivo.files?.[0];
     inputArchivo.value = '';
 
-    if (!archivo) {
-      return;
-    }
+    if (!archivo) return;
+
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(archivo.type)) {
       this.error.set('Elige una imagen JPG, PNG o WebP.');
       return;
     }
+
     if (archivo.size > TAMANO_MAXIMO_FOTO) {
       this.error.set('La imagen no puede superar los 2 MB.');
       return;
     }
 
-    const lector = new FileReader();
-    lector.onload = () => {
-      if (typeof lector.result !== 'string') {
-        this.error.set('No se ha podido leer la imagen. Prueba con otro archivo.');
-        return;
+    const url = `https://api.cloudinary.com/v1_1/${environment.cloudinaryCloudName}/image/upload`;
+
+    const formData = new FormData();
+    formData.append('file', archivo);
+    formData.append('upload_preset', environment.cloudinaryUploadPreset);
+    formData.append('folder', environment.carpetaAvatares);
+
+    this.error.set('Subiendo imagen a la nube...');
+
+    this.http.post<{secure_url: string}>(url, formData).subscribe({
+      next: (respuesta) => {
+        this.error.set('');
+        this.valueChange.emit(respuesta.secure_url);
+      },
+      error: () => {
+        this.error.set('Error al subir la imagen. Inténtalo de nuevo.');
       }
-      this.error.set('');
-      this.valueChange.emit(lector.result);
-    };
-    lector.onerror = () => {
-      this.error.set('No se ha podido leer la imagen. Prueba con otro archivo.');
-    };
-    lector.readAsDataURL(archivo);
+    });
   }
 }
