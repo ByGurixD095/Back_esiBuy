@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import {
   AbstractControl,
   FormControl,
@@ -10,6 +10,7 @@ import {
 } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService, LoginResponse } from '../../services/auth.service';
+import { Categoria, Categorias } from '../../services/categorias.service';
 import { Registro as RegistroService } from '../../services/registro-service/registro';
 import { AvatarSelector, avatarAleatorio } from '../avatar-selector/avatar-selector';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
@@ -79,9 +80,10 @@ function validarDatosPersonales(control: AbstractControl): ValidationErrors | nu
   styleUrl: './registro.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class RegistroComponent {
+export class RegistroComponent implements OnInit {
   private readonly registroService = inject(RegistroService);
   private readonly authService = inject(AuthService);
+  private readonly categoriasService = inject(Categorias);
   private readonly router = inject(Router);
   private readonly cloudinary = inject(CloudinaryService);
   readonly archivoAvatar = signal<File | null>(null);
@@ -94,6 +96,9 @@ export class RegistroComponent {
   readonly cuentaCreada = signal(false);
   readonly puedeReintentarLogin = signal(false);
   readonly fechaMaxima = this.fechaDeHoy();
+  readonly categorias = signal<Categoria[]>([]);
+  readonly cargandoCategorias = signal(false);
+  readonly errorCategorias = signal('');
 
   readonly form = new FormGroup({
     nombre: new FormControl('', {
@@ -161,6 +166,31 @@ export class RegistroComponent {
       this.form.controls.categoriaPrincipalId.disable();
     }
     this.form.updateValueAndValidity();
+  }
+
+  ngOnInit(): void {
+    if (this.esVendedor) {
+      this.cargarCategorias();
+    }
+  }
+
+  cargarCategorias(): void {
+    this.cargandoCategorias.set(true);
+    this.errorCategorias.set('');
+    this.categoriasService.listar().subscribe({
+      next: (categorias) => {
+        this.categorias.set(categorias);
+        this.cargandoCategorias.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.errorCategorias.set(
+          error.status === 0
+            ? 'No se ha podido conectar con el servidor para cargar las categorías.'
+            : `No se han podido cargar las categorías (HTTP ${error.status}).`,
+        );
+        this.cargandoCategorias.set(false);
+      },
+    });
   }
 
   enviar(): void {

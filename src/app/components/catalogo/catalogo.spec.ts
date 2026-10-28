@@ -4,6 +4,7 @@ import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { PaginaProducto, Producto } from '../../models/producto.model';
 import { AuthService } from '../../services/auth.service';
+import { Categorias } from '../../services/categorias.service';
 import { Favoritos, FavoritosApiError } from '../../services/favoritos-service/favoritos';
 import { CarritoService } from '../../services/carrito.service';
 import { ProductService } from '../../services/product.service';
@@ -17,6 +18,7 @@ function producto(id: string, nombre: string): Producto {
     numStock: 5,
     precioCent: 10000,
     descripcion: null,
+    categoriaId: 'c-hogar',
     categoria: 'HOGAR',
     urlImagen: null,
     descuento: 0,
@@ -37,6 +39,7 @@ describe('Catalogo (favoritos HU 15)', () => {
   const productServiceFalso = { obtenerDisponibles: vi.fn() };
   const favoritosFalso = { listar: vi.fn(), marcar: vi.fn(), quitar: vi.fn() };
   const carritoFalso = { anadirProducto: vi.fn() };
+  const categoriasFalso = { listar: vi.fn() };
   const authFalso = { isAuthenticated: vi.fn(), hasRole: vi.fn() };
 
   async function crear(rol: 'CLIENTE' | 'VENDEDOR' | null): Promise<void> {
@@ -50,6 +53,7 @@ describe('Catalogo (favoritos HU 15)', () => {
         { provide: ProductService, useValue: productServiceFalso },
         { provide: Favoritos, useValue: favoritosFalso },
         { provide: CarritoService, useValue: carritoFalso },
+        { provide: Categorias, useValue: categoriasFalso },
         { provide: AuthService, useValue: authFalso },
       ],
     }).compileComponents();
@@ -71,6 +75,12 @@ describe('Catalogo (favoritos HU 15)', () => {
     favoritosFalso.marcar.mockReset();
     favoritosFalso.quitar.mockReset();
     carritoFalso.anadirProducto.mockReset();
+    categoriasFalso.listar.mockReset();
+    categoriasFalso.listar.mockReturnValue(of([
+      { id: 'c1', nombre: 'Tecnología' },
+      { id: 'c2', nombre: 'Moda' },
+      { id: 'c3', nombre: 'Hogar' },
+    ]));
   });
 
   it('no muestra el corazón ni pide favoritos a un visitante', async () => {
@@ -85,6 +95,14 @@ describe('Catalogo (favoritos HU 15)', () => {
 
     expect(html().querySelector('.product-image-link[href="/products/p1"]')).not.toBeNull();
     expect(html().querySelector('.product-info-link[href="/products/p1"]')).not.toBeNull();
+  });
+
+  it('muestra en el filtro todas las categorías de la lista pública', async () => {
+    await crear(null);
+
+    const opciones = Array.from(html().querySelectorAll('select option')).map((opcion) => opcion.textContent?.trim());
+    expect(opciones.slice(0, 4)).toEqual(['Todas', 'Tecnología', 'Moda', 'Hogar']);
+    expect(categoriasFalso.listar).toHaveBeenCalledOnce();
   });
 
   it('no muestra el corazón a un vendedor', async () => {
