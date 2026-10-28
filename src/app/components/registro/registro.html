@@ -230,6 +230,7 @@
               [value]="form.controls.imagenPerfil.value"
               [esVendedor]="esVendedor"
               (valueChange)="form.controls.imagenPerfil.setValue($event)"
+              (fileSeleccionado)="archivoAvatar.set($event)"
             />
 
           <button type="submit" class="esi-boton" [disabled]="form.invalid || enviando()">

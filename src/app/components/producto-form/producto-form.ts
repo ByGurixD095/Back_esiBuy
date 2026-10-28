@@ -1,3 +1,4 @@
+import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, PLATFORM_ID, inject, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -6,6 +7,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Producto, ProductoDTO } from '../../models/producto.model';
 import { Categoria, Categorias } from '../../services/categorias.service';
 import { ProductoApiError, ProductoService } from '../../services/producto.service';
+import { CloudinaryService } from '../../services/cloudinary.service';
+import { environment } from '../../../environments/environment';
 
 interface BorradorProducto {
   nombre: string;
@@ -36,8 +39,12 @@ export class ProductoForm implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly cloudinaryService = inject(CloudinaryService);
   private readonly destroyRef = inject(DestroyRef);
 
+  readonly archivoSeleccionado = signal<File | null>(null);
+  readonly imagenPreview = signal<string | null>(null);
+  readonly errorImagen = signal('');
   readonly isSubmitting = signal(false);
   readonly submitError = signal<string | null>(null);
   readonly createdProduct = signal<Producto | null>(null);
@@ -147,73 +154,6 @@ export class ProductoForm implements OnInit {
     this.productoForm.controls[controlName].setValue(valor);
   }
 
-  enviarFormulario(): void {
-    this.submitError.set(null);
-    this.createdProduct.set(null);
-    this.creationSuccess.set(false);
-    this.formSubmitted.set(true);
-
-    if (this.productoForm.invalid) {
-      this.productoForm.markAllAsTouched();
-      return;
-    }
-
-    const formValue = this.productoForm.getRawValue();
-    const producto: ProductoDTO = {
-      nombre: formValue.nombre.trim(),
-      referencia: formValue.referencia.trim(),
-      numStock: formValue.numStock,
-      precioCent: Math.round(formValue.precioEuros * 100),
-      descuento: formValue.descuento ?? 0,
-      descuentoPremium: formValue.descuentoPremium ?? 0,
-      descripcion: formValue.descripcion.trim() || null,
-      categoriaId: formValue.categoriaId,
-      urlImagen: formValue.urlImagen.trim() || null,
-      activo: formValue.activo,
-    };
-
-    this.isSubmitting.set(true);
-    const request = this.editingId()
-      ? this.productoService.actualizarProducto(this.editingId()!, producto)
-      : this.productoService.crearProducto(producto);
-
-    request.subscribe({
-      next: (createdProduct) => {
-        this.createdProduct.set(createdProduct);
-        this.creationSuccess.set(true);
-        if (this.editingId()) {
-          this.isSubmitting.set(false);
-          window.setTimeout(() => void this.router.navigate(['/products/catalogo']), 800);
-          return;
-        }
-        this.eliminarBorradorGuardado();
-        this.productoForm.reset({
-          nombre: '',
-          referencia: this.generatedReference,
-          numStock: 1,
-          precioEuros: 0,
-          descuento: 0,
-          descuentoPremium: 0,
-          descripcion: '',
-          categoriaId: '',
-          urlImagen: '',
-          activo: true,
-        });
-        this.formSubmitted.set(false);
-        this.isSubmitting.set(false);
-        window.setTimeout(() => {
-          void this.router.navigate(['/products'], {
-            queryParams: { published: 'true' },
-          });
-        }, 1200);
-      },
-      error: (error: ProductoApiError | Error) => {
-        this.submitError.set(error.message);
-        this.isSubmitting.set(false);
-      },
-    });
-  }
-
   private restaurarBorrador(): void {
     if (!isPlatformBrowser(this.platformId)) return;
 
@@ -244,6 +184,100 @@ export class ProductoForm implements OnInit {
       this.submitError.set('El producto se publicó, pero no se pudo eliminar el borrador guardado en este navegador.');
     }
   }
+
+subirImagenProducto(event: Event): void {
+    const inputArchivo = event.target as HTMLInputElement;
+    const archivo = inputArchivo.files?.[0];
+    inputArchivo.value = '';
+
+    if (!archivo) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(archivo.type)) {
+      this.errorImagen.set('Elige una imagen JPG, PNG o WebP.');
+      return;
+    }
+    if (archivo.size > 2 * 1024 * 1024) {
+      this.errorImagen.set('La imagen no puede superar los 2 MB.');
+      return;
+    }
+
+    this.errorImagen.set('');
+    this.archivoSeleccionado.set(archivo); // Guardamos el archivo
+    this.imagenPreview.set(URL.createObjectURL(archivo)); // Vista previa local
+  }
+
+  enviarFormulario(): void {
+    this.submitError.set(null);
+    this.createdProduct.set(null);
+    this.creationSuccess.set(false);
+    this.formSubmitted.set(true);
+
+    if (this.productoForm.invalid) {
+      this.productoForm.markAllAsTouched();
+      return;
+    }
+
+    this.isSubmitting.set(true);
+    const archivo = this.archivoSeleccionado();
+
+    if (archivo) {
+      this.cloudinaryService.subirImagen(archivo, environment.carpetaProductos).subscribe({
+        next: (url) => this.ejecutarGuardado(url),
+        error: () => {
+          this.submitError.set('Error al subir la imagen a la nube.');
+          this.isSubmitting.set(false);
+        }
+      });
+    } else {
+      // Si no hay archivo nuevo, usamos la URL que ya tuviera
+      this.ejecutarGuardado(this.productoForm.controls.urlImagen.value);
+    }
+  }
+
+  private ejecutarGuardado(urlImagenFinal: string): void {
+    const formValue = this.productoForm.getRawValue();
+    const producto: ProductoDTO = {
+      nombre: formValue.nombre.trim(),
+      referencia: formValue.referencia.trim(),
+      numStock: formValue.numStock,
+      precioCent: Math.round(formValue.precioEuros * 100),
+      descuento: formValue.descuento ?? 0,
+      descuentoPremium: formValue.descuentoPremium ?? 0,
+      descripcion: formValue.descripcion.trim() || null,
+      categoriaId: formValue.categoriaId.trim(),
+      urlImagen: urlImagenFinal.trim() || null, // Usamos la URL final
+      activo: formValue.activo,
+    };
+
+    const request = this.editingId()
+      ? this.productoService.actualizarProducto(this.editingId()!, producto)
+      : this.productoService.crearProducto(producto);
+
+    request.subscribe({
+      next: (createdProduct) => {
+        this.createdProduct.set(createdProduct);
+        this.creationSuccess.set(true);
+        
+        if (this.editingId()) {
+          this.isSubmitting.set(false);
+          window.setTimeout(() => void this.router.navigate(['/products/catalogo']), 800);
+          return;
+        }
+
+        this.eliminarBorradorGuardado();
+        // Reset manual simplificado
+        this.formSubmitted.set(false);
+        this.isSubmitting.set(false);
+        window.setTimeout(() => {
+          void this.router.navigate(['/products'], { queryParams: { published: 'true' } });
+        }, 1200);
+      },
+      error: (error: ProductoApiError | Error) => {
+        this.submitError.set(error.message);
+        this.isSubmitting.set(false);
+      },
+    });
+  }
+
 }
 
 function esBorradorProducto(valor: unknown): valor is BorradorProducto {
