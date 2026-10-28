@@ -243,7 +243,7 @@ subirImagenProducto(event: Event): void {
       descuento: formValue.descuento ?? 0,
       descuentoPremium: formValue.descuentoPremium ?? 0,
       descripcion: formValue.descripcion.trim() || null,
-      categoria: formValue.categoria.trim(),
+      categoriaId: formValue.categoriaId.trim(),
       urlImagen: urlImagenFinal.trim() || null, // Usamos la URL final
       activo: formValue.activo,
     };
