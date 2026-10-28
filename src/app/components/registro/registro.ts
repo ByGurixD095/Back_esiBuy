@@ -13,6 +13,8 @@ import { AuthService, LoginResponse } from '../../services/auth.service';
 import { Registro as RegistroService } from '../../services/registro-service/registro';
 import { AvatarSelector, avatarAleatorio } from '../avatar-selector/avatar-selector';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
+import { CloudinaryService } from '../../services/cloudinary.service';
+import { environment } from '../../../environments/environment';
 
 type TipoRegistro = 'cliente' | 'vendedor';
 
@@ -81,6 +83,8 @@ export class RegistroComponent {
   private readonly registroService = inject(RegistroService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly cloudinary = inject(CloudinaryService);
+  readonly archivoAvatar = signal<File | null>(null);
   readonly tipo: TipoRegistro =
     inject(ActivatedRoute).snapshot.data['tipoRegistro'] === 'vendedor' ? 'vendedor' : 'cliente';
   readonly esVendedor = this.tipo === 'vendedor';
@@ -170,9 +174,6 @@ export class RegistroComponent {
         : { noCoinciden: true },
     );
 
-    if (!this.form.controls.imagenPerfil.value.trim()) {
-      this.form.controls.imagenPerfil.setValue(avatarAleatorio(this.esVendedor));
-    }
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -182,7 +183,28 @@ export class RegistroComponent {
     this.mensajeError.set('');
     this.enviando.set(true);
 
+    const archivo = this.archivoAvatar();
+    if (archivo) {
+      this.cloudinary.subirImagen(archivo, environment.carpetaAvatares).subscribe({
+        next: (url) => this.ejecutarRegistro(url),
+        error: () => {
+          this.mensajeError.set('Error al subir la imagen de perfil.');
+          this.enviando.set(false);
+        }
+      });
+    } else {
+      let imagenFinal = this.form.controls.imagenPerfil.value.trim();
+      if (!imagenFinal || imagenFinal.startsWith('data:image')) {
+        imagenFinal = avatarAleatorio(this.esVendedor);
+      }
+      this.ejecutarRegistro(imagenFinal);
+    }
+  }
+
+  private ejecutarRegistro(imagenFinal: string): void {
     const datos = this.form.getRawValue();
+    datos.imagenPerfil = imagenFinal;
+
     const peticion = this.esVendedor
       ? this.registroService.registrarVendedor({
           nombre: datos.nombre,

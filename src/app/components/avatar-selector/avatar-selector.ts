@@ -1,5 +1,4 @@
 import { HttpClient } from '@angular/common/http';
-import {environment} from '../../../environments/environment';
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 
 export const AVATARES_PERFIL = [
@@ -40,12 +39,14 @@ export class AvatarSelector {
   readonly value = input('');
   readonly esVendedor = input(false);
   readonly valueChange = output<string>();
+  readonly fileSeleccionado = output<File | null>();
   readonly avatares = computed(() => (this.esVendedor() ? AVATARES_VENDEDOR : AVATARES_PERFIL));
   readonly error = signal('');
 
   seleccionarAvatar(ruta: string): void {
     this.error.set('');
     this.valueChange.emit(ruta);
+    this.fileSeleccionado.emit(null);
   }
 
   cargarFoto(event: Event): void {
@@ -54,34 +55,23 @@ export class AvatarSelector {
     inputArchivo.value = '';
 
     if (!archivo) return;
-
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(archivo.type)) {
       this.error.set('Elige una imagen JPG, PNG o WebP.');
       return;
     }
-
-    if (archivo.size > TAMANO_MAXIMO_FOTO) {
+    if (archivo.size > 2 * 1024 * 1024) {
       this.error.set('La imagen no puede superar los 2 MB.');
       return;
     }
 
-    const url = `https://api.cloudinary.com/v1_1/${environment.cloudinaryCloudName}/image/upload`;
-
-    const formData = new FormData();
-    formData.append('file', archivo);
-    formData.append('upload_preset', environment.cloudinaryUploadPreset);
-    formData.append('folder', environment.carpetaAvatares);
-
-    this.error.set('Subiendo imagen a la nube...');
-
-    this.http.post<{secure_url: string}>(url, formData).subscribe({
-      next: (respuesta) => {
-        this.error.set('');
-        this.valueChange.emit(respuesta.secure_url);
-      },
-      error: () => {
-        this.error.set('Error al subir la imagen. Inténtalo de nuevo.');
-      }
-    });
+    // Leemos localmente para mostrar la vista previa instantánea
+    const lector = new FileReader();
+    lector.onload = () => {
+      this.error.set('');
+      this.valueChange.emit(lector.result as string); // Vista previa en base64
+      this.fileSeleccionado.emit(archivo); // Enviamos el File al componente padre
+    };
+    lector.onerror = () => this.error.set('No se ha podido leer la imagen.');
+    lector.readAsDataURL(archivo);
   }
 }
