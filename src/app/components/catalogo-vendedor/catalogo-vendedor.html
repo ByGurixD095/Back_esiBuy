@@ -47,7 +47,7 @@
       <p class="demo-result" role="status">{{ resultado }}</p>
     }
 
-    <app-panel-filtros-productos [productos]="productos()" [categoriasDisponibles]="nombresCategorias()" [mostrarEstado]="true" (filtrosChange)="aplicarFiltros($event)" />
+    <app-panel-filtros-productos [productos]="productos()" [categoriasDisponibles]="categoriasDisponibles()" [mostrarEstado]="true" (filtrosChange)="aplicarFiltros($event)" />
     @if (errorCategorias(); as mensaje) {
       <p class="state-panel error-state" role="alert">
         {{ mensaje }}

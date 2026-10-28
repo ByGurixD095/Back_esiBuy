@@ -46,7 +46,7 @@
       </aside>
     </div>
 
-    <app-panel-filtros-productos [productos]="productos()" [categoriasDisponibles]="nombresCategorias()" (filtrosChange)="aplicarFiltros($event)" />
+    <app-panel-filtros-productos [productos]="productos()" [categoriasDisponibles]="categoriasDisponibles()" (filtrosChange)="aplicarFiltros($event)" />
     @if (errorCategorias(); as mensaje) {
       <p class="cart-feedback cart-feedback-error" role="alert">
         {{ mensaje }}

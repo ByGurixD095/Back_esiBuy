@@ -30,6 +30,14 @@ export class Categorias {
     );
   }
 
+  actualizar(id: string, datos: NuevaCategoria): Observable<Categoria> {
+    return this.http.put<Categoria>(
+      `${environment.apiUrl}/admin/categorias/${encodeURIComponent(id)}`,
+      datos,
+      { withCredentials: true },
+    );
+  }
+
   listar(): Observable<Categoria[]> {
     return this.http.get<Categoria[]>(`${environment.apiUrl}/categorias`, {
       withCredentials: true,

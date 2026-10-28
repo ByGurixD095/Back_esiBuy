@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, linkedSignal, output, signal } from '@angular/core';
 import { Producto } from '../../models/producto.model';
+import { Categoria } from '../../services/categorias.service';
 import { EstadoProducto, FiltrosProductos, OrdenCatalogo } from '../../services/product.service';
 
 @Component({
@@ -10,12 +11,12 @@ import { EstadoProducto, FiltrosProductos, OrdenCatalogo } from '../../services/
 })
 export class PanelFiltrosProductos {
   readonly productos = input<Producto[]>([]);
-  readonly categoriasDisponibles = input<string[] | null>(null);
+  readonly categoriasDisponibles = input<Categoria[] | null>(null);
   readonly mostrarEstado = input(false);
   readonly filtrosChange = output<FiltrosProductos>();
 
   readonly busqueda = signal('');
-  readonly categoria = signal('Todas');
+  readonly categoriaId = signal('Todas');
   readonly orden = signal<OrdenCatalogo>('relevancia');
   readonly estado = signal<EstadoProducto>('todos');
   readonly precioMinimo = signal<number | null>(null);
@@ -23,19 +24,31 @@ export class PanelFiltrosProductos {
   readonly soloConDescuento = signal(false);
 
   readonly categorias = linkedSignal<
-    { disponibles: string[] | null; productos: string[] },
-    string[]
+    { disponibles: Categoria[] | null; productos: Producto[] },
+    Categoria[]
   >({
     source: () => ({
       disponibles: this.categoriasDisponibles(),
-      productos: this.productos().map((producto) => producto.categoria),
+      productos: this.productos(),
     }),
-    computation: ({ disponibles, productos }, anteriores) => [
-      ...new Set([
-        'Todas',
-        ...(disponibles ?? [...(anteriores?.value.slice(1) ?? []), ...productos]),
-      ]),
-    ],
+    computation: ({ disponibles, productos }, anteriores) => {
+      if (disponibles !== null) {
+        return [{ id: 'Todas', nombre: 'Todas' }, ...disponibles];
+      }
+
+      const opciones = new Map(
+        (anteriores?.value.slice(1) ?? []).map((categoria) => [categoria.id, categoria]),
+      );
+      for (const producto of productos) {
+        if (producto.categoriaId) {
+          opciones.set(producto.categoriaId, {
+            id: producto.categoriaId,
+            nombre: producto.categoria || producto.categoriaId,
+          });
+        }
+      }
+      return [{ id: 'Todas', nombre: 'Todas' }, ...opciones.values()];
+    },
   });
 
   readonly precioEscalaMaxima = computed(() => {
@@ -47,7 +60,7 @@ export class PanelFiltrosProductos {
   readonly hayFiltros = computed(
     () =>
       !!this.busqueda() ||
-      this.categoria() !== 'Todas' ||
+      this.categoriaId() !== 'Todas' ||
       this.orden() !== 'relevancia' ||
       this.estado() !== 'todos' ||
       this.precioMinimo() !== null ||
@@ -60,7 +73,7 @@ export class PanelFiltrosProductos {
   }
 
   actualizarCategoria(event: Event): void {
-    this.categoria.set((event.target as HTMLSelectElement).value);
+    this.categoriaId.set((event.target as HTMLSelectElement).value);
   }
 
   actualizarOrden(event: Event): void {
@@ -98,7 +111,7 @@ export class PanelFiltrosProductos {
     }
     this.filtrosChange.emit({
       busqueda: this.busqueda(),
-      categoria: this.categoria(),
+      categoriaId: this.categoriaId(),
       precioMinCent: this.precioMinimo(),
       precioMaxCent: this.precioMaximo(),
       soloOfertas: this.soloConDescuento(),
@@ -109,7 +122,7 @@ export class PanelFiltrosProductos {
 
   limpiarFiltros(): void {
     this.busqueda.set('');
-    this.categoria.set('Todas');
+    this.categoriaId.set('Todas');
     this.orden.set('relevancia');
     this.estado.set('todos');
     this.precioMinimo.set(null);

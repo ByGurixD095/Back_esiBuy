@@ -39,4 +39,14 @@ describe('Categorias', () => {
     http.expectOne(`${environment.apiUrl}/admin/categorias`).flush(respuesta);
     expect(recibido).toEqual(respuesta);
   });
+
+  it('envía un PUT administrativo para cambiar el nombre', () => {
+    servicio.actualizar('c1', { nombre: 'Hogar actualizado' }).subscribe();
+
+    const peticion = http.expectOne(`${environment.apiUrl}/admin/categorias/c1`);
+    expect(peticion.request.method).toBe('PUT');
+    expect(peticion.request.body).toEqual({ nombre: 'Hogar actualizado' });
+    expect(peticion.request.withCredentials).toBe(true);
+    peticion.flush({ id: 'c1', nombre: 'Hogar actualizado' });
+  });
 });

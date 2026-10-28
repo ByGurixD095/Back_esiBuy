@@ -20,6 +20,9 @@ export class ListarCategorias implements OnInit {
   readonly error = signal('');
   readonly categoriaPendiente = signal<Categoria | null>(null);
   readonly eliminando = signal(false);
+  readonly categoriaEditando = signal<Categoria | null>(null);
+  readonly nombreEditado = signal('');
+  readonly guardandoEdicion = signal(false);
   readonly mensajeExito = signal('');
   readonly errorEliminar = signal('');
 
@@ -43,12 +46,54 @@ export class ListarCategorias implements OnInit {
   }
 
   pedirEliminar(categoria: Categoria): void {
-    if (this.eliminando()) {
+    if (this.eliminando() || this.guardandoEdicion()) {
       return;
     }
     this.mensajeExito.set('');
     this.errorEliminar.set('');
     this.categoriaPendiente.set(categoria);
+  }
+
+  empezarEdicion(categoria: Categoria): void {
+    if (this.eliminando() || this.guardandoEdicion()) return;
+    this.errorEliminar.set('');
+    this.mensajeExito.set('');
+    this.categoriaEditando.set(categoria);
+    this.nombreEditado.set(categoria.nombre);
+  }
+
+  actualizarNombre(event: Event): void {
+    this.nombreEditado.set((event.target as HTMLInputElement).value);
+  }
+
+  cancelarEdicion(): void {
+    if (this.guardandoEdicion()) return;
+    this.categoriaEditando.set(null);
+  }
+
+  guardarEdicion(): void {
+    const categoria = this.categoriaEditando();
+    const nombre = this.nombreEditado().trim();
+    if (!categoria || !nombre || this.guardandoEdicion()) return;
+
+    this.guardandoEdicion.set(true);
+    this.errorEliminar.set('');
+    this.categoriasService.actualizar(categoria.id, { nombre }).subscribe({
+      next: (actualizada) => {
+        this.categorias.update((lista) =>
+          lista
+            .map((item) => item.id === actualizada.id ? actualizada : item)
+            .sort((a, b) => a.nombre.localeCompare(b.nombre, undefined, { sensitivity: 'base' })),
+        );
+        this.mensajeExito.set(`La categoría se ha cambiado a «${actualizada.nombre}».`);
+        this.categoriaEditando.set(null);
+        this.guardandoEdicion.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.errorEliminar.set(this.textoDeErrorEdicion(error));
+        this.guardandoEdicion.set(false);
+      },
+    });
   }
 
   cancelarEliminar(): void {
@@ -97,6 +142,7 @@ export class ListarCategorias implements OnInit {
         'No se puede eliminar la categoría porque hay productos que la usan.'
       );
     }
+
     if (error.status === 404) {
       return 'La categoría ya no existe.';
     }
@@ -107,6 +153,18 @@ export class ListarCategorias implements OnInit {
       return 'No se ha podido conectar con el servidor.';
     }
     return 'No se ha podido eliminar la categoría. Inténtalo de nuevo.';
+  }
+
+  private textoDeErrorEdicion(error: HttpErrorResponse): string {
+    if (error.status === 409) {
+      return error.error?.message ?? 'Ya existe una categoría con ese nombre.';
+    }
+    if (error.status === 404) return 'La categoría ya no existe.';
+    if (error.status === 401 || error.status === 403) {
+      return 'No tienes permisos para modificar categorías. Inicia sesión como administrador.';
+    }
+    if (error.status === 0) return 'No se ha podido conectar con el servidor.';
+    return 'No se ha podido modificar la categoría. Inténtalo de nuevo.';
   }
 
   private textoDeError(error: HttpErrorResponse): string {

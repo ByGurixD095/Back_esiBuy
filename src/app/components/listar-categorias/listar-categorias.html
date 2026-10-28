@@ -34,12 +34,43 @@
     <ul class="lista esi-tarjeta">
       @for (categoria of categorias(); track categoria.id) {
       <li class="elemento">
+        @if (categoriaEditando()?.id === categoria.id) {
+        <div class="edicion">
+          <label>
+            <span class="visually-hidden">Nuevo nombre para {{ categoria.nombre }}</span>
+            <input
+              type="text"
+              [value]="nombreEditado()"
+              [disabled]="guardandoEdicion()"
+              (input)="actualizarNombre($event)"
+              (keydown.enter)="guardarEdicion()"
+              maxlength="80"
+            />
+          </label>
+          <button type="button" class="esi-boton" [disabled]="guardandoEdicion() || !nombreEditado().trim()" (click)="guardarEdicion()">
+            Guardar
+          </button>
+          <button type="button" class="esi-boton" [disabled]="guardandoEdicion()" (click)="cancelarEdicion()">
+            Cancelar
+          </button>
+        </div>
+        } @else {
         <span class="nombre">{{ categoria.nombre }}</span>
+        <button
+          type="button"
+          class="esi-boton accion-editar"
+          [attr.aria-label]="'Modificar la categoría ' + categoria.nombre"
+          [disabled]="guardandoEdicion() || eliminando()"
+          (click)="empezarEdicion(categoria)"
+        >
+          Modificar
+        </button>
+        }
         <button
           type="button"
           class="esi-boton accion-eliminar"
           [attr.aria-label]="'Eliminar la categoría ' + categoria.nombre"
-          [disabled]="eliminando()"
+          [disabled]="eliminando() || guardandoEdicion() || categoriaEditando()?.id === categoria.id"
           (click)="pedirEliminar(categoria)"
         >
           Eliminar

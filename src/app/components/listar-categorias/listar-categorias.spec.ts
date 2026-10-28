@@ -9,7 +9,7 @@ import { ListarCategorias } from './listar-categorias';
 
 describe('ListarCategorias', () => {
   let fixture: ComponentFixture<ListarCategorias>;
-  const servicioFalso = { listar: vi.fn(), eliminar: vi.fn() };
+  const servicioFalso = { listar: vi.fn(), eliminar: vi.fn(), actualizar: vi.fn() };
   const authFalso = { isAuthenticated: () => true, hasRole: () => true };
 
   async function crear(): Promise<void> {
@@ -33,6 +33,7 @@ describe('ListarCategorias', () => {
   beforeEach(() => {
     servicioFalso.listar.mockReset();
     servicioFalso.eliminar.mockReset();
+    servicioFalso.actualizar.mockReset();
   });
 
   it('se crea y pide las categorías al servicio', async () => {
@@ -91,7 +92,7 @@ describe('ListarCategorias', () => {
     await crear();
 
     const alerta = html().querySelector('[role="alert"]');
-    expect(alerta?.textContent).toContain('No tienes permisos para ver las categorías');
+    expect(alerta?.textContent).toContain('No se han podido cargar las categorías');
 
     servicioFalso.listar.mockReturnValue(of([{ id: 'c1', nombre: 'Hogar' }]));
     (alerta?.querySelector('button') as HTMLButtonElement).click();
@@ -131,6 +132,25 @@ describe('ListarCategorias', () => {
 
       expect(botonEliminar('Hogar')).toBeTruthy();
       expect(botonEliminar('Ropa')).toBeTruthy();
+    });
+
+    it('permite cambiar el nombre y conserva la categoría en la lista', async () => {
+      servicioFalso.actualizar.mockReturnValue(of({ id: 'c1', nombre: 'Casa' }));
+      await crear();
+      (html().querySelector('button[aria-label="Modificar la categoría Hogar"]') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      const input = html().querySelector('.edicion input') as HTMLInputElement;
+      input.value = 'Casa';
+      input.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      (html().querySelector('.edicion button') as HTMLButtonElement).click();
+      fixture.detectChanges();
+
+      expect(servicioFalso.actualizar).toHaveBeenCalledWith('c1', { nombre: 'Casa' });
+      expect(html().textContent).toContain('Casa');
+      expect(html().textContent).not.toContain('Hogar');
+      expect(html().textContent).toContain('La categoría se ha cambiado a «Casa».');
     });
 
     it('pide confirmación antes de eliminar y no llama al servicio todavía', async () => {

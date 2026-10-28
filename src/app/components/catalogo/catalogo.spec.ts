@@ -18,6 +18,7 @@ function producto(id: string, nombre: string): Producto {
     numStock: 5,
     precioCent: 10000,
     descripcion: null,
+    categoriaId: 'c-hogar',
     categoria: 'HOGAR',
     urlImagen: null,
     descuento: 0,

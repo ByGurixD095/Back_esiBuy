@@ -67,6 +67,33 @@
   overflow-wrap: anywhere;
 }
 
+.edicion {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.edicion label {
+  flex: 1 1 180px;
+}
+
+.edicion input {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+  color: var(--esi-ink);
+  background: var(--esi-card);
+  border: 1px solid var(--esi-field-border);
+  border-radius: var(--esi-radius);
+}
+
+.accion-editar {
+  color: var(--esi-ink);
+  background: var(--esi-card);
+  border: 1px solid var(--esi-field-border);
+}
+
 .accion-eliminar {
   min-height: 36px;
   padding: 0 14px;

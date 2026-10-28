@@ -5,7 +5,7 @@ import { AuthService } from '../../services/auth.service';
 import { PaginaProducto, Producto } from '../../models/producto.model';
 import { Favoritos, FavoritosApiError } from '../../services/favoritos-service/favoritos';
 import { CarritoService } from '../../services/carrito.service';
-import { Categorias } from '../../services/categorias.service';
+import { Categoria, Categorias } from '../../services/categorias.service';
 import { PanelFiltrosProductos } from '../panel-filtros-productos/panel-filtros-productos';
 import { FiltrosProductos, ProductApiError, ProductService, filtrarProductos } from '../../services/product.service';
 
@@ -24,7 +24,7 @@ export class Catalogo implements OnInit {
   readonly auth = inject(AuthService);
 
   readonly productos = signal<Producto[]>([]);
-  readonly nombresCategorias = signal<string[]>([]);
+  readonly categoriasDisponibles = signal<Categoria[]>([]);
   readonly errorCategorias = signal<string | null>(null);
   readonly totalCatalogo = signal<number | null>(null);
   readonly totalElementos = signal(0);
@@ -54,7 +54,7 @@ export class Catalogo implements OnInit {
   cargarCategorias(): void {
     this.errorCategorias.set(null);
     this.categoriasService.listar().subscribe({
-      next: (categorias) => this.nombresCategorias.set(categorias.map((categoria) => categoria.nombre)),
+      next: (categorias) => this.categoriasDisponibles.set(categorias),
       error: (error: HttpErrorResponse) => {
         this.errorCategorias.set(
           error.status === 0
@@ -182,7 +182,7 @@ export class Catalogo implements OnInit {
   private hayFiltrosRestrictivos(filtros: FiltrosProductos): boolean {
     return Boolean(
       filtros.busqueda?.trim() ||
-        (filtros.categoria && filtros.categoria !== 'Todas' && filtros.categoria !== 'TODAS') ||
+        (filtros.categoriaId && filtros.categoriaId !== 'Todas' && filtros.categoriaId !== 'TODAS') ||
         filtros.precioMinCent != null ||
         filtros.precioMaxCent != null ||
         filtros.soloOfertas ||
