@@ -88,18 +88,17 @@ public class FavoritoService {
 
     /**
      * Lista los productos favoritos vigentes del cliente, del más reciente al más antiguo.
-     * Se omiten los productos que ya no existen o no están activos.
+     * Se omiten los productos que ya no existen.
      *
      * @param clienteId identificador del cliente autenticado
-     * @return productos favoritos activos
+     * @return productos favoritos
      */
     public List<Producto> listarFavoritos(String clienteId) {
         List<Favorito> favoritos = favoritoRepository.findByClienteIdAndActivoTrue(clienteId);
-
+           
         Map<String, Producto> productos = productoRepository
                 .findAllById(favoritos.stream().map(Favorito::getProductoId).toList())
                 .stream()
-                .filter(Producto::isActivo)
                 .collect(Collectors.toMap(Producto::getId, Function.identity()));
 
         return favoritos.stream()
