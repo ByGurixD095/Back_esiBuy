@@ -112,23 +112,16 @@
 
           <label class="field field-wide">
             <span>Categoría</span>
-              <select formControlName="categoria" [class.invalid-field]="formSubmitted() && productoForm.controls.categoria.invalid">
+            @if (errorCategorias(); as mensaje) {
+              <small class="field-error" role="alert">{{ mensaje }}</small>
+            }
+            <select formControlName="categoriaId" [class.invalid-field]="formSubmitted() && productoForm.controls.categoriaId.invalid">
               <option value="" disabled>Selecciona una categoría</option>
-              <option>Tecnología</option>
-              <option>Moda</option>
-              <option>Hogar y Cocina</option>
-              <option>Deporte y Ocio</option>
-              <option>Libros</option>
-              <option>Otros</option>
-              <option>Papelería y Material Escolar</option>
-              <option>Salud y Cuidado Personal</option>
-              <option>Alimentación y Bebidas</option>
-              <option>Juguetes y Hobbies</option>
-              <option>Electrodomésticos</option>
-              <option>Bricolaje y Herramientas</option>
-              <option>Mascotas</option>
+              @for (categoria of categoriasDisponibles(); track categoria.id) {
+                <option [value]="categoria.id">{{ categoria.nombre }}</option>
+              }
             </select>
-            @if (formSubmitted() && productoForm.controls.categoria.invalid) {
+            @if (formSubmitted() && productoForm.controls.categoriaId.invalid) {
               <small class="field-error">Selecciona una categoría.</small>
             }
           </label>

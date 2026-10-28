@@ -46,7 +46,13 @@
       </aside>
     </div>
 
-    <app-panel-filtros-productos [productos]="productos()" (filtrosChange)="aplicarFiltros($event)" />
+    <app-panel-filtros-productos [productos]="productos()" [categoriasDisponibles]="categoriasDisponibles()" (filtrosChange)="aplicarFiltros($event)" />
+    @if (errorCategorias(); as mensaje) {
+      <p class="cart-feedback cart-feedback-error" role="alert">
+        {{ mensaje }}
+        <button type="button" class="state-action" (click)="cargarCategorias()">Reintentar</button>
+      </p>
+    }
 
     @if (mensajeCarrito(); as mensaje) {
       <p class="cart-feedback" role="status">{{ mensaje }}</p>

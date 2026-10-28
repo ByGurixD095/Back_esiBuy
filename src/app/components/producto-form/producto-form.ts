@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Producto, ProductoDTO } from '../../models/producto.model';
+import { Categoria, Categorias } from '../../services/categorias.service';
 import { ProductoApiError, ProductoService } from '../../services/producto.service';
 
 interface BorradorProducto {
@@ -14,7 +15,7 @@ interface BorradorProducto {
   descuento: number;
   descuentoPremium: number;
   descripcion: string;
-  categoria: string;
+  categoriaId: string;
   urlImagen: string;
   activo: boolean;
 }
@@ -31,6 +32,7 @@ const CLAVE_BORRADOR_PRODUCTO = 'esiBuy.producto.borrador';
 export class ProductoForm implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
   private readonly productoService = inject(ProductoService);
+  private readonly categoriasService = inject(Categorias);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly platformId = inject(PLATFORM_ID);
@@ -45,6 +47,8 @@ export class ProductoForm implements OnInit {
   readonly formSubmitted = signal(false);
   readonly editingId = signal<string | null>(null);
   readonly loadingProduct = signal(false);
+  readonly categoriasDisponibles = signal<Categoria[]>([]);
+  readonly errorCategorias = signal<string | null>(null);
   private readonly generatedReference = `ESI-${Date.now().toString(36).toUpperCase()}`;
 
   readonly productoForm = this.formBuilder.nonNullable.group({
@@ -55,12 +59,23 @@ export class ProductoForm implements OnInit {
     descuento: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
     descuentoPremium: [0, [Validators.required, Validators.min(0), Validators.max(100)]],
     descripcion: ['', [Validators.maxLength(500)]],
-    categoria: ['', [Validators.required, Validators.maxLength(50)]],
+    categoriaId: ['', [Validators.required]],
     urlImagen: ['', [Validators.pattern(/^\s*$|^https?:\/\/.+/i)]],
     activo: [true],
   });
 
   ngOnInit(): void {
+    this.categoriasService.listar().subscribe({
+      next: (categorias) => this.categoriasDisponibles.set(categorias),
+      error: (error: { status: number }) => {
+        this.errorCategorias.set(
+          error.status === 0
+            ? 'No se ha podido conectar con el servidor para cargar las categorías.'
+            : `No se han podido cargar las categorías (HTTP ${error.status}).`,
+        );
+      },
+    });
+
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {
       this.restaurarBorrador();
@@ -87,7 +102,7 @@ export class ProductoForm implements OnInit {
           descuento: producto.descuento,
           descuentoPremium: producto.descuentoPremium,
           descripcion: producto.descripcion ?? '',
-          categoria: producto.categoria,
+          categoriaId: producto.categoriaId,
           urlImagen: producto.urlImagen ?? '',
           activo: producto.activo,
         });
@@ -152,7 +167,7 @@ export class ProductoForm implements OnInit {
       descuento: formValue.descuento ?? 0,
       descuentoPremium: formValue.descuentoPremium ?? 0,
       descripcion: formValue.descripcion.trim() || null,
-      categoria: formValue.categoria.trim(),
+      categoriaId: formValue.categoriaId,
       urlImagen: formValue.urlImagen.trim() || null,
       activo: formValue.activo,
     };
@@ -180,7 +195,7 @@ export class ProductoForm implements OnInit {
           descuento: 0,
           descuentoPremium: 0,
           descripcion: '',
-          categoria: '',
+          categoriaId: '',
           urlImagen: '',
           activo: true,
         });
@@ -243,7 +258,7 @@ function esBorradorProducto(valor: unknown): valor is BorradorProducto {
     typeof borrador['descuento'] === 'number' &&
     typeof borrador['descuentoPremium'] === 'number' &&
     typeof borrador['descripcion'] === 'string' &&
-    typeof borrador['categoria'] === 'string' &&
+    typeof borrador['categoriaId'] === 'string' &&
     typeof borrador['urlImagen'] === 'string' &&
     typeof borrador['activo'] === 'boolean'
   );
