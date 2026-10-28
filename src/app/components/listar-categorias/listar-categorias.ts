@@ -135,6 +135,7 @@ export class ListarCategorias implements OnInit {
       return;
     }
     this.categoriaPendiente.set(null);
+    this.errorEliminar.set('');
   }
 
   confirmarEliminar(): void {
@@ -155,6 +156,10 @@ export class ListarCategorias implements OnInit {
           this.quitarDeLaLista(categoria.id);
         }
         this.errorEliminar.set(this.textoDeErrorEliminar(error));
+        if (error.status === 409) {
+          this.eliminando.set(false);
+          return;
+        }
         this.cerrarDialogo();
       },
     });

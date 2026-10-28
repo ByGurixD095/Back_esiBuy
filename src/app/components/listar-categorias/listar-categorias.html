@@ -14,7 +14,7 @@
     @if (mensajeExito()) {
     <p class="esi-alerta esi-alerta--ok" role="status">{{ mensajeExito() }}</p>
     }
-    @if (errorEliminar()) {
+    @if (errorEliminar() && !categoriaPendiente()) {
     <p class="esi-alerta esi-alerta--error" role="alert">{{ errorEliminar() }}</p>
     }
 
@@ -134,29 +134,52 @@
         aria-describedby="confirmacion-descripcion"
         (keydown.escape)="cancelarEliminar()"
       >
-        <h2 id="confirmacion-titulo">¿Eliminar categoría?</h2>
+        <h2 id="confirmacion-titulo">
+          {{ errorEliminar() ? 'No se puede eliminar todavía' : '¿Eliminar categoría?' }}
+        </h2>
         <p id="confirmacion-descripcion">
+          @if (errorEliminar()) {
+            La categoría <strong>{{ pendiente.nombre }}</strong> está asociada a uno o más
+            productos. Cambia esos productos a otra categoría antes de eliminarla.
+          } @else {
           ¿Seguro que quieres eliminar la categoría <strong>{{ pendiente.nombre }}</strong>?
           Esta acción no se puede deshacer.
+          }
         </p>
+        @if (errorEliminar()) {
+          <p class="esi-alerta esi-alerta--error error-confirmacion" role="alert">
+            {{ errorEliminar() }}
+          </p>
+        }
         <div class="confirmacion-acciones">
-          <button
-            type="button"
-            class="esi-boton confirmacion-cancelar"
-            autofocus
-            [disabled]="eliminando()"
-            (click)="cancelarEliminar()"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            class="esi-boton confirmacion-eliminar"
-            [disabled]="eliminando()"
-            (click)="confirmarEliminar()"
-          >
-            Sí, eliminar
-          </button>
+          @if (errorEliminar()) {
+            <button
+              type="button"
+              class="esi-boton confirmacion-cancelar"
+              autofocus
+              (click)="cancelarEliminar()"
+            >
+              Entendido
+            </button>
+          } @else {
+            <button
+              type="button"
+              class="esi-boton confirmacion-cancelar"
+              autofocus
+              [disabled]="eliminando()"
+              (click)="cancelarEliminar()"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              class="esi-boton confirmacion-eliminar"
+              [disabled]="eliminando()"
+              (click)="confirmarEliminar()"
+            >
+              {{ eliminando() ? 'Eliminando…' : 'Sí, eliminar' }}
+            </button>
+          }
         </div>
       </dialog>
     </div>

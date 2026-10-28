@@ -266,8 +266,14 @@ describe('ListarCategorias', () => {
       fixture.detectChanges();
       pulsar('.confirmacion-eliminar');
 
-      expect(html().querySelector('[role="alert"]')?.textContent).toContain('productos que la usan');
+      expect(dialogo()?.textContent).toContain('No se puede eliminar todavía');
+      expect(dialogo()?.textContent).toContain('Cambia esos productos a otra categoría');
+      expect(dialogo()?.querySelector('[role="alert"]')?.textContent).toContain('productos que la usan');
       expect(html().querySelectorAll('.elemento').length).toBe(2);
+      expect(dialogo()).not.toBeNull();
+      expect(dialogo()?.querySelector('.confirmacion-eliminar')).toBeNull();
+
+      pulsar('.confirmacion-cancelar');
       expect(dialogo()).toBeNull();
     });
 

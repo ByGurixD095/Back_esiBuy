@@ -306,6 +306,13 @@
   line-height: 1.55;
 }
 
+.error-confirmacion {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  line-height: 1.5;
+}
+
 .confirmacion-acciones {
   display: flex;
   justify-content: flex-end;
