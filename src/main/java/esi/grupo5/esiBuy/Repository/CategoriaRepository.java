@@ -10,4 +10,6 @@ import esi.grupo5.esiBuy.Model.Categoria;
 public interface CategoriaRepository extends MongoRepository<Categoria, String> {
 
     boolean existsByNombreRegexIgnoreCase(String nombreRegex);
+
+    boolean existsByIdNotAndNombreRegexIgnoreCase(String id, String nombreRegex);
 }
