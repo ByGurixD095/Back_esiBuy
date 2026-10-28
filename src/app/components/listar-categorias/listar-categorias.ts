@@ -111,7 +111,7 @@ export class ListarCategorias implements OnInit {
 
   private textoDeError(error: HttpErrorResponse): string {
     if (error.status === 401 || error.status === 403) {
-      return 'No tienes permisos para ver las categorías. Inicia sesión como administrador.';
+      return 'No se han podido cargar las categorías. Inténtalo de nuevo.';
     }
     if (error.status === 0) {
       return 'No se ha podido conectar con el servidor.';

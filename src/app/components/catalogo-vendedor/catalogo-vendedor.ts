@@ -1,6 +1,8 @@
-﻿import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PaginaProducto, Producto, ProductoDTO } from '../../models/producto.model';
+import { Categorias } from '../../services/categorias.service';
 import { PanelFiltrosProductos } from '../panel-filtros-productos/panel-filtros-productos';
 import { FiltrosProductos, ProductApiError, ProductService, filtrarProductos } from '../../services/product.service';
 import { ProductoApiError, ProductoService } from '../../services/producto.service';
@@ -16,8 +18,11 @@ import { concatMap, from, toArray } from 'rxjs';
 export class CatalogoVendedor implements OnInit {
   private readonly productService = inject(ProductService);
   private readonly productoService = inject(ProductoService);
+  private readonly categoriasService = inject(Categorias);
 
   readonly productos = signal<Producto[]>([]);
+  readonly nombresCategorias = signal<string[]>([]);
+  readonly errorCategorias = signal<string | null>(null);
   readonly totalElementos = signal(0);
   readonly totalPaginas = signal(0);
   readonly paginaActual = signal(0);
@@ -31,7 +36,22 @@ export class CatalogoVendedor implements OnInit {
   private readonly filtros = signal<FiltrosProductos>({});
 
   ngOnInit(): void {
+    this.cargarCategorias();
     this.cargarCatalogo();
+  }
+
+  cargarCategorias(): void {
+    this.errorCategorias.set(null);
+    this.categoriasService.listar().subscribe({
+      next: (categorias) => this.nombresCategorias.set(categorias.map((categoria) => categoria.nombre)),
+      error: (error: HttpErrorResponse) => {
+        this.errorCategorias.set(
+          error.status === 0
+            ? 'No se ha podido conectar con el servidor para cargar las categorías.'
+            : `No se han podido cargar las categorías (HTTP ${error.status}).`,
+        );
+      },
+    });
   }
 
   cargarCatalogo(): void {

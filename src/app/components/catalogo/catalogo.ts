@@ -1,9 +1,11 @@
-﻿import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { PaginaProducto, Producto } from '../../models/producto.model';
 import { Favoritos, FavoritosApiError } from '../../services/favoritos-service/favoritos';
 import { CarritoService } from '../../services/carrito.service';
+import { Categorias } from '../../services/categorias.service';
 import { PanelFiltrosProductos } from '../panel-filtros-productos/panel-filtros-productos';
 import { FiltrosProductos, ProductApiError, ProductService, filtrarProductos } from '../../services/product.service';
 
@@ -18,9 +20,12 @@ export class Catalogo implements OnInit {
   private readonly productService = inject(ProductService);
   private readonly favoritosService = inject(Favoritos);
   private readonly carritoService = inject(CarritoService);
+  private readonly categoriasService = inject(Categorias);
   readonly auth = inject(AuthService);
 
   readonly productos = signal<Producto[]>([]);
+  readonly nombresCategorias = signal<string[]>([]);
+  readonly errorCategorias = signal<string | null>(null);
   readonly totalCatalogo = signal<number | null>(null);
   readonly totalElementos = signal(0);
   readonly totalPaginas = signal(0);
@@ -39,10 +44,25 @@ export class Catalogo implements OnInit {
   readonly errorCarrito = signal<string | null>(null);
 
   ngOnInit(): void {
+    this.cargarCategorias();
     this.cargarCatalogo();
     if (this.esCliente()) {
       this.cargarFavoritos();
     }
+  }
+
+  cargarCategorias(): void {
+    this.errorCategorias.set(null);
+    this.categoriasService.listar().subscribe({
+      next: (categorias) => this.nombresCategorias.set(categorias.map((categoria) => categoria.nombre)),
+      error: (error: HttpErrorResponse) => {
+        this.errorCategorias.set(
+          error.status === 0
+            ? 'No se ha podido conectar con el servidor para cargar las categorías.'
+            : `No se han podido cargar las categorías (HTTP ${error.status}).`,
+        );
+      },
+    });
   }
 
   esCliente(): boolean {

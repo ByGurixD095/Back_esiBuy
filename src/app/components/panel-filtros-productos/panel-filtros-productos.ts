@@ -10,6 +10,7 @@ import { EstadoProducto, FiltrosProductos, OrdenCatalogo } from '../../services/
 })
 export class PanelFiltrosProductos {
   readonly productos = input<Producto[]>([]);
+  readonly categoriasDisponibles = input<string[] | null>(null);
   readonly mostrarEstado = input(false);
   readonly filtrosChange = output<FiltrosProductos>();
 
@@ -21,10 +22,19 @@ export class PanelFiltrosProductos {
   readonly precioMaximo = signal<number | null>(null);
   readonly soloConDescuento = signal(false);
 
-  readonly categorias = linkedSignal<string[], string[]>({
-    source: () => this.productos().map((producto) => producto.categoria),
-    computation: (nuevasCategorias, anteriores) => [
-      ...new Set(['Todas', ...(anteriores?.value.slice(1) ?? []), ...nuevasCategorias]),
+  readonly categorias = linkedSignal<
+    { disponibles: string[] | null; productos: string[] },
+    string[]
+  >({
+    source: () => ({
+      disponibles: this.categoriasDisponibles(),
+      productos: this.productos().map((producto) => producto.categoria),
+    }),
+    computation: ({ disponibles, productos }, anteriores) => [
+      ...new Set([
+        'Todas',
+        ...(disponibles ?? [...(anteriores?.value.slice(1) ?? []), ...productos]),
+      ]),
     ],
   });
 

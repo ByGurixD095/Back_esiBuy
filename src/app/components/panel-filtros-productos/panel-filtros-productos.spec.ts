@@ -28,8 +28,22 @@ describe('PanelFiltrosProductos', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const opciones = Array.from(element.querySelectorAll('select option')).map((opcion) => opcion.textContent?.trim());
+    const opciones = Array.from(
+      element.querySelector('select')!.querySelectorAll('option'),
+    ).map((opcion) => opcion.textContent?.trim());
     expect(opciones.slice(0, 4)).toEqual(['Todas', 'Tecnología', 'Moda', 'Hogar']);
+  });
+
+  it('usa la lista recibida del backend aunque no haya productos de esas categorías', async () => {
+    fixture.componentRef.setInput('categoriasDisponibles', ['Hogar']);
+    fixture.componentRef.setInput('productos', [crearProducto('1', 'Fotografía')]);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const opciones = Array.from(
+      element.querySelector('select')!.querySelectorAll('option'),
+    ).map((opcion) => opcion.textContent?.trim());
+    expect(opciones).toEqual(['Todas', 'Hogar']);
   });
 });
 

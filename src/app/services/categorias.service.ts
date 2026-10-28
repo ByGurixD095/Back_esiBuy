@@ -31,7 +31,7 @@ export class Categorias {
   }
 
   listar(): Observable<Categoria[]> {
-    return this.http.get<Categoria[]>(`${environment.apiUrl}/admin/categorias`, {
+    return this.http.get<Categoria[]>(`${environment.apiUrl}/categorias`, {
       withCredentials: true,
     });
   }
