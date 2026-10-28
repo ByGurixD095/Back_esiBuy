@@ -3,8 +3,12 @@
     <p class="esi-eyebrow">Categorías</p>
     <h1 class="esi-titulo">Categorías del <em>catálogo.</em></h1>
 
-    <div class="acciones">
-      <a class="esi-boton" routerLink="/admin/categorias/nueva">Nueva categoría</a>
+    <div class="cabecera-lista">
+      <p class="descripcion">Administra las categorías disponibles en el catálogo.</p>
+      <a class="esi-boton boton-nueva" routerLink="/admin/categorias/nueva">
+        <span aria-hidden="true">+</span>
+        Nueva categoría
+      </a>
     </div>
 
     @if (mensajeExito()) {
@@ -27,17 +31,36 @@
       <p>Crea la primera para que los vendedores puedan clasificar sus productos.</p>
     </section>
     } @else {
+    <label class="busqueda-categorias">
+      <span aria-hidden="true">⌕</span>
+      <input
+        type="search"
+        aria-label="Buscar categorías por nombre"
+        placeholder="Buscar categoría"
+        [value]="busqueda()"
+        (input)="actualizarBusqueda($event)"
+      />
+    </label>
     <p class="contador" role="status">
-      {{ categorias().length }}
-      {{ categorias().length === 1 ? 'categoría' : 'categorías' }}
+      <span>{{ categoriasFiltradas().length }}</span>
+      {{ categoriasFiltradas().length === 1 ? 'categoría' : 'categorías' }}
+      @if (busqueda().trim()) {
+        <span class="total-filtrado">de {{ categorias().length }}</span>
+      }
     </p>
+    @if (categoriasFiltradas().length === 0) {
+    <section class="esi-tarjeta estado" role="status">
+      <h2>No hay coincidencias</h2>
+      <p>Prueba con otro nombre de categoría.</p>
+    </section>
+    } @else {
     <ul class="lista esi-tarjeta">
-      @for (categoria of categorias(); track categoria.id) {
+      @for (categoria of categoriasPagina(); track categoria.id) {
       <li class="elemento">
         @if (categoriaEditando()?.id === categoria.id) {
         <div class="edicion">
-          <label>
-            <span class="visually-hidden">Nuevo nombre para {{ categoria.nombre }}</span>
+          <label class="campo-edicion">
+            <span>Nuevo nombre para {{ categoria.nombre }}</span>
             <input
               type="text"
               [value]="nombreEditado()"
@@ -47,37 +70,58 @@
               maxlength="80"
             />
           </label>
-          <button type="button" class="esi-boton" [disabled]="guardandoEdicion() || !nombreEditado().trim()" (click)="guardarEdicion()">
-            Guardar
-          </button>
-          <button type="button" class="esi-boton" [disabled]="guardandoEdicion()" (click)="cancelarEdicion()">
-            Cancelar
-          </button>
+          <div class="acciones-elemento">
+            <button type="button" class="esi-boton boton-guardar" [disabled]="guardandoEdicion() || !nombreEditado().trim()" (click)="guardarEdicion()">
+              {{ guardandoEdicion() ? 'Guardando…' : 'Guardar' }}
+            </button>
+            <button type="button" class="esi-boton boton-cancelar" [disabled]="guardandoEdicion()" (click)="cancelarEdicion()">
+              Cancelar
+            </button>
+          </div>
         </div>
         } @else {
         <span class="nombre">{{ categoria.nombre }}</span>
-        <button
-          type="button"
-          class="esi-boton accion-editar"
-          [attr.aria-label]="'Modificar la categoría ' + categoria.nombre"
-          [disabled]="guardandoEdicion() || eliminando()"
-          (click)="empezarEdicion(categoria)"
-        >
-          Modificar
-        </button>
+        <div class="acciones-elemento">
+          <button
+            type="button"
+            class="esi-boton boton-modificar"
+            [attr.aria-label]="'Modificar la categoría ' + categoria.nombre"
+            [disabled]="guardandoEdicion() || eliminando()"
+            (click)="empezarEdicion(categoria)"
+          >
+            Modificar
+          </button>
+          <button
+            type="button"
+            class="esi-boton accion-eliminar"
+            [attr.aria-label]="'Eliminar la categoría ' + categoria.nombre"
+            [disabled]="eliminando() || guardandoEdicion()"
+            (click)="pedirEliminar(categoria)"
+          >
+            Eliminar
+          </button>
+        </div>
         }
-        <button
-          type="button"
-          class="esi-boton accion-eliminar"
-          [attr.aria-label]="'Eliminar la categoría ' + categoria.nombre"
-          [disabled]="eliminando() || guardandoEdicion() || categoriaEditando()?.id === categoria.id"
-          (click)="pedirEliminar(categoria)"
-        >
-          Eliminar
-        </button>
       </li>
       }
     </ul>
+    @if (totalPaginas() > 1) {
+    <nav class="paginacion" aria-label="Paginación de categorías">
+      <button type="button" class="esi-boton" [disabled]="paginaActual() === 0" (click)="paginaAnterior()">
+        Anterior
+      </button>
+      <span>Página {{ paginaActual() + 1 }} de {{ totalPaginas() }}</span>
+      <button
+        type="button"
+        class="esi-boton"
+        [disabled]="paginaActual() + 1 >= totalPaginas()"
+        (click)="paginaSiguiente()"
+      >
+        Siguiente
+      </button>
+    </nav>
+    }
+    }
     }
 
     @if (categoriaPendiente(); as pendiente) {

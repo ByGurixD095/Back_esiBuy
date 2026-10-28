@@ -111,6 +111,65 @@ describe('ListarCategorias', () => {
     );
   });
 
+  it('filtra categorías por nombre sin distinguir mayúsculas', async () => {
+    servicioFalso.listar.mockReturnValue(
+      of([
+        { id: 'c1', nombre: 'Hogar' },
+        { id: 'c2', nombre: 'Ropa' },
+      ]),
+    );
+    await crear();
+
+    const buscador = html().querySelector('.busqueda-categorias input') as HTMLInputElement;
+    buscador.value = 'hog';
+    buscador.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    expect(html().querySelectorAll('.elemento').length).toBe(1);
+    expect(html().textContent).toContain('Hogar');
+    expect(html().querySelector('.contador')?.textContent).toContain('1 categoría');
+    expect(html().querySelector('.contador')?.textContent).toContain('de 2');
+  });
+
+  it('pagina las categorías y vuelve a la primera página al buscar', async () => {
+    servicioFalso.listar.mockReturnValue(
+      of(Array.from({ length: 10 }, (_, indice) => ({
+        id: `c${indice + 1}`,
+        nombre: `Categoría ${indice + 1}`,
+      }))),
+    );
+    await crear();
+
+    expect(html().querySelectorAll('.elemento').length).toBe(8);
+    expect(html().querySelector('.paginacion')?.textContent).toContain('Página 1 de 2');
+
+    (html().querySelector('.paginacion button:last-child') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(html().querySelectorAll('.elemento').length).toBe(2);
+    expect(html().querySelector('.paginacion')?.textContent).toContain('Página 2 de 2');
+
+    const buscador = html().querySelector('.busqueda-categorias input') as HTMLInputElement;
+    buscador.value = 'Categoría 1';
+    buscador.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    expect(html().querySelectorAll('.elemento').length).toBe(2);
+    expect(html().querySelector('.paginacion')).toBeNull();
+  });
+
+  it('muestra un estado vacío cuando la búsqueda no encuentra categorías', async () => {
+    servicioFalso.listar.mockReturnValue(of([{ id: 'c1', nombre: 'Hogar' }]));
+    await crear();
+
+    const buscador = html().querySelector('.busqueda-categorias input') as HTMLInputElement;
+    buscador.value = 'jardín';
+    buscador.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    expect(html().querySelectorAll('.elemento').length).toBe(0);
+    expect(html().textContent).toContain('No hay coincidencias');
+  });
+
   describe('eliminar categoría (HU 30)', () => {
     const dosCategorias = [
       { id: 'c1', nombre: 'Hogar' },

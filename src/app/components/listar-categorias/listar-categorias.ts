@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Categoria, Categorias } from '../../services/categorias.service';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
@@ -13,9 +13,26 @@ import { MarcoPagina } from '../marco-pagina/marco-pagina';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ListarCategorias implements OnInit {
+  private readonly categoriasPorPagina = 8;
   private readonly categoriasService = inject(Categorias);
 
   readonly categorias = signal<Categoria[]>([]);
+  readonly busqueda = signal('');
+  readonly paginaActual = signal(0);
+  readonly categoriasFiltradas = computed(() => {
+    const consulta = this.busqueda().trim().toLocaleLowerCase();
+    if (!consulta) return this.categorias();
+    return this.categorias().filter((categoria) =>
+      categoria.nombre.toLocaleLowerCase().includes(consulta),
+    );
+  });
+  readonly categoriasPagina = computed(() => {
+    const inicio = this.paginaActual() * this.categoriasPorPagina;
+    return this.categoriasFiltradas().slice(inicio, inicio + this.categoriasPorPagina);
+  });
+  readonly totalPaginas = computed(() =>
+    Math.ceil(this.categoriasFiltradas().length / this.categoriasPorPagina),
+  );
   readonly cargando = signal(true);
   readonly error = signal('');
   readonly categoriaPendiente = signal<Categoria | null>(null);
@@ -36,6 +53,7 @@ export class ListarCategorias implements OnInit {
     this.categoriasService.listar().subscribe({
       next: (categorias) => {
         this.categorias.set(categorias);
+        this.ajustarPagina();
         this.cargando.set(false);
       },
       error: (error: HttpErrorResponse) => {
@@ -43,6 +61,21 @@ export class ListarCategorias implements OnInit {
         this.cargando.set(false);
       },
     });
+  }
+
+  actualizarBusqueda(event: Event): void {
+    this.busqueda.set((event.target as HTMLInputElement).value);
+    this.paginaActual.set(0);
+  }
+
+  paginaAnterior(): void {
+    if (this.paginaActual() > 0) this.paginaActual.update((pagina) => pagina - 1);
+  }
+
+  paginaSiguiente(): void {
+    if (this.paginaActual() + 1 < this.totalPaginas()) {
+      this.paginaActual.update((pagina) => pagina + 1);
+    }
   }
 
   pedirEliminar(categoria: Categoria): void {
@@ -85,6 +118,7 @@ export class ListarCategorias implements OnInit {
             .map((item) => item.id === actualizada.id ? actualizada : item)
             .sort((a, b) => a.nombre.localeCompare(b.nombre, undefined, { sensitivity: 'base' })),
         );
+        this.ajustarPagina();
         this.mensajeExito.set(`La categoría se ha cambiado a «${actualizada.nombre}».`);
         this.categoriaEditando.set(null);
         this.guardandoEdicion.set(false);
@@ -128,6 +162,11 @@ export class ListarCategorias implements OnInit {
 
   private quitarDeLaLista(id: string): void {
     this.categorias.update((lista) => lista.filter((c) => c.id !== id));
+    this.ajustarPagina();
+  }
+
+  private ajustarPagina(): void {
+    this.paginaActual.set(Math.min(this.paginaActual(), Math.max(0, this.totalPaginas() - 1)));
   }
 
   private cerrarDialogo(): void {

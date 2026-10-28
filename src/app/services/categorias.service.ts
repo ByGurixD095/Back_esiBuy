@@ -16,6 +16,14 @@ export interface Categoria {
   nombre: string;
 }
 
+export function normalizarNombreCategoria(nombre: string): string {
+  const normalizado = nombre.trim().replace(/\s+/g, ' ').toLocaleLowerCase('es-ES');
+  if (!normalizado) return '';
+
+  const [primeraLetra, ...resto] = normalizado;
+  return primeraLetra.toLocaleUpperCase('es-ES') + resto.join('');
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -25,7 +33,7 @@ export class Categorias {
   crear(datos: NuevaCategoria): Observable<CategoriaCreada> {
     return this.http.post<CategoriaCreada>(
       `${environment.apiUrl}/admin/categorias`,
-      datos,
+      { nombre: normalizarNombreCategoria(datos.nombre) },
       { withCredentials: true },
     );
   }
@@ -33,7 +41,7 @@ export class Categorias {
   actualizar(id: string, datos: NuevaCategoria): Observable<Categoria> {
     return this.http.put<Categoria>(
       `${environment.apiUrl}/admin/categorias/${encodeURIComponent(id)}`,
-      datos,
+      { nombre: normalizarNombreCategoria(datos.nombre) },
       { withCredentials: true },
     );
   }
