@@ -9,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 		"jwt.secret=0123456789012345678901234567890123456789012345678901234567890123",
 		"jwt.expiration=60000",
 		"jwt.refresh.expiration=120000",
+		"app.migrations.product-category.enabled=false",
 		"mail.username=test@example.com",
 		"mail.password=test-password"
 })

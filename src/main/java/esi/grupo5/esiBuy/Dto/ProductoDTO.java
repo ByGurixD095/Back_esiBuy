@@ -14,7 +14,7 @@ import jakarta.validation.constraints.PositiveOrZero;
  * @param referencia referencia comercial
  * @param precioCent precio expresado en céntimos
  * @param descripcion descripción opcional
- * @param categoria categoría asociada al producto
+ * @param categoriaId identificador de la categoría asociada al producto
  * @param urlImagen URL o referencia de la imagen
  * @param numStock unidades disponibles
  * @param descuento porcentaje de descuento general
@@ -36,8 +36,8 @@ public record ProductoDTO(
         @Pattern(regexp = "(?s).*\\S.*", message = "La descripción no puede estar vacía")
         String descripcion,
 
-        @NotBlank(message = "La categoría no puede ser nula ni vacía")
-        String categoria,
+        @NotBlank(message = "El identificador de categoría no puede ser nulo ni vacío")
+        String categoriaId,
 
         @Pattern(regexp = "(?s).*\\S.*", message = "La URL de la imagen no puede estar vacía")
         String urlImagen,

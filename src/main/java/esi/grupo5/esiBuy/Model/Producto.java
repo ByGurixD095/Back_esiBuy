@@ -1,6 +1,7 @@
 package esi.grupo5.esiBuy.Model;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
@@ -21,7 +22,10 @@ public class Producto {
     private int precioCent;
     /** Descripción visible en el catálogo. */
     private String descripcion;
-    /** Categoría a la que pertenece el producto. */
+    /** Identificador estable de la categoría a la que pertenece el producto. */
+    private String categoriaId;
+    /** Nombre actual de la categoría, incluido únicamente en respuestas. */
+    @Transient
     private String categoria;
     /** URL o referencia de la imagen del producto. */
     private String urlImagen;
@@ -47,20 +51,20 @@ public class Producto {
      * @param numStock unidades disponibles
      * @param precioCent precio en céntimos
      * @param descripcion descripción
-     * @param categoria categoría
+     * @param categoriaId identificador de categoría
      * @param urlImagen URL o referencia de imagen
      * @param descuento porcentaje de descuento general
      * @param descuentoPremium porcentaje de descuento prémium
      */
     public Producto(String nombre, String referencia, int numStock, int precioCent, 
-                    String descripcion, String categoria, String urlImagen, int descuento, int descuentoPremium) {
+                    String descripcion, String categoriaId, String urlImagen, int descuento, int descuentoPremium) {
         this();
         this.nombre = nombre;
         this.referencia = referencia;
         this.numStock = numStock;
         this.precioCent = precioCent;
         this.descripcion = descripcion;
-        this.categoria = categoria;
+        this.categoriaId = categoriaId;
         this.urlImagen = urlImagen;
         this.descuento = descuento;
         this.descuentoPremium = descuentoPremium;
@@ -96,9 +100,14 @@ public class Producto {
     /** @param descripcion descripción visible */
     public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
 
-    /** @return categoría asignada */
+    /** @return identificador estable de la categoría asignada */
+    public String getCategoriaId() { return categoriaId; }
+    /** @param categoriaId identificador de categoría */
+    public void setCategoriaId(String categoriaId) { this.categoriaId = categoriaId; }
+
+    /** @return nombre actual de categoría para la respuesta API */
     public String getCategoria() { return categoria; }
-    /** @param categoria categoría asignada */
+    /** @param categoria nombre actual de categoría para la respuesta API */
     public void setCategoria(String categoria) { this.categoria = categoria; }
 
     /** @return URL o referencia de la imagen */
