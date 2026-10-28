@@ -1,0 +1,31 @@
+<app-marco-pagina panel="Lista de deseos">
+  <section class="pagina-lista" aria-labelledby="lista-titulo" [attr.aria-busy]="enviando()">
+    <p class="esi-eyebrow">Área de cliente</p>
+    <h1 id="lista-titulo" class="esi-titulo">Crear lista de deseos.</h1>
+    <p class="descripcion">Ponle un nombre a tu nueva lista.</p>
+
+    @if (listaCreada(); as lista) {
+      <p class="esi-alerta esi-alerta--ok" role="status">
+        Se ha creado la lista «{{ lista.nombre }}».
+      </p>
+    }
+
+    @if (error(); as mensaje) {
+      <p class="esi-alerta esi-alerta--error" role="alert">{{ mensaje }}</p>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="crear()" novalidate>
+      <div class="esi-campo">
+        <label for="nombre-lista">Nombre de la lista</label>
+        <input id="nombre-lista" type="text" formControlName="nombre" autocomplete="off" required />
+        @if (form.controls.nombre.touched && form.controls.nombre.invalid) {
+          <small class="ayuda-error" role="alert">Escribe un nombre para la lista.</small>
+        }
+      </div>
+
+      <button class="esi-boton" type="submit" [disabled]="enviando()">
+        {{ enviando() ? 'Creando…' : 'Crear lista' }}
+      </button>
+    </form>
+  </section>
+</app-marco-pagina>

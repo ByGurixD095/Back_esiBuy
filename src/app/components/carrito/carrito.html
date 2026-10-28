@@ -1,0 +1,123 @@
+<app-marco-pagina panel="Mi cesta">
+  <section class="cart-page" aria-labelledby="cart-title">
+    <div class="cart-heading">
+      <div>
+        <p class="eyebrow">Tu selección</p>
+        <h1 id="cart-title">Tu cesta</h1>
+        <p class="intro-copy">Revisa los productos que quieres comprar. Puedes volver al catálogo cuando quieras.</p>
+      </div>
+      <a class="continue-link" routerLink="/products">Seguir comprando</a>
+    </div>
+
+    @if (cargando()) {
+      <section class="cart-state" aria-live="polite" aria-busy="true">
+        <span class="loader" aria-hidden="true"></span>
+        <h2>Cargando tu cesta</h2>
+        <p>Estamos recuperando los productos que has añadido.</p>
+      </section>
+    } @else if (error() && items().length === 0) {
+      <section class="cart-state error-state" role="alert">
+        <span class="state-symbol" aria-hidden="true">!</span>
+        <h2>No se ha podido cargar la cesta</h2>
+        <p>{{ error() }}</p>
+        <button type="button" class="retry-button" (click)="cargarCarrito()">Reintentar</button>
+      </section>
+    } @else if (items().length === 0) {
+      <section class="cart-state empty-state" aria-live="polite">
+        <span class="empty-symbol" aria-hidden="true">○</span>
+        <h2>Tu cesta está vacía</h2>
+        <p>Cuando añadas productos al carrito, aparecerán aquí para que puedas revisarlos.</p>
+        <a class="primary-link" routerLink="/products">Explorar el catálogo</a>
+      </section>
+    } @else {
+      <div class="cart-layout">
+        <div class="cart-items" aria-label="Productos de la cesta">
+          @if (error(); as mensajeError) {
+            <p class="inline-error" role="alert">{{ mensajeError }}</p>
+          }
+          <p class="items-caption">
+            {{ items().length }} {{ items().length === 1 ? 'artículo' : 'artículos' }}
+            · {{ cantidadUnidades() }} {{ cantidadUnidades() === 1 ? 'unidad' : 'unidades' }}
+          </p>
+
+          @for (item of items(); track item.productoId) {
+            <article class="cart-item">
+              <div class="item-image">
+                @if (item.urlImagen) {
+                  <img [src]="item.urlImagen" [alt]="item.nombre" />
+                } @else {
+                  <span>Sin imagen</span>
+                }
+              </div>
+
+              <div class="item-details">
+                <h2>{{ item.nombre }}</h2>
+                <p class="unit-price">{{ formatearPrecio(item.precioCent) }} <span>por unidad</span></p>
+                <div class="item-actions">
+                  <label [for]="'cantidad-' + item.productoId">Cantidad</label>
+                  <div class="quantity-control">
+                    <button
+                      type="button"
+                      [attr.aria-label]="'Reducir cantidad de ' + item.nombre"
+                      [disabled]="estaActualizando(item.productoId) || item.cantidad <= 1"
+                      (click)="actualizarCantidad(item, item.cantidad - 1)"
+                    >−</button>
+                    <input
+                      [id]="'cantidad-' + item.productoId"
+                      type="number"
+                      min="1"
+                      step="1"
+                      [value]="item.cantidad"
+                      [disabled]="estaActualizando(item.productoId)"
+                      (change)="editarCantidad($event, item)"
+                    />
+                    <button
+                      type="button"
+                      [attr.aria-label]="'Aumentar cantidad de ' + item.nombre"
+                      [disabled]="estaActualizando(item.productoId)"
+                      (click)="actualizarCantidad(item, item.cantidad + 1)"
+                    >+</button>
+                  </div>
+                  @if (estaActualizando(item.productoId)) {
+                    <span class="updating-note" aria-live="polite">Guardando...</span>
+                  }
+                </div>
+              </div>
+
+              <div class="item-total">
+                <strong>{{ formatearPrecio(item.precioCent * item.cantidad) }}</strong>
+                <button
+                  type="button"
+                  class="remove-button"
+                  disabled
+                  title="La eliminación se habilitará próximamente"
+                  [attr.aria-label]="'Eliminar ' + item.nombre + ' (próximamente)'"
+                >Eliminar</button>
+              </div>
+            </article>
+          }
+        </div>
+
+        <aside class="order-summary" aria-labelledby="summary-title">
+          <h2 id="summary-title">Resumen</h2>
+          <div class="summary-row">
+            <span>Productos ({{ cantidadUnidades() }})</span>
+            <strong>{{ formatearPrecio(totalCentimos()) }}</strong>
+          </div>
+          <div class="summary-row total-row">
+            <span>Subtotal</span>
+            <strong>{{ formatearPrecio(totalCentimos()) }}</strong>
+          </div>
+          <p class="summary-note">Los descuentos aplicables se calcularán al finalizar la compra.</p>
+          <button
+            type="button"
+            class="buy-button"
+            disabled
+            title="La compra se habilitará próximamente"
+          >Comprar</button>
+          <p class="coming-soon">El proceso de compra estará disponible próximamente.</p>
+        </aside>
+      </div>
+    }
+  </section>
+</app-marco-pagina>
