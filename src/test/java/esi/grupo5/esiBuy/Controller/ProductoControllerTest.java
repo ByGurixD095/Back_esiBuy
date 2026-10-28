@@ -55,7 +55,7 @@ class ProductoControllerTest {
     void crearProducto_DatosCorrectos_Devuelve200Ok() throws Exception {
         ProductoDTO dto = new ProductoDTO(
             "Camiseta ESI", "REF-092026a", 1999,
-            "Camiseta oficial de algodón", "Ropa", "url_imagen.jpg", 10, 5, 0, null
+            "Camiseta oficial de algodón", "categoria-1", "url_imagen.jpg", 10, 5, 0, null
         );
 
         Producto productoCreado = new Producto();
@@ -81,7 +81,7 @@ class ProductoControllerTest {
         void crearProducto_RutaLegacy_Devuelve201Created() throws Exception {
         ProductoDTO dto = new ProductoDTO(
             "Camiseta ESI", "REF-092026a", 1999,
-            "Camiseta oficial de algodón", "Ropa", "url_imagen.jpg", 10, 5, 0, null);
+            "Camiseta oficial de algodón", "categoria-1", "url_imagen.jpg", 10, 5, 0, null);
         Producto productoCreado = new Producto();
         productoCreado.setId("mongo-id-123");
 
@@ -102,7 +102,7 @@ class ProductoControllerTest {
                             "nombre": "",
                             "referencia": "REF-001",
                             "precioCent": 1999,
-                            "categoria": "Ropa",
+                            "categoriaId": "categoria-1",
                             "numStock": 1,
                             "descuento": 0,
                             "descuentoPremium": 0
@@ -122,7 +122,7 @@ class ProductoControllerTest {
                             "nombre": "Camiseta ESI",
                             "referencia": "REF-001",
                             "precioCent": 1999,
-                            "categoria": "Ropa",
+                            "categoriaId": "categoria-1",
                             "numStock": 1,
                             "descuento": 101,
                             "descuentoPremium": 0
@@ -144,7 +144,7 @@ class ProductoControllerTest {
                                     "numStock": 10,
                                     "precioCent": 80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
                                     "descripcion": "Camiseta oficial de algodón",
-                                    "categoria": "Ropa",
+                                    "categoriaId": "categoria-1",
                                     "urlImagen": "url_imagen.jpg",
                                     "descuento": 5,
                                     "descuentoPremium": 0
@@ -166,7 +166,7 @@ class ProductoControllerTest {
                       "numStock": 80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
                       "precioCent": 1999,
                       "descripcion": "Camiseta oficial de algodón",
-                      "categoria": "Ropa",
+                      "categoriaId": "categoria-1",
                       "urlImagen": "url_imagen.jpg",
                       "descuento": 5,
                       "descuentoPremium": 0
@@ -191,7 +191,7 @@ class ProductoControllerTest {
                       "referencia": "REF-092026a",
                       "precioCent": 1999,
                       "descripcion": "Camiseta oficial de algodón",
-                      "categoria": "Ropa",
+                      "categoriaId": "categoria-1",
                       "urlImagen": "url_imagen.jpg",
                       "descuento": 5,
                       "descuentoPremium": 0
@@ -219,7 +219,7 @@ class ProductoControllerTest {
                   "referencia": "REF-092026a",
                   "numStock": 0,
                   "precioCent": 1999,
-                  "categoria": "Ropa",
+                  "categoriaId": "categoria-1",
                   "descuento": 5,
                   "descuentoPremium": 0
                 }
@@ -235,8 +235,9 @@ class ProductoControllerTest {
     @Test
     void obtenerDisponibles_devuelveProductosDisponibles() throws Exception {
         Producto producto = new Producto("Camiseta ESI", "REF-092026a", 10, 1999,
-                "Camiseta oficial de algodón", "Ropa", "url_imagen.jpg", 0, 0);
+                "Camiseta oficial de algodón", "categoria-1", "url_imagen.jpg", 0, 0);
         producto.setId("mongo-id-123");
+        producto.setCategoria("Ropa");
 
         when(productoService.obtenerProductosDisponibles(
                 any(FiltroCatalogoDTO.class), any(org.springframework.data.domain.Pageable.class)))
@@ -244,7 +245,7 @@ class ProductoControllerTest {
 
         mockMvc.perform(get("/products/disponibles")
             .param("busqueda", "camiseta")
-            .param("categoria", "Ropa")
+            .param("categoriaId", "categoria-1")
             .param("precioMinCent", "1000")
             .param("precioMaxCent", "5000")
             .param("soloOfertas", "true")
@@ -338,7 +339,7 @@ class ProductoControllerTest {
     void actualizarProducto_pasaElVendedorAutenticado() throws Exception {
         ProductoDTO dto = new ProductoDTO(
                 "Producto actualizado", "REF-2", 1999, "Descripción",
-                "Ropa", null, 5, 0, 0, true);
+                "categoria-1", null, 5, 0, 0, true);
         Producto producto = new Producto();
         producto.setId("producto-1");
         when(productoService.actualizarProducto("producto-1", dto, "vendedor-1"))

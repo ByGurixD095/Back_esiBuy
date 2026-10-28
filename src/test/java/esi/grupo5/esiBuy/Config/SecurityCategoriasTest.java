@@ -52,34 +52,21 @@ class SecurityCategoriasTest {
         when(usuarioRepository.existsByIdAndActivoTrueAndBloqueadoFalse("1")).thenReturn(true);
     }
 
-        @Test
-    void administrador_puedeListarCategorias() throws Exception {
-        simularLogin("ADMINISTRADOR");
+    @Test
+    void sinLogin_puedeListarCategoriasPublicas() throws Exception {
         when(categoriaService.listarCategorias()).thenReturn(List.of());
 
-        mockMvc.perform(get("/admin/categorias").cookie(new Cookie("accessToken", "token")))
+        mockMvc.perform(get("/categorias"))
                 .andExpect(status().isOk());
     }
 
     @Test
-    void vendedor_noPuedeListarCategorias() throws Exception {
-        simularLogin("VENDEDOR");
-
-        mockMvc.perform(get("/admin/categorias").cookie(new Cookie("accessToken", "token")))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void cliente_noPuedeListarCategorias() throws Exception {
+    void cliente_puedeListarCategoriasPublicas() throws Exception {
         simularLogin("CLIENTE");
+        when(categoriaService.listarCategorias()).thenReturn(List.of());
 
-        mockMvc.perform(get("/admin/categorias").cookie(new Cookie("accessToken", "token")))
-                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/categorias").cookie(new Cookie("accessToken", "token")))
+                .andExpect(status().isOk());
     }
 
-    @Test
-    void sinLogin_noPuedeListarCategorias() throws Exception {
-        mockMvc.perform(get("/admin/categorias"))
-                .andExpect(status().is4xxClientError());
-    }
 }

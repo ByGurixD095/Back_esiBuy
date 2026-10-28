@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -62,5 +63,21 @@ class CategoriaControllerTest {
                         .content(objectMapper.writeValueAsString(new Categoria(null, "Ropa"))))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Ya existe una categoría con ese nombre"));
+    }
+
+    @Test
+    void actualizarCategoria_devuelveCategoriaConElNombreActualizado() throws Exception {
+        Categoria categoria = new Categoria("categoria-1", "Hogar");
+        when(categoriaService.actualizarCategoria(
+                org.mockito.ArgumentMatchers.eq("categoria-1"),
+                org.mockito.ArgumentMatchers.any(Categoria.class)))
+                .thenReturn(categoria);
+
+        mockMvc.perform(put("/admin/categorias/categoria-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new Categoria(null, "Hogar"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value("categoria-1"))
+                .andExpect(jsonPath("$.nombre").value("Hogar"));
     }
 }

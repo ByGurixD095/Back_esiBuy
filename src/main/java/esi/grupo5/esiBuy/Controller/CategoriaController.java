@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 
 /** Expone la creación y la eliminación administrativa de categorías. */
 @RestController
@@ -25,6 +26,13 @@ public class CategoriaController {
     @PostMapping
     public ResponseEntity<Categoria> crearCategoria(@RequestBody Categoria categoria) {
         return ResponseEntity.status(HttpStatus.CREATED).body(categoriaService.crearCategoria(categoria));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Categoria> actualizarCategoria(
+            @PathVariable String id,
+            @RequestBody Categoria categoria) {
+        return ResponseEntity.ok(categoriaService.actualizarCategoria(id, categoria));
     }
 
     /**

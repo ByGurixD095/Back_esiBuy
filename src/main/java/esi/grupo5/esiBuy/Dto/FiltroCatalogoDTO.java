@@ -4,7 +4,7 @@ package esi.grupo5.esiBuy.Dto;
  * Filtros opcionales para buscar, acotar y ordenar el catálogo público de productos.
  *
  * @param busqueda texto buscado en el nombre o referencia
- * @param categoria categoría solicitada; el valor {@code Todas} no aplica un filtro
+ * @param categoriaId identificador de categoría solicitado
  * @param precioMinCent límite inferior del precio en céntimos
  * @param precioMaxCent límite superior del precio en céntimos
  * @param soloOfertas cuando es {@code true}, limita los resultados a productos con descuento
@@ -14,7 +14,7 @@ public record FiltroCatalogoDTO(
     
     String busqueda,
     
-    String categoria,
+    String categoriaId,
     
     Integer precioMinCent,
     

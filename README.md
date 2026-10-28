@@ -102,7 +102,14 @@ guardadas en Render.
 
 ## Categorías
 
-Los administradores pueden crear categorías mediante `POST /admin/categorias`.
+La lista ordenada de categorías está disponible en `GET /categorias`. Los
+administradores pueden crear categorías mediante `POST /admin/categorias` y
+modificarlas mediante `PUT /admin/categorias/{id}` enviando el nuevo `nombre`,
+y eliminarlas mediante `DELETE /admin/categorias/{id}`. Los productos guardan
+el identificador de su categoría, por lo que un cambio de nombre no requiere
+actualizar los productos. Los datos existentes con categorías guardadas como
+texto no se migran automáticamente; deben actualizarse antes de usar este
+formato. Las operaciones administrativas requieren el rol de administrador.
 Los nombres duplicados se responden con HTTP 409.
 
 ## Cobertura con JaCoCo
