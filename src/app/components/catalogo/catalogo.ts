@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { PaginaProducto, Producto } from '../../models/producto.model';
 import { Favoritos, FavoritosApiError } from '../../services/favoritos-service/favoritos';
-import { CarritoService } from '../../services/carrito.service';
+import { CarritoService, ItemCarrito } from '../../services/carrito.service';
 import { Categoria, Categorias } from '../../services/categorias.service';
 import { PanelFiltrosProductos } from '../panel-filtros-productos/panel-filtros-productos';
 import { FiltrosProductos, ProductApiError, ProductService, filtrarProductos } from '../../services/product.service';
@@ -42,12 +42,15 @@ export class Catalogo implements OnInit {
   readonly carritoProcesando = signal<ReadonlySet<string>>(new Set());
   readonly mensajeCarrito = signal<string | null>(null);
   readonly errorCarrito = signal<string | null>(null);
+  readonly cantidadCarrito = signal<number | null>(null);
+  private carritoVersion = 0;
 
   ngOnInit(): void {
     this.cargarCategorias();
     this.cargarCatalogo();
     if (this.esCliente()) {
       this.cargarFavoritos();
+      this.cargarCantidadCarrito();
     }
   }
 
@@ -120,10 +123,17 @@ export class Catalogo implements OnInit {
     this.carritoProcesando.update((ids) => new Set(ids).add(producto.id));
     this.carritoService.anadirProducto(producto.id).subscribe({
       next: () => {
+        this.carritoVersion += 1;
+        const cantidadActual = this.cantidadCarrito();
+        if (cantidadActual === null) {
+          this.cargarCantidadCarrito();
+        } else {
+          this.cantidadCarrito.set(cantidadActual + 1);
+        }
         this.mensajeCarrito.set(`${producto.nombre} se ha añadido a tu cesta.`);
         this.terminarAnadirAlCarrito(producto.id);
       },
-      error: (error: { status: number }) => {
+      error: (error: HttpErrorResponse) => {
         this.errorCarrito.set(this.mensajeParaErrorCarrito(error.status));
         this.terminarAnadirAlCarrito(producto.id);
       },
@@ -132,6 +142,26 @@ export class Catalogo implements OnInit {
 
   estaAnadiendoAlCarrito(productoId: string): boolean {
     return this.carritoProcesando().has(productoId);
+  }
+
+  private cargarCantidadCarrito(): void {
+    const version = ++this.carritoVersion;
+    this.carritoService.obtenerCarrito().subscribe({
+      next: (items: ItemCarrito[]) => {
+        if (version === this.carritoVersion) {
+          this.cantidadCarrito.set(items.reduce((total, item) => total + item.cantidad, 0));
+        }
+      },
+      error: (error: HttpErrorResponse) => {
+        if (version === this.carritoVersion) {
+          this.errorCarrito.set(
+            error.status === 0
+              ? 'No se ha podido consultar el contenido de tu cesta.'
+              : `No se ha podido consultar la cesta (HTTP ${error.status}).`,
+          );
+        }
+      },
+    });
   }
 
   private terminarProceso(productoId: string): void {

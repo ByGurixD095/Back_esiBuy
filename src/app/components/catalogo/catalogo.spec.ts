@@ -38,7 +38,7 @@ describe('Catalogo (favoritos HU 15)', () => {
   let fixture: ComponentFixture<Catalogo>;
   const productServiceFalso = { obtenerDisponibles: vi.fn() };
   const favoritosFalso = { listar: vi.fn(), marcar: vi.fn(), quitar: vi.fn() };
-  const carritoFalso = { anadirProducto: vi.fn() };
+  const carritoFalso = { anadirProducto: vi.fn(), obtenerCarrito: vi.fn() };
   const categoriasFalso = { listar: vi.fn() };
   const authFalso = { isAuthenticated: vi.fn(), hasRole: vi.fn() };
 
@@ -75,6 +75,7 @@ describe('Catalogo (favoritos HU 15)', () => {
     favoritosFalso.marcar.mockReset();
     favoritosFalso.quitar.mockReset();
     carritoFalso.anadirProducto.mockReset();
+    carritoFalso.obtenerCarrito.mockReset().mockReturnValue(of([]));
     categoriasFalso.listar.mockReset();
     categoriasFalso.listar.mockReturnValue(of([
       { id: 'c1', nombre: 'Tecnología' },
@@ -123,7 +124,7 @@ describe('Catalogo (favoritos HU 15)', () => {
     expect(corazones()[1].getAttribute('aria-pressed')).toBe('false');
   });
 
-  it('permite añadir un producto a la cesta y confirma la acción', async () => {
+  it('añade el producto a la cesta desde el catálogo', async () => {
     carritoFalso.anadirProducto.mockReturnValue(of(undefined));
     await crear('CLIENTE');
 
@@ -132,6 +133,18 @@ describe('Catalogo (favoritos HU 15)', () => {
 
     expect(carritoFalso.anadirProducto).toHaveBeenCalledWith('p1');
     expect(html().textContent).toContain('Lámpara se ha añadido a tu cesta.');
+    expect(html().querySelector('.cart-link .cart-count')?.textContent?.trim()).toBe('1');
+  });
+
+  it('muestra en la cabecera el total de unidades que ya hay en la cesta', async () => {
+    carritoFalso.obtenerCarrito.mockReturnValue(of([
+      { productoId: 'p1', nombre: 'Lámpara', precioCent: 10000, urlImagen: null, cantidad: 2 },
+      { productoId: 'p2', nombre: 'Mesa', precioCent: 10000, urlImagen: null, cantidad: 1 },
+    ]));
+    await crear('CLIENTE');
+
+    expect(html().querySelector('.cart-link .cart-count')?.textContent?.trim()).toBe('3');
+    expect(html().querySelector('.cart-link')?.getAttribute('aria-label')).toBe('Mi cesta, 3 productos');
   });
 
   it('guarda un producto como favorito al pulsar el corazón vacío', async () => {
