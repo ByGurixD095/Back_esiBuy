@@ -2,7 +2,6 @@ package esi.grupo5.esiBuy.Dto;
 
 import esi.grupo5.esiBuy.Model.enums.TipoMetodoPago;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
