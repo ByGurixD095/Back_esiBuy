@@ -29,7 +29,6 @@ public record MetodoPagoRequestDTO(
         )
         String numeroTarjeta,
 
-        @NotBlank(message = "El nombre del titular es obligatorio para tarjeta")
         String titular,
 
         @Pattern(
