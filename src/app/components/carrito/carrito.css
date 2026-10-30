@@ -282,19 +282,28 @@ h1 {
 }
 
 .remove-button {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
   padding: 0;
-  border: 0;
-  background: transparent;
   color: var(--esi-error-text);
-  font: inherit;
-  font-size: 13px;
-  text-decoration: underline;
+  background: var(--esi-error-bg);
+  border: 1px solid var(--esi-error-text);
+  border-radius: var(--esi-radius);
+  font-family: inherit;
+  font-size: 16px;
   cursor: pointer;
 }
 
+.remove-button:hover:not(:disabled) {
+  background: var(--esi-error-bg);
+  border-color: var(--esi-error-text);
+}
+
 .remove-button:disabled {
-  cursor: wait;
-  opacity: 0.6;
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .confirmation-backdrop {

@@ -92,7 +92,9 @@
                   [disabled]="estaActualizando(item.productoId)"
                   [attr.aria-label]="'Eliminar ' + item.nombre + ' del carrito'"
                   (click)="eliminarProducto(item)"
-                >{{ estaActualizando(item.productoId) ? 'Eliminando...' : 'Eliminar' }}</button>
+                >
+                  {{ estaActualizando(item.productoId) ? '⏳' : '🗑️' }}
+                </button>
               </div>
             </article>
           }
