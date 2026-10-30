@@ -1,6 +1,7 @@
 package esi.grupo5.esiBuy.Service;
 
 import java.util.HashSet;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 
@@ -22,5 +23,9 @@ public class ListaDeseosService {
         lista.setIdCliente(idCliente);
         lista.setProductosIds(new HashSet<>());
         return listaDeseosRepository.save(lista);
+    }
+
+    public List<ListaDeseos> obtenerListas (String idCliente) {
+        return listaDeseosRepository.findByIdCliente(idCliente);
     }
 }
