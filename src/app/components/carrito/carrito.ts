@@ -18,6 +18,7 @@ export class Carrito implements OnInit {
   readonly cargando = signal(true);
   readonly error = signal<string | null>(null);
   readonly actualizandoIds = signal<ReadonlySet<string>>(new Set());
+  readonly productoPendienteEliminar = signal<ItemCarrito | null>(null);
   readonly cantidadUnidades = computed(() => this.items().reduce((total, item) => total + item.cantidad, 0));
   readonly totalCentimos = computed(() =>
     this.items().reduce((total, item) => total + item.precioCent * item.cantidad, 0),
@@ -67,6 +68,34 @@ export class Carrito implements OnInit {
             actual.productoId === item.productoId ? { ...actual, cantidad } : actual,
           ),
         );
+        this.limpiarActualizando(item.productoId);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.error.set(this.mensajeParaError(error));
+        this.limpiarActualizando(item.productoId);
+      },
+    });
+  }
+
+  eliminarProducto(item: ItemCarrito): void {
+    if (this.actualizandoIds().has(item.productoId)) return;
+    this.productoPendienteEliminar.set(item);
+  }
+
+  cancelarEliminacion(): void {
+    this.productoPendienteEliminar.set(null);
+  }
+
+  confirmarEliminacion(): void {
+    const item = this.productoPendienteEliminar();
+    if (!item || this.actualizandoIds().has(item.productoId)) return;
+
+    this.productoPendienteEliminar.set(null);
+    this.error.set(null);
+    this.actualizandoIds.update((ids) => new Set(ids).add(item.productoId));
+    this.carritoService.eliminarProducto(item.productoId).subscribe({
+      next: () => {
+        this.items.update((items) => items.filter((actual) => actual.productoId !== item.productoId));
         this.limpiarActualizando(item.productoId);
       },
       error: (error: HttpErrorResponse) => {
