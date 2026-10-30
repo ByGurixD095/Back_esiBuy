@@ -35,4 +35,10 @@ export class CarritoService {
       { withCredentials: true },
     );
   }
+
+  eliminarProducto(productoId: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${encodeURIComponent(productoId)}`, {
+      withCredentials: true,
+    });
+  }
 }

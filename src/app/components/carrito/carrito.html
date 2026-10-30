@@ -89,10 +89,10 @@
                 <button
                   type="button"
                   class="remove-button"
-                  disabled
-                  title="La eliminación se habilitará próximamente"
-                  [attr.aria-label]="'Eliminar ' + item.nombre + ' (próximamente)'"
-                >Eliminar</button>
+                  [disabled]="estaActualizando(item.productoId)"
+                  [attr.aria-label]="'Eliminar ' + item.nombre + ' del carrito'"
+                  (click)="eliminarProducto(item)"
+                >{{ estaActualizando(item.productoId) ? 'Eliminando...' : 'Eliminar' }}</button>
               </div>
             </article>
           }
@@ -117,6 +117,29 @@
           >Comprar</button>
           <p class="coming-soon">El proceso de compra estará disponible próximamente.</p>
         </aside>
+      </div>
+    }
+
+    @if (productoPendienteEliminar(); as item) {
+      <div class="confirmation-backdrop">
+        <section
+          class="confirmation-dialog"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="remove-dialog-title"
+          aria-describedby="remove-dialog-message"
+        >
+          <h2 id="remove-dialog-title">Eliminar producto</h2>
+          <p id="remove-dialog-message">
+            ¿Está seguro de que quiere eliminar <strong>{{ item.nombre }}</strong> del carrito?
+          </p>
+          <div class="confirmation-actions">
+            <button type="button" class="cancel-button" (click)="cancelarEliminacion()">Cancelar</button>
+            <button type="button" class="confirm-remove-button" (click)="confirmarEliminacion()">
+              Sí, eliminar
+            </button>
+          </div>
+        </section>
       </div>
     }
   </section>

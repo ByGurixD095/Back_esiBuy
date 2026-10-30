@@ -8,7 +8,7 @@ import { Carrito } from './carrito';
 
 describe('Carrito', () => {
   let fixture: ComponentFixture<Carrito>;
-  const carritoFalso = { obtenerCarrito: vi.fn(), actualizarCantidad: vi.fn() };
+  const carritoFalso = { obtenerCarrito: vi.fn(), actualizarCantidad: vi.fn(), eliminarProducto: vi.fn() };
   const authFalso = {
     isAuthenticated: () => true,
     hasRole: () => true,
@@ -36,6 +36,7 @@ describe('Carrito', () => {
   beforeEach(() => {
     carritoFalso.obtenerCarrito.mockReset();
     carritoFalso.actualizarCantidad.mockReset();
+    carritoFalso.eliminarProducto.mockReset();
   });
 
   it('muestra un estado informativo y enlace al catálogo con la cesta vacía', async () => {
@@ -68,5 +69,41 @@ describe('Carrito', () => {
 
     expect(carritoFalso.actualizarCantidad).toHaveBeenCalledWith('p1', 2);
     expect(html().textContent).toContain('51,98');
+  });
+
+  it('muestra la ventana de confirmación y elimina el producto al confirmar', async () => {
+    carritoFalso.eliminarProducto.mockReturnValue(of(undefined));
+    await crear([
+      { productoId: 'p1', nombre: 'Mochila', precioCent: 2599, urlImagen: null, cantidad: 2 },
+    ]);
+
+    html().querySelector<HTMLButtonElement>('[aria-label="Eliminar Mochila del carrito"]')?.click();
+    fixture.detectChanges();
+
+    expect(html().textContent).toContain(
+      '¿Está seguro de que quiere eliminar Mochila del carrito?',
+    );
+    expect(carritoFalso.eliminarProducto).not.toHaveBeenCalled();
+
+    html().querySelector<HTMLButtonElement>('.confirm-remove-button')?.click();
+    fixture.detectChanges();
+
+    expect(carritoFalso.eliminarProducto).toHaveBeenCalledWith('p1');
+    expect(html().textContent).toContain('Tu cesta está vacía');
+  });
+
+  it('mantiene el producto si se cancela la ventana de confirmación', async () => {
+    await crear([
+      { productoId: 'p1', nombre: 'Mochila', precioCent: 2599, urlImagen: null, cantidad: 1 },
+    ]);
+
+    html().querySelector<HTMLButtonElement>('[aria-label="Eliminar Mochila del carrito"]')?.click();
+    fixture.detectChanges();
+    html().querySelector<HTMLButtonElement>('.cancel-button')?.click();
+    fixture.detectChanges();
+
+    expect(carritoFalso.eliminarProducto).not.toHaveBeenCalled();
+    expect(html().textContent).toContain('Mochila');
+    expect(html().querySelector('[role="alertdialog"]')).toBeNull();
   });
 });
