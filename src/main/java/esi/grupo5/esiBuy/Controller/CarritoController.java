@@ -16,7 +16,7 @@ import jakarta.validation.Valid;
 import esi.grupo5.esiBuy.Dto.ActualizarCantidadCarritoDTO;
 import esi.grupo5.esiBuy.Dto.ItemCarritoResponseDTO;
 import esi.grupo5.esiBuy.Service.CarritoService;
-
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 @RestController
 @RequestMapping("/carrito")
@@ -52,6 +52,13 @@ public class CarritoController {
             @Valid @RequestBody ActualizarCantidadCarritoDTO dto) {
         String clienteId = (String) authentication.getPrincipal();
         carritoService.actualizarCantidad(clienteId, productoId, dto.cantidad());
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{productoId}")
+    public ResponseEntity<Void> eliminarProducto(Authentication authentication,@PathVariable String productoId) {
+        String clienteId = (String) authentication.getPrincipal();
+        carritoService.eliminarProducto(clienteId, productoId);
         return ResponseEntity.noContent().build();
     }
     

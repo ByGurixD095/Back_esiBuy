@@ -97,4 +97,18 @@ public class CarritoService {
         carritoRepository.save(carrito);
     }
 
+    public void eliminarProducto(String clienteId, String productoId) {
+
+        Carrito carrito = carritoRepository.findByClienteId(clienteId).orElseThrow(() ->
+                        new NotFoundException("Carrito no encontrado"));
+
+        boolean eliminado = carrito.getItems().removeIf(item -> item.getProductoId().equals(productoId));
+        if (!eliminado) {
+            throw new NotFoundException(
+                    "El producto no está en el carrito"
+            );
+        }
+        carritoRepository.save(carrito);
+    }
+
 }
