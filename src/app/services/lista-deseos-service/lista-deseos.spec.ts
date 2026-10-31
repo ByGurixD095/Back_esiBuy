@@ -37,6 +37,39 @@ describe('ListaDeseosService', () => {
     expect(resultado).toEqual(lista);
   });
 
+  it('consulta todas las listas del cliente con sus credenciales', () => {
+    const listas = [
+      { id: 'lista-1', idCliente: 'cliente-1', nombre: 'Para comprar', productosIds: [] },
+      { id: 'lista-2', idCliente: 'cliente-1', nombre: 'Regalos', productosIds: ['producto-1'] },
+    ];
+    let resultado: unknown;
+
+    servicio.listar().subscribe((respuesta) => (resultado = respuesta));
+
+    const peticion = http.expectOne('http://localhost:8080/listas-deseos');
+    expect(peticion.request.method).toBe('GET');
+    expect(peticion.request.withCredentials).toBe(true);
+    peticion.flush(listas);
+
+    expect(resultado).toEqual(listas);
+  });
+
+  it('consulta los productos de una lista codificando el identificador', () => {
+    const productos = [{ id: 'producto-1', nombre: 'Teclado' }];
+    let resultado: unknown;
+
+    servicio.obtenerProductos('lista con espacios').subscribe((respuesta) => (resultado = respuesta));
+
+    const peticion = http.expectOne(
+      'http://localhost:8080/listas-deseos/lista%20con%20espacios/productos',
+    );
+    expect(peticion.request.method).toBe('GET');
+    expect(peticion.request.withCredentials).toBe(true);
+    peticion.flush(productos);
+
+    expect(resultado).toEqual(productos);
+  });
+
   it('traduce un 403 a un mensaje de rol no permitido', () => {
     let error: ListaDeseosApiError | undefined;
 

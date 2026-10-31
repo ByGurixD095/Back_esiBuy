@@ -22,6 +22,7 @@ import { CrearCategoria } from './components/crear-categoria/crear-categoria';
 import { ListarCategorias } from './components/listar-categorias/listar-categorias';
 import { Carrito } from './components/carrito/carrito';
 import { CrearListaDeseos } from './components/crear-lista-deseos/crear-lista-deseos';
+import { ListasDeseos } from './components/listas-deseos/listas-deseos';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', component: Inicio },
@@ -35,7 +36,9 @@ export const routes: Routes = [
   { path: 'register/vendedor', component: RegistroComponent, data: { tipoRegistro: 'vendedor' }, canActivate: [guestGuard] },
   { path: 'cart', component: Carrito, canActivate: [roleGuard(['CLIENTE'])] },
   { path: 'favoritos', component: MisFavoritos, canActivate: [roleGuard(['CLIENTE'])] },
+  { path: 'listas-deseos', component: ListasDeseos, canActivate: [roleGuard(['CLIENTE'])] },
   { path: 'listas-deseos/nueva', component: CrearListaDeseos, canActivate: [roleGuard(['CLIENTE'])] },
+  { path: 'listas-deseos/:id', component: ListasDeseos, canActivate: [roleGuard(['CLIENTE'])] },
   { path: 'account/metodos-pago', component: MetodosPagoComponent, canActivate: [roleGuard(['CLIENTE'])] },
   { path: 'account', component: Cuenta, canActivate: [roleGuard(['ADMINISTRADOR', 'VENDEDOR', 'CLIENTE'])] },
   {
