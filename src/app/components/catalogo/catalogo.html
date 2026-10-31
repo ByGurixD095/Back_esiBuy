@@ -24,6 +24,7 @@
             }
           </a>
           <a class="account-link" routerLink="/favoritos">Mis favoritos</a>
+          <a class="account-link" routerLink="/listas-deseos">Mis listas</a>
         }
         @if (auth.hasRole(['ADMINISTRADOR', 'VENDEDOR'])) {
           <a class="account-link" routerLink="/manage">Gestionar</a>
