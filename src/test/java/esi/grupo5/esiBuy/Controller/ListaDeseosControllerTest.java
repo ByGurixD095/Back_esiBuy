@@ -1,9 +1,12 @@
 package esi.grupo5.esiBuy.Controller;
 
+import java.util.List;
+
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -17,6 +20,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import esi.grupo5.esiBuy.Model.ListaDeseos;
+import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Service.ListaDeseosService;
@@ -85,5 +89,47 @@ class ListaDeseosControllerTest {
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(listaDeseosService);
+    }
+
+    @Test
+    void obtenerListas_listasExistentes_devuelveListas() throws Exception {
+        ListaDeseos lista1 = new ListaDeseos();
+        lista1.setId("lista-1");
+        lista1.setIdCliente("cliente-1");
+        lista1.setNombre("Para comprar");
+
+        ListaDeseos lista2 = new ListaDeseos();
+        lista2.setId("lista-2");
+        lista2.setIdCliente("cliente-1");
+        lista2.setNombre("Regalos");
+
+        when(listaDeseosService.obtenerListas("cliente-1")).thenReturn(List.of(lista1, lista2));
+
+        mockMvc.perform(get("/listas-deseos").principal(new UsernamePasswordAuthenticationToken("cliente-1", null)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(2))
+            .andExpect(jsonPath("$[0].nombre").value("Para comprar"))
+            .andExpect(jsonPath("$[1].nombre").value("Regalos"));
+
+        verify(listaDeseosService).obtenerListas("cliente-1");
+
+    }
+
+    @Test
+    void obtenerProductosLista_listaExistente_devuelveProductos() throws Exception {
+        Producto producto = new Producto();
+        producto.setId("producto-1");
+        producto.setNombre("Teclado");
+
+        when(listaDeseosService.obtenerProductosLista("lista-1", "cliente-1")).thenReturn(List.of(producto));
+
+        mockMvc.perform(get("/listas-deseos/lista-1/productos").principal(new UsernamePasswordAuthenticationToken("cliente-1", null)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0].id").value("producto-1"))
+            .andExpect(jsonPath("$[0].nombre").value("Teclado"));
+
+        verify(listaDeseosService).obtenerProductosLista("lista-1", "cliente-1");
+        
     }
 }
