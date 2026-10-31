@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.PutMapping;
 import esi.grupo5.esiBuy.Dto.MetodoPagoRequestDTO;
 import esi.grupo5.esiBuy.Dto.MetodoPagoResponseDTO;
 import esi.grupo5.esiBuy.Service.MetodoPagoService;
@@ -49,5 +49,14 @@ public class MetodoPagoController {
         String clienteId = (String) authentication.getPrincipal();
         metodoPagoService.eliminarMetodoPago(clienteId, metodoPagoId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{metodoPagoId}")
+    public ResponseEntity<MetodoPagoResponseDTO> modificarMetodoPago(@PathVariable String metodoPagoId,
+        @Valid @RequestBody MetodoPagoRequestDTO dto,Authentication authentication) {
+
+        String clienteId = (String) authentication.getPrincipal();
+        MetodoPagoResponseDTO metodoModificado =metodoPagoService.modificarMetodoPago(clienteId, metodoPagoId, dto);
+        return ResponseEntity.ok(metodoModificado);
     }
 }
