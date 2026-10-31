@@ -1,7 +1,28 @@
 <main class="detail-shell">
   <header class="detail-header">
     <a routerLink="/" class="brand">Esi<strong>Buy</strong></a>
-    <a routerLink="/products" class="back-link">← Volver al catálogo</a>
+    <nav class="detail-nav" aria-label="Navegación de productos">
+      <a routerLink="/products" class="back-link">← Volver al catálogo</a>
+      @if (esCliente()) {
+        <a
+          routerLink="/cart"
+          class="cart-link"
+          [attr.aria-label]="
+            cantidadEnCarrito() === null
+              ? 'Ir a mi cesta'
+              : 'Ir a mi cesta, ' +
+                cantidadEnCarrito() +
+                (cantidadEnCarrito() === 1 ? ' producto' : ' productos')
+          "
+          title="Mi cesta"
+        >
+          <span aria-hidden="true">🛒</span>
+          @if (cantidadEnCarrito() !== null) {
+            <span class="cart-count" aria-hidden="true">{{ cantidadEnCarrito() }}</span>
+          }
+        </a>
+      }
+    </nav>
   </header>
 
   @if (cargando()) {
@@ -52,7 +73,23 @@
         </p>
 
         <section class="purchase-panel" aria-label="Opciones de compra">
-          <button type="button" class="buy-button" disabled>Comprar ahora</button>
+          @if (esCliente()) {
+            <button
+              type="button"
+              class="buy-button"
+              [disabled]="anadiendoAlCarrito() || item.numStock < 1"
+              (click)="anadirAlCarrito()"
+            >
+              {{ anadiendoAlCarrito() ? 'Añadiendo...' : 'Añadir a la cesta' }}
+            </button>
+            @if (mensajeCarrito(); as mensaje) {
+              <p class="cart-feedback" role="status">{{ mensaje }}</p>
+            }
+            @if (errorCarrito(); as mensaje) {
+              <p class="cart-feedback cart-feedback-error" role="alert">{{ mensaje }}</p>
+            }
+          }
+          <button type="button" class="buy-button checkout-button" disabled>Comprar ahora</button>
           <p>La compra online todavía no está disponible en EsiBuy.</p>
         </section>
 
