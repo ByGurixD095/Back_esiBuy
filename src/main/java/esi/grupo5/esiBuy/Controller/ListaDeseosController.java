@@ -3,6 +3,7 @@ package esi.grupo5.esiBuy.Controller;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import esi.grupo5.esiBuy.Dto.ListaDeseosDTO;
 import esi.grupo5.esiBuy.Model.ListaDeseos;
+import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Service.ListaDeseosService;
 import jakarta.validation.Valid;
 
@@ -42,5 +44,16 @@ public class ListaDeseosController {
         return ResponseEntity.ok(listas);
     }
 
+    @GetMapping ("/{id}/productos")
+    public ResponseEntity<List<Producto>> obtenerProductosLista (@PathVariable String id, Authentication authentication) {
+        String idCliente = (String) authentication.getPrincipal();
+        List<Producto> productos = listaDeseosService.obtenerProductosLista(id, idCliente);
+
+        return ResponseEntity.ok(productos);
+    }
+
     
+
+
+
 }
