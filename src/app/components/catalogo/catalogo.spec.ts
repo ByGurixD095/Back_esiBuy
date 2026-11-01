@@ -112,6 +112,13 @@ describe('Catalogo (favoritos HU 15)', () => {
     expect(corazones().length).toBe(0);
     expect(favoritosFalso.listar).not.toHaveBeenCalled();
     expect(html().querySelector('a[href="/favoritos"]')).toBeNull();
+    expect(html().querySelector('a[href="/listas-deseos"]')).toBeNull();
+  });
+
+  it('muestra el enlace Mis listas a un cliente', async () => {
+    await crear('CLIENTE');
+
+    expect(html().querySelector('a[href="/listas-deseos"]')?.textContent).toContain('Mis listas');
   });
 
   it('a un cliente le muestra Gestionar y marca los productos que ya son favoritos', async () => {
