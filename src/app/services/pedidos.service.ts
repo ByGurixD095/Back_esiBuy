@@ -24,6 +24,29 @@ export interface PedidoCreado {
   estado: string;
 }
 
+export interface LineaPedido {
+  productoId: string;
+  nombre: string;
+  referencia: string;
+  urlImagen: string | null;
+  precioUnitarioCent: number;
+  cantidad: number;
+  subtotalCent: number;
+}
+
+export interface Pedido {
+  id: string;
+  lineas: LineaPedido[];
+  direccionEnvio: DireccionEnvio;
+  metodoPagoId: string;
+  tipoMetodoPago: string;
+  aliasMetodoPago: string;
+  referenciaMetodoPago: string;
+  totalCent: number;
+  estado: string;
+  fechaPedido: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PedidosService {
   private readonly http = inject(HttpClient);
@@ -31,5 +54,9 @@ export class PedidosService {
 
   crear(datos: CrearPedidoRequest): Observable<PedidoCreado> {
     return this.http.post<PedidoCreado>(this.apiUrl, datos);
+  }
+
+  listar(): Observable<Pedido[]> {
+    return this.http.get<Pedido[]>(this.apiUrl);
   }
 }

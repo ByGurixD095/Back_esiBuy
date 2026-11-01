@@ -1,0 +1,93 @@
+<app-marco-pagina panel="Mis pedidos">
+  <section class="orders-page" aria-labelledby="orders-title" [attr.aria-busy]="cargando()">
+    <div class="orders-heading">
+      <div>
+        <p class="eyebrow">Área de cliente</p>
+        <h1 id="orders-title">Mis pedidos</h1>
+        <p class="intro-copy">Consulta tus compras, su estado y los datos de entrega.</p>
+      </div>
+      <a class="continue-link" routerLink="/products">Volver al catálogo</a>
+    </div>
+
+    @if (cargando()) {
+      <section class="orders-state" role="status" aria-live="polite">
+        <span class="loader" aria-hidden="true"></span>
+        <h2>Cargando tus pedidos</h2>
+        <p>Estamos recuperando tu historial de compras.</p>
+      </section>
+    } @else if (error()) {
+      <section class="orders-state error-state" role="alert">
+        <span class="state-symbol" aria-hidden="true">!</span>
+        <h2>No se han podido cargar tus pedidos</h2>
+        <p>{{ error() }}</p>
+        <button type="button" class="retry-button" (click)="cargarPedidos()">Reintentar</button>
+      </section>
+    } @else if (pedidos().length === 0) {
+      <section class="orders-state empty-state" aria-live="polite">
+        <span class="empty-symbol" aria-hidden="true">○</span>
+        <h2>Aún no has realizado ningún pedido</h2>
+        <p>Cuando completes una compra, podrás consultar aquí sus productos y detalles.</p>
+        <a class="primary-link" routerLink="/products">Explorar el catálogo</a>
+      </section>
+    } @else {
+      <div class="orders-list" aria-label="Historial de pedidos">
+        @for (pedido of pedidos(); track pedido.id) {
+          <article class="order-card">
+            <header class="order-header">
+              <div>
+                <p class="order-label">Pedido</p>
+                <h2>{{ pedido.id }}</h2>
+                <p class="order-date">{{ formatearFecha(pedido.fechaPedido) }}</p>
+              </div>
+              <span class="order-status">{{ estadoLegible(pedido.estado) }}</span>
+            </header>
+
+            <div class="order-lines">
+              @for (linea of pedido.lineas; track linea.productoId) {
+                <div class="order-line">
+                  <div class="line-image">
+                    @if (linea.urlImagen) {
+                      <img [src]="linea.urlImagen" [alt]="linea.nombre" />
+                    } @else {
+                      <span aria-hidden="true">Sin imagen</span>
+                    }
+                  </div>
+                  <div class="line-info">
+                    <h3>{{ linea.nombre }}</h3>
+                    <p>{{ linea.cantidad }} {{ linea.cantidad === 1 ? 'unidad' : 'unidades' }} · {{ formatearPrecio(linea.precioUnitarioCent) }} / unidad</p>
+                  </div>
+                  <strong class="line-subtotal">{{ formatearPrecio(linea.subtotalCent) }}</strong>
+                </div>
+              }
+            </div>
+
+            <div class="order-details">
+              <section aria-label="Dirección de envío">
+                <h3>Envío</h3>
+                <p>
+                  {{ pedido.direccionEnvio.nombreCompleto }}<br />
+                  {{ pedido.direccionEnvio.direccion }}<br />
+                  {{ pedido.direccionEnvio.codigoPostal }} {{ pedido.direccionEnvio.ciudad }},
+                  {{ pedido.direccionEnvio.provincia }}<br />
+                  {{ pedido.direccionEnvio.pais }} · {{ pedido.direccionEnvio.telefono }}
+                </p>
+              </section>
+              <section aria-label="Método de pago">
+                <h3>Pago</h3>
+                <p>{{ pedido.aliasMetodoPago }} · {{ pedido.tipoMetodoPago }}</p>
+                @if (pedido.referenciaMetodoPago) {
+                  <p class="payment-reference">{{ pedido.referenciaMetodoPago }}</p>
+                }
+              </section>
+            </div>
+
+            <footer class="order-total">
+              <span>Total del pedido</span>
+              <strong>{{ formatearPrecio(pedido.totalCent) }}</strong>
+            </footer>
+          </article>
+        }
+      </div>
+    }
+  </section>
+</app-marco-pagina>
