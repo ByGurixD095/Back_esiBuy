@@ -15,9 +15,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.HashSet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -89,6 +91,44 @@ public class ListaDeseosServiceTest {
         verify(listaDeseosRepository).findByIdAndIdCliente("lista-1", "cliente-1");
         verifyNoInteractions(productoRepository);
     }
+
+    @Test
+    void agregarProductoLista_productoExistente_seAgregaCorrectamente() {
+        ListaDeseos lista = new ListaDeseos();
+        lista.setId("lista-1");
+        lista.setIdCliente("cliente-1");
+        lista.setProductosIds(new HashSet<>());
+
+        Producto producto = new Producto();
+        producto.setId("producto-1");
+
+        when(listaDeseosRepository.findByIdAndIdCliente("lista-1", "cliente-1")).thenReturn(Optional.of(lista));
+
+        when(productoRepository.findById("producto-1")).thenReturn(Optional.of(producto));
+
+        when(listaDeseosRepository.save(lista)).thenReturn(lista);
+
+        ListaDeseos resultado = service.agregarProductoLista("lista-1", "producto-1", "cliente-1");
+
+        assertTrue(resultado.getProductosIds().contains("producto-1"));
+        assertEquals(1, resultado.getProductosIds().size());
+
+        verify(listaDeseosRepository).findByIdAndIdCliente("lista-1", "cliente-1");
+        verify(productoRepository).findById("producto-1");
+        verify(listaDeseosRepository).save(lista);
+    }
+
+    @Test
+    void agregarProductoLista_listaNoEncontrada_lanzaExcepcion() {
+    when(listaDeseosRepository.findByIdAndIdCliente("lista-1", "cliente-1")).thenReturn(Optional.empty());
+
+    assertThrows(NotFoundException.class, () -> service.agregarProductoLista("lista-1", "producto-1", "cliente-1"));
+
+    verify(listaDeseosRepository).findByIdAndIdCliente("lista-1", "cliente-1");
+    verifyNoInteractions(productoRepository);
+}
+
+
     
 
 }
