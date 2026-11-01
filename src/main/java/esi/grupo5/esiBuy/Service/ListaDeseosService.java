@@ -43,4 +43,15 @@ public class ListaDeseosService {
 
         return productos;
     }
+
+    public ListaDeseos agregarProductoLista (String idLista, String idProducto, String idCliente) {
+        ListaDeseos lista = listaDeseosRepository.findByIdAndIdCliente(idLista, idCliente).orElseThrow(() -> new NotFoundException ("Lista de deseos no encontrada"));
+
+        productoRepository.findById(idProducto).orElseThrow(() -> new NotFoundException("Producto no encontrado"));
+
+        lista.getProductosIds().add(idProducto);
+
+        return listaDeseosRepository.save(lista);
+    }
+
 }
