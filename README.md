@@ -112,6 +112,37 @@ texto no se migran automáticamente; deben actualizarse antes de usar este
 formato. Las operaciones administrativas requieren el rol de administrador.
 Los nombres duplicados se responden con HTTP 409.
 
+## Pedidos
+
+Los clientes pueden confirmar el carrito mediante `POST /pedidos`. La petición
+requiere el identificador de un método de pago previamente guardado y una
+dirección de envío completa:
+
+```json
+{
+  "metodoPagoId": "id-del-metodo",
+  "direccionEnvio": {
+    "nombreCompleto": "Ana García",
+    "direccion": "Calle Mayor 1",
+    "ciudad": "Madrid",
+    "provincia": "Madrid",
+    "codigoPostal": "28001",
+    "pais": "España",
+    "telefono": "+34600000000"
+  }
+}
+```
+
+Esta versión no realiza ningún cobro: registra el pedido como `RECIBIDO`,
+asocia una copia de los datos visibles del método de pago, conserva una copia
+de los productos y precios, descuenta el stock y vacía el carrito. El número
+de tarjeta no se guarda en el pedido; solo se conserva la referencia ya
+enmascarada del método. La respuesta se devuelve con HTTP 201.
+
+El cliente autenticado puede consultar su historial con `GET /pedidos` y un
+pedido concreto con `GET /pedidos/{pedidoId}`. No puede consultar pedidos de
+otros clientes. Las operaciones de pedidos requieren el rol de cliente.
+
 ## Cobertura con JaCoCo
 
 La cobertura se genera durante la fase `verify`, junto con la ejecución de los
