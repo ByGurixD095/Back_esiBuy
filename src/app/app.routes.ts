@@ -23,6 +23,7 @@ import { ListarCategorias } from './components/listar-categorias/listar-categori
 import { Carrito } from './components/carrito/carrito';
 import { CrearListaDeseos } from './components/crear-lista-deseos/crear-lista-deseos';
 import { ListasDeseos } from './components/listas-deseos/listas-deseos';
+import { MisPedidos } from './components/pedidos/mis-pedidos';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', component: Inicio },
@@ -35,6 +36,7 @@ export const routes: Routes = [
   { path: 'register/clientes', component: RegistroComponent, data: { tipoRegistro: 'cliente' }, canActivate: [guestGuard] },
   { path: 'register/vendedor', component: RegistroComponent, data: { tipoRegistro: 'vendedor' }, canActivate: [guestGuard] },
   { path: 'cart', component: Carrito, canActivate: [roleGuard(['CLIENTE'])] },
+  { path: 'pedidos', component: MisPedidos, canActivate: [roleGuard(['CLIENTE'])] },
   { path: 'favoritos', component: MisFavoritos, canActivate: [roleGuard(['CLIENTE'])] },
   { path: 'listas-deseos', component: ListasDeseos, canActivate: [roleGuard(['CLIENTE'])] },
   { path: 'listas-deseos/nueva', component: CrearListaDeseos, canActivate: [roleGuard(['CLIENTE'])] },

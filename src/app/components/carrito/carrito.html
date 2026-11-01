@@ -15,6 +15,14 @@
         <h2>Cargando tu cesta</h2>
         <p>Estamos recuperando los productos que has añadido.</p>
       </section>
+    } @else if (pedidoConfirmado(); as pedido) {
+      <section class="cart-state order-success" role="status" aria-live="polite">
+        <span class="state-symbol" aria-hidden="true">✓</span>
+        <h2>¡Pedido realizado!</h2>
+        <p>Tu pedido <strong>{{ pedido.id }}</strong> se ha registrado correctamente.</p>
+        <p class="success-total">Total: {{ formatearPrecio(pedido.totalCent) }}</p>
+        <a class="primary-link" routerLink="/products">Volver al catálogo</a>
+      </section>
     } @else if (error() && items().length === 0) {
       <section class="cart-state error-state" role="alert">
         <span class="state-symbol" aria-hidden="true">!</span>
@@ -114,12 +122,116 @@
           <button
             type="button"
             class="buy-button"
-            disabled
-            title="La compra se habilitará próximamente"
-          >Comprar</button>
-          <p class="coming-soon">El proceso de compra estará disponible próximamente.</p>
+            [disabled]="creandoPedido() || actualizandoIds().size > 0"
+            (click)="abrirCheckout()"
+          >{{ checkoutAbierto() ? 'Actualizar métodos de pago' : 'Tramitar pedido' }}</button>
         </aside>
       </div>
+
+      @if (checkoutAbierto()) {
+        <section class="checkout-panel" aria-labelledby="checkout-title">
+          <div class="checkout-heading">
+            <div>
+              <p class="eyebrow">Último paso</p>
+              <h2 id="checkout-title">Datos del pedido</h2>
+              <p>Indica dónde recibirlo y elige uno de tus métodos de pago guardados.</p>
+            </div>
+            <button type="button" class="cancel-button" [disabled]="creandoPedido()" (click)="cerrarCheckout()">
+              Cerrar
+            </button>
+          </div>
+
+          @if (errorPedido()) {
+            <p class="inline-error" role="alert">{{ errorPedido() }}</p>
+          }
+
+          @if (cargandoMetodosPago()) {
+            <p class="checkout-status" role="status" aria-live="polite">Cargando tus métodos de pago...</p>
+          } @else if (errorMetodosPago()) {
+            <div class="checkout-status checkout-error">
+              <p role="alert">{{ errorMetodosPago() }}</p>
+              <button type="button" class="retry-button" (click)="cargarMetodosPago()">Reintentar</button>
+            </div>
+          } @else if (metodosPago().length === 0) {
+            <div class="checkout-status">
+              <p>Aún no tienes métodos de pago guardados.</p>
+              <a class="primary-link" routerLink="/account/metodos-pago">Añadir método de pago</a>
+            </div>
+          } @else {
+            <form [formGroup]="checkoutForm" (ngSubmit)="confirmarPedido()" novalidate>
+              <div class="checkout-fields">
+                <div class="checkout-field field-wide">
+                  <label for="metodo-pago-pedido">Método de pago</label>
+                  <select id="metodo-pago-pedido" formControlName="metodoPagoId">
+                    @for (metodo of metodosPago(); track metodo.id) {
+                      <option [value]="metodo.id">
+                        {{ metodo.alias }} · {{ metodo.tipo }}
+                        @if (metodo.referencia) {
+                          ({{ metodo.referencia }})
+                        }
+                      </option>
+                    }
+                  </select>
+                </div>
+
+                <div class="checkout-field field-wide">
+                  <label for="nombre-envio">Nombre completo</label>
+                  <input id="nombre-envio" type="text" formControlName="nombreCompleto" autocomplete="name" maxlength="120" required />
+                  @if (campoEnvioInvalido('nombreCompleto')) {
+                    <small>Introduce un nombre (máximo 120 caracteres).</small>
+                  }
+                </div>
+                <div class="checkout-field field-wide">
+                  <label for="direccion-envio">Dirección</label>
+                  <input id="direccion-envio" type="text" formControlName="direccion" autocomplete="street-address" maxlength="200" required />
+                  @if (campoEnvioInvalido('direccion')) {
+                    <small>Introduce una dirección (máximo 200 caracteres).</small>
+                  }
+                </div>
+                <div class="checkout-field">
+                  <label for="ciudad-envio">Ciudad</label>
+                  <input id="ciudad-envio" type="text" formControlName="ciudad" autocomplete="address-level2" maxlength="100" required />
+                  @if (campoEnvioInvalido('ciudad')) {
+                    <small>Introduce una ciudad.</small>
+                  }
+                </div>
+                <div class="checkout-field">
+                  <label for="provincia-envio">Provincia</label>
+                  <input id="provincia-envio" type="text" formControlName="provincia" autocomplete="address-level1" maxlength="100" required />
+                  @if (campoEnvioInvalido('provincia')) {
+                    <small>Introduce una provincia.</small>
+                  }
+                </div>
+                <div class="checkout-field">
+                  <label for="codigo-postal-envio">Código postal</label>
+                  <input id="codigo-postal-envio" type="text" formControlName="codigoPostal" autocomplete="postal-code" maxlength="20" required />
+                  @if (campoEnvioInvalido('codigoPostal')) {
+                    <small>Introduce un código postal.</small>
+                  }
+                </div>
+                <div class="checkout-field">
+                  <label for="pais-envio">País</label>
+                  <input id="pais-envio" type="text" formControlName="pais" autocomplete="country-name" maxlength="100" required />
+                  @if (campoEnvioInvalido('pais')) {
+                    <small>Introduce un país.</small>
+                  }
+                </div>
+                <div class="checkout-field">
+                  <label for="telefono-envio">Teléfono de contacto</label>
+                  <input id="telefono-envio" type="tel" formControlName="telefono" autocomplete="tel" maxlength="30" required />
+                  @if (campoEnvioInvalido('telefono')) {
+                    <small>Introduce un teléfono de contacto.</small>
+                  }
+                </div>
+              </div>
+              <p class="checkout-total">Total del pedido <strong>{{ formatearPrecio(totalCentimos()) }}</strong></p>
+              <button type="submit" class="buy-button checkout-submit" [disabled]="creandoPedido()">
+                {{ creandoPedido() ? 'Realizando pedido...' : 'Confirmar pedido' }}
+              </button>
+            </form>
+          }
+        </section>
+      }
     }
 
     @if (productoPendienteEliminar(); as item) {

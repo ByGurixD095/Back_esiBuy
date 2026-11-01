@@ -1,28 +1,74 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 import { CarritoService, ItemCarrito } from '../../services/carrito.service';
+import { MetodoPago, MetodosPagoService } from '../../services/metodos-pago-service/metodos-pago';
+import { CrearPedidoRequest, PedidoCreado, PedidosService } from '../../services/pedidos.service';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
 
 @Component({
   selector: 'app-carrito',
-  imports: [MarcoPagina, RouterLink],
+  imports: [MarcoPagina, ReactiveFormsModule, RouterLink],
   templateUrl: './carrito.html',
   styleUrl: './carrito.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Carrito implements OnInit {
+  private readonly auth = inject(AuthService);
   private readonly carritoService = inject(CarritoService);
+  private readonly metodosPagoService = inject(MetodosPagoService);
+  private readonly pedidosService = inject(PedidosService);
 
   readonly items = signal<ItemCarrito[]>([]);
   readonly cargando = signal(true);
   readonly error = signal<string | null>(null);
   readonly actualizandoIds = signal<ReadonlySet<string>>(new Set());
   readonly productoPendienteEliminar = signal<ItemCarrito | null>(null);
+  readonly checkoutAbierto = signal(false);
+  readonly metodosPago = signal<MetodoPago[]>([]);
+  readonly cargandoMetodosPago = signal(false);
+  readonly errorMetodosPago = signal('');
+  readonly creandoPedido = signal(false);
+  readonly errorPedido = signal('');
+  readonly pedidoConfirmado = signal<PedidoCreado | null>(null);
   readonly cantidadUnidades = computed(() => this.items().reduce((total, item) => total + item.cantidad, 0));
   readonly totalCentimos = computed(() =>
     this.items().reduce((total, item) => total + item.precioCent * item.cantidad, 0),
   );
+
+  readonly checkoutForm = new FormGroup({
+    metodoPagoId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    nombreCompleto: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(120)],
+    }),
+    direccion: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(200)],
+    }),
+    ciudad: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(100)],
+    }),
+    provincia: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(100)],
+    }),
+    codigoPostal: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(20)],
+    }),
+    pais: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(100)],
+    }),
+    telefono: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(30)],
+    }),
+  });
 
   ngOnInit(): void {
     this.cargarCarrito();
@@ -105,8 +151,89 @@ export class Carrito implements OnInit {
     });
   }
 
+  abrirCheckout(): void {
+    this.checkoutAbierto.set(true);
+    this.errorPedido.set('');
+    this.cargarMetodosPago();
+  }
+
+  cerrarCheckout(): void {
+    if (!this.creandoPedido()) {
+      this.checkoutAbierto.set(false);
+      this.errorPedido.set('');
+    }
+  }
+
+  cargarMetodosPago(): void {
+    this.cargandoMetodosPago.set(true);
+    this.errorMetodosPago.set('');
+    this.metodosPagoService.listar().subscribe({
+      next: (metodos) => {
+        this.metodosPago.set(metodos);
+        if (
+          metodos.length > 0 &&
+          !metodos.some((metodo) => metodo.id === this.checkoutForm.controls.metodoPagoId.value)
+        ) {
+          this.checkoutForm.controls.metodoPagoId.setValue(metodos[0].id);
+        }
+        this.cargandoMetodosPago.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.errorMetodosPago.set(
+          this.auth.errorMessage(error, 'No se han podido cargar tus métodos de pago.'),
+        );
+        this.cargandoMetodosPago.set(false);
+      },
+    });
+  }
+
+  confirmarPedido(): void {
+    if (this.creandoPedido()) return;
+    if (this.checkoutForm.invalid || this.metodosPago().length === 0) {
+      this.checkoutForm.markAllAsTouched();
+      this.errorPedido.set('Completa los datos de envío y selecciona un método de pago.');
+      return;
+    }
+
+    const valores = this.checkoutForm.getRawValue();
+    const datos: CrearPedidoRequest = {
+      metodoPagoId: valores.metodoPagoId,
+      direccionEnvio: {
+        nombreCompleto: valores.nombreCompleto.trim(),
+        direccion: valores.direccion.trim(),
+        ciudad: valores.ciudad.trim(),
+        provincia: valores.provincia.trim(),
+        codigoPostal: valores.codigoPostal.trim(),
+        pais: valores.pais.trim(),
+        telefono: valores.telefono.trim(),
+      },
+    };
+
+    this.creandoPedido.set(true);
+    this.errorPedido.set('');
+    this.pedidosService.crear(datos).subscribe({
+      next: (pedido) => {
+        this.pedidoConfirmado.set(pedido);
+        this.items.set([]);
+        this.checkoutAbierto.set(false);
+        this.creandoPedido.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.errorPedido.set(
+          this.auth.errorMessage(error, 'No se ha podido realizar el pedido. Revisa la cesta e inténtalo de nuevo.'),
+        );
+        this.creandoPedido.set(false);
+      },
+    });
+  }
+
   estaActualizando(productoId: string): boolean {
     return this.actualizandoIds().has(productoId);
+  }
+
+  campoEnvioInvalido(campo: keyof typeof this.checkoutForm.controls): boolean {
+    const control = this.checkoutForm.controls[campo];
+    return control.invalid && (control.touched || control.dirty);
   }
 
   formatearPrecio(precioCent: number): string {
