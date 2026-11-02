@@ -120,14 +120,53 @@ public class ListaDeseosServiceTest {
 
     @Test
     void agregarProductoLista_listaNoEncontrada_lanzaExcepcion() {
-    when(listaDeseosRepository.findByIdAndIdCliente("lista-1", "cliente-1")).thenReturn(Optional.empty());
+        when(listaDeseosRepository.findByIdAndIdCliente("lista-1", "cliente-1")).thenReturn(Optional.empty());
 
-    assertThrows(NotFoundException.class, () -> service.agregarProductoLista("lista-1", "producto-1", "cliente-1"));
+        assertThrows(NotFoundException.class, () -> service.agregarProductoLista("lista-1", "producto-1", "cliente-1"));
 
-    verify(listaDeseosRepository).findByIdAndIdCliente("lista-1", "cliente-1");
-    verifyNoInteractions(productoRepository);
-}
+        verify(listaDeseosRepository).findByIdAndIdCliente("lista-1", "cliente-1");
+        verifyNoInteractions(productoRepository);
+    }
 
+    @Test
+    void agregarProductoLista_productoNoEncontrado_lanzaExcepcion() {
+        ListaDeseos lista = new ListaDeseos();
+        lista.setId("lista-1");
+        lista.setIdCliente("cliente-1");
+        lista.setProductosIds(new HashSet<>());
+
+        when(listaDeseosRepository.findByIdAndIdCliente("lista-1", "cliente-1")).thenReturn(Optional.of(lista));
+
+        when(productoRepository.findById("producto-1")).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> service.agregarProductoLista("lista-1", "producto-1", "cliente-1"));
+
+        verify(listaDeseosRepository).findByIdAndIdCliente("lista-1", "cliente-1");
+        verify(productoRepository).findById("producto-1");
+    }
+
+    @Test
+    void agregarProductoLista_productoYaExistente_noSeDuplica() {
+        ListaDeseos lista = new ListaDeseos();
+        lista.setId("lista-1");
+        lista.setIdCliente("cliente-1");
+        lista.setProductosIds(new HashSet<>());
+        lista.getProductosIds().add("producto-1");
+
+        Producto producto = new Producto();
+        producto.setId("producto-1");
+
+        when(listaDeseosRepository.findByIdAndIdCliente("lista-1", "cliente-1")).thenReturn(Optional.of(lista));
+        when(productoRepository.findById("producto-1")).thenReturn(Optional.of(producto));
+        when(listaDeseosRepository.save(lista)).thenReturn(lista);
+
+        ListaDeseos resultado = service.agregarProductoLista("lista-1", "producto-1", "cliente-1");
+
+        assertEquals(1, resultado.getProductosIds().size());
+        assertTrue(resultado.getProductosIds().contains("producto-1"));
+
+        verify(listaDeseosRepository).save(lista);
+    }
 
     
 

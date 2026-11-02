@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -132,4 +133,22 @@ class ListaDeseosControllerTest {
         verify(listaDeseosService).obtenerProductosLista("lista-1", "cliente-1");
         
     }
+
+    @Test
+    void agregarProductoLista_listaExistente_devuelveListaActualizada() throws Exception {
+
+        ListaDeseos lista = new ListaDeseos();
+        lista.setId("lista-1");
+        lista.setIdCliente("cliente-1");
+
+        when(listaDeseosService.agregarProductoLista("lista-1", "producto-1", "cliente-1")).thenReturn(lista);
+
+        mockMvc.perform(post("/listas-deseos/lista-1/productos/producto-1").principal(new UsernamePasswordAuthenticationToken("cliente-1", null)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value("lista-1"))
+            .andExpect(jsonPath("$.idCliente").value("cliente-1"));
+
+        verify(listaDeseosService).agregarProductoLista("lista-1", "producto-1", "cliente-1");
+    }
+
 }
