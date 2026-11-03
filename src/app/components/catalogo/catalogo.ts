@@ -6,6 +6,11 @@ import { PaginaProducto, Producto } from '../../models/producto.model';
 import { Favoritos, FavoritosApiError } from '../../services/favoritos-service/favoritos';
 import { CarritoService, ItemCarrito } from '../../services/carrito.service';
 import { Categoria, Categorias } from '../../services/categorias.service';
+import {
+  ListaDeseos,
+  ListaDeseosApiError,
+  ListaDeseosService,
+} from '../../services/lista-deseos-service/lista-deseos';
 import { PanelFiltrosProductos } from '../panel-filtros-productos/panel-filtros-productos';
 import { FiltrosProductos, ProductApiError, ProductService, filtrarProductos } from '../../services/product.service';
 
@@ -21,6 +26,7 @@ export class Catalogo implements OnInit {
   private readonly favoritosService = inject(Favoritos);
   private readonly carritoService = inject(CarritoService);
   private readonly categoriasService = inject(Categorias);
+  private readonly listasDeseosService = inject(ListaDeseosService);
   readonly auth = inject(AuthService);
 
   readonly productos = signal<Producto[]>([]);
@@ -44,6 +50,15 @@ export class Catalogo implements OnInit {
   readonly errorCarrito = signal<string | null>(null);
   readonly cantidadCarrito = signal<number | null>(null);
   private carritoVersion = 0;
+  readonly productoListaPendiente = signal<Producto | null>(null);
+  readonly listasDeseos = signal<ListaDeseos[]>([]);
+  readonly listaDeseosSeleccionadaId = signal('');
+  readonly cargandoListasDeseos = signal(false);
+  readonly guardandoEnLista = signal(false);
+  readonly mostrandoNuevaLista = signal(false);
+  readonly nombreNuevaLista = signal('');
+  readonly errorListaDeseos = signal<string | null>(null);
+  readonly mensajeListaDeseos = signal<string | null>(null);
 
   ngOnInit(): void {
     this.cargarCategorias();
@@ -142,6 +157,110 @@ export class Catalogo implements OnInit {
 
   estaAnadiendoAlCarrito(productoId: string): boolean {
     return this.carritoProcesando().has(productoId);
+  }
+
+  abrirSelectorLista(producto: Producto): void {
+    this.productoListaPendiente.set(producto);
+    this.listasDeseos.set([]);
+    this.listaDeseosSeleccionadaId.set('');
+    this.mostrandoNuevaLista.set(false);
+    this.nombreNuevaLista.set('');
+    this.errorListaDeseos.set(null);
+    this.mensajeListaDeseos.set(null);
+    this.cargarListasDeseos();
+  }
+
+  cargarListasDeseos(): void {
+    this.cargandoListasDeseos.set(true);
+    this.errorListaDeseos.set(null);
+    this.listasDeseosService.listar().subscribe({
+      next: (listas) => {
+        this.listasDeseos.set(listas);
+        this.listaDeseosSeleccionadaId.set(listas[0]?.id ?? '');
+        this.cargandoListasDeseos.set(false);
+      },
+      error: (error: ListaDeseosApiError) => {
+        this.errorListaDeseos.set(error.message);
+        this.cargandoListasDeseos.set(false);
+      },
+    });
+  }
+
+  seleccionarListaDeseos(event: Event): void {
+    this.listaDeseosSeleccionadaId.set((event.target as HTMLSelectElement).value);
+  }
+
+  alternarFormularioNuevaLista(): void {
+    this.mostrandoNuevaLista.update((mostrar) => !mostrar);
+    this.nombreNuevaLista.set('');
+    this.errorListaDeseos.set(null);
+  }
+
+  actualizarNombreNuevaLista(event: Event): void {
+    this.nombreNuevaLista.set((event.target as HTMLInputElement).value);
+  }
+
+  crearListaYGuardarProducto(): void {
+    const producto = this.productoListaPendiente();
+    const nombre = this.nombreNuevaLista().trim();
+    if (!producto || !nombre || this.guardandoEnLista()) return;
+
+    this.guardandoEnLista.set(true);
+    this.errorListaDeseos.set(null);
+    this.listasDeseosService.crear(nombre).subscribe({
+      next: (lista) => {
+        this.listasDeseos.update((listas) => [...listas, lista]);
+        this.listaDeseosSeleccionadaId.set(lista.id);
+        this.mostrandoNuevaLista.set(false);
+        this.nombreNuevaLista.set('');
+        this.guardarProductoEnLista(producto, lista.id);
+      },
+      error: (error: ListaDeseosApiError) => {
+        this.errorListaDeseos.set(error.message);
+        this.guardandoEnLista.set(false);
+      },
+    });
+  }
+
+  cancelarSeleccionLista(): void {
+    if (this.guardandoEnLista()) return;
+    this.productoListaPendiente.set(null);
+    this.errorListaDeseos.set(null);
+  }
+
+  confirmarAnadirALista(): void {
+    const producto = this.productoListaPendiente();
+    const idLista = this.listaDeseosSeleccionadaId();
+    if (!producto || !idLista || this.guardandoEnLista()) return;
+
+    this.guardandoEnLista.set(true);
+    this.errorListaDeseos.set(null);
+    this.guardarProductoEnLista(producto, idLista);
+  }
+
+  private guardarProductoEnLista(producto: Producto, idLista: string): void {
+    const yaEstabaEnLista = this.listasDeseos()
+      .find((lista) => lista.id === idLista)
+      ?.productosIds.includes(producto.id) ?? false;
+
+    this.listasDeseosService.agregarProducto(idLista, producto.id).subscribe({
+      next: (listaActualizada) => {
+        this.listasDeseos.update((listas) =>
+          listas.map((lista) => lista.id === listaActualizada.id ? listaActualizada : lista),
+        );
+        this.mensajeListaDeseos.set(
+          yaEstabaEnLista
+            ? `${producto.nombre} ya está añadido a la lista de deseos «${listaActualizada.nombre}».`
+            : `${producto.nombre} se ha guardado correctamente en la lista «${listaActualizada.nombre}».`,
+        );
+        this.productoListaPendiente.set(null);
+        this.guardandoEnLista.set(false);
+      },
+      error: (error: ListaDeseosApiError) => {
+        this.errorListaDeseos.set(error.message);
+        this.guardandoEnLista.set(false);
+      },
+    });
   }
 
   private cargarCantidadCarrito(): void {

@@ -13,6 +13,11 @@ import { catchError, map, of, switchMap, tap } from 'rxjs';
 import { ProductInfo } from '../../models/producto.model';
 import { AuthService } from '../../services/auth.service';
 import { CarritoService } from '../../services/carrito.service';
+import {
+  ListaDeseos,
+  ListaDeseosApiError,
+  ListaDeseosService,
+} from '../../services/lista-deseos-service/lista-deseos';
 import { ProductApiError, ProductService } from '../../services/product.service';
 
 @Component({
@@ -27,6 +32,7 @@ export class ProductoDetalle implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly productoService = inject(ProductService);
   private readonly carritoService = inject(CarritoService);
+  private readonly listasDeseosService = inject(ListaDeseosService);
   readonly auth = inject(AuthService);
 
   readonly producto = signal<ProductInfo | null>(null);
@@ -37,6 +43,15 @@ export class ProductoDetalle implements OnInit {
   readonly cantidadEnCarrito = signal<number | null>(null);
   readonly mensajeCarrito = signal<string | null>(null);
   readonly errorCarrito = signal<string | null>(null);
+  readonly selectorListaAbierto = signal(false);
+  readonly listasDeseos = signal<ListaDeseos[]>([]);
+  readonly listaDeseosSeleccionadaId = signal('');
+  readonly cargandoListasDeseos = signal(false);
+  readonly guardandoEnLista = signal(false);
+  readonly mostrandoNuevaLista = signal(false);
+  readonly nombreNuevaLista = signal('');
+  readonly errorListaDeseos = signal<string | null>(null);
+  readonly mensajeListaDeseos = signal<string | null>(null);
   private carritoVersion = 0;
 
   ngOnInit(): void {
@@ -113,6 +128,114 @@ export class ProductoDetalle implements OnInit {
       error: (error: HttpErrorResponse) => {
         this.errorCarrito.set(this.mensajeParaErrorCarrito(error));
         this.anadiendoAlCarrito.set(false);
+      },
+    });
+  }
+
+  abrirSelectorLista(): void {
+    this.selectorListaAbierto.set(true);
+    this.listasDeseos.set([]);
+    this.listaDeseosSeleccionadaId.set('');
+    this.mostrandoNuevaLista.set(false);
+    this.nombreNuevaLista.set('');
+    this.errorListaDeseos.set(null);
+    this.mensajeListaDeseos.set(null);
+    this.cargarListasDeseos();
+  }
+
+  cargarListasDeseos(): void {
+    this.cargandoListasDeseos.set(true);
+    this.errorListaDeseos.set(null);
+    this.listasDeseosService.listar().subscribe({
+      next: (listas) => {
+        this.listasDeseos.set(listas);
+        this.listaDeseosSeleccionadaId.set(listas[0]?.id ?? '');
+        this.cargandoListasDeseos.set(false);
+      },
+      error: (error: ListaDeseosApiError) => {
+        this.errorListaDeseos.set(error.message);
+        this.cargandoListasDeseos.set(false);
+      },
+    });
+  }
+
+  seleccionarListaDeseos(event: Event): void {
+    this.listaDeseosSeleccionadaId.set((event.target as HTMLSelectElement).value);
+  }
+
+  alternarFormularioNuevaLista(): void {
+    this.mostrandoNuevaLista.update((mostrar) => !mostrar);
+    this.nombreNuevaLista.set('');
+    this.errorListaDeseos.set(null);
+  }
+
+  actualizarNombreNuevaLista(event: Event): void {
+    this.nombreNuevaLista.set((event.target as HTMLInputElement).value);
+  }
+
+  cancelarSelectorLista(): void {
+    if (this.guardandoEnLista()) return;
+    this.selectorListaAbierto.set(false);
+    this.errorListaDeseos.set(null);
+  }
+
+  confirmarAnadirALista(): void {
+    const idLista = this.listaDeseosSeleccionadaId();
+    if (!idLista || this.guardandoEnLista()) return;
+    this.guardarEnLista(idLista);
+  }
+
+  crearListaYGuardarProducto(): void {
+    const nombre = this.nombreNuevaLista().trim();
+    if (!nombre || this.guardandoEnLista()) return;
+
+    this.guardandoEnLista.set(true);
+    this.errorListaDeseos.set(null);
+    this.listasDeseosService.crear(nombre).subscribe({
+      next: (lista) => {
+        this.listasDeseos.update((listas) => [...listas, lista]);
+        this.listaDeseosSeleccionadaId.set(lista.id);
+        this.mostrandoNuevaLista.set(false);
+        this.nombreNuevaLista.set('');
+        this.guardarEnLista(lista.id);
+      },
+      error: (error: ListaDeseosApiError) => {
+        this.errorListaDeseos.set(error.message);
+        this.guardandoEnLista.set(false);
+      },
+    });
+  }
+
+  private guardarEnLista(idLista: string): void {
+    const idProducto = this.productoId();
+    const item = this.producto();
+    if (!idProducto || !item) {
+      this.guardandoEnLista.set(false);
+      return;
+    }
+
+    const yaEstabaEnLista = this.listasDeseos()
+      .find((lista) => lista.id === idLista)
+      ?.productosIds.includes(idProducto) ?? false;
+
+    this.guardandoEnLista.set(true);
+    this.errorListaDeseos.set(null);
+    this.listasDeseosService.agregarProducto(idLista, idProducto).subscribe({
+      next: (listaActualizada) => {
+        this.listasDeseos.update((listas) =>
+          listas.map((lista) => lista.id === listaActualizada.id ? listaActualizada : lista),
+        );
+        this.mensajeListaDeseos.set(
+          yaEstabaEnLista
+            ? `${item.nombre} ya está añadido a la lista de deseos «${listaActualizada.nombre}».`
+            : `${item.nombre} se ha guardado correctamente en la lista «${listaActualizada.nombre}».`,
+        );
+        this.selectorListaAbierto.set(false);
+        this.guardandoEnLista.set(false);
+      },
+      error: (error: ListaDeseosApiError) => {
+        this.errorListaDeseos.set(error.message);
+        this.guardandoEnLista.set(false);
       },
     });
   }
