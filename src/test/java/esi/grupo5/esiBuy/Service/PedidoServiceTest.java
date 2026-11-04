@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 import com.mongodb.client.result.UpdateResult;
 import org.junit.jupiter.api.Test;
@@ -29,7 +30,9 @@ import esi.grupo5.esiBuy.Exception.ConflictException;
 import esi.grupo5.esiBuy.Exception.NotFoundException;
 import esi.grupo5.esiBuy.Exception.ValidationException;
 import esi.grupo5.esiBuy.Model.Carrito;
+import esi.grupo5.esiBuy.Model.DireccionEnvioPedido;
 import esi.grupo5.esiBuy.Model.EstadoPedido;
+import esi.grupo5.esiBuy.Model.LineaPedido;
 import esi.grupo5.esiBuy.Model.ItemCarrito;
 import esi.grupo5.esiBuy.Model.MetodoPago;
 import esi.grupo5.esiBuy.Model.Pedido;
@@ -39,6 +42,7 @@ import esi.grupo5.esiBuy.Repository.CarritoRepository;
 import esi.grupo5.esiBuy.Repository.MetodoPagoRepository;
 import esi.grupo5.esiBuy.Repository.PedidoRepository;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
+import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 
 @ExtendWith(MockitoExtension.class)
 class PedidoServiceTest {
@@ -54,6 +58,9 @@ class PedidoServiceTest {
 
     @Mock
     private MetodoPagoRepository metodoPagoRepository;
+
+    @Mock
+    private UsuarioRepository usuarioRepository;
 
     @Mock
     private MongoTemplate mongoTemplate;
@@ -86,7 +93,7 @@ class PedidoServiceTest {
 
         assertEquals("pedido-1", resultado.id());
         assertEquals(2_500L, resultado.totalCent());
-        assertEquals(EstadoPedido.RECIBIDO, resultado.estado());
+        assertEquals(EstadoPedido.EN_PROCESO, resultado.estado());
         assertEquals(1, resultado.lineas().size());
         assertEquals(2, resultado.lineas().get(0).cantidad());
         assertEquals(1_250, resultado.lineas().get(0).precioUnitarioCent());
@@ -196,6 +203,124 @@ class PedidoServiceTest {
                 () -> pedidoService.obtenerPedido("cliente-1", "pedido-1"));
     }
 
+    @Test
+    void pagarPedido_cambiaAutomaticamenteAEstadoVisibleParaVendedor() {
+        Pedido pedido = pedido("pedido-1", EstadoPedido.EN_PROCESO);
+        pedido.setFechaExpiracion(LocalDateTime.now().plusMinutes(10));
+        when(pedidoRepository.findByIdAndClienteId("pedido-1", "cliente-1"))
+                .thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var resultado = pedidoService.pagarPedido("cliente-1", "pedido-1");
+
+        assertEquals(EstadoPedido.PAGADO, resultado.estado());
+        verify(pedidoRepository).save(pedido);
+    }
+
+    @Test
+    void marcarEnviado_soloActualizaLineasDelVendedorYFinalizaCuandoTodasSeEnvian() {
+        Pedido pedido = pedido("pedido-1", EstadoPedido.PAGADO);
+        pedido.getLineas().add(new LineaPedido(
+                "producto-2", "Ratón", "RAT-2", null, "vendedor-2", 500, 1, 500));
+        when(pedidoRepository.findById("pedido-1")).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var respuestaVendedorUno = pedidoService.marcarEnviado("vendedor-1", "pedido-1");
+
+        assertEquals(EstadoPedido.PAGADO, respuestaVendedorUno.estado());
+        assertEquals(1, respuestaVendedorUno.lineas().size());
+        assertEquals(1_250, respuestaVendedorUno.totalCent());
+        assertEquals(null, respuestaVendedorUno.referenciaMetodoPago());
+        assertEquals(true, respuestaVendedorUno.lineas().get(0).enviado());
+        assertEquals(false, pedido.getLineas().get(1).isEnviado());
+
+        pedidoService.marcarEnviado("vendedor-2", "pedido-1");
+
+        assertEquals(EstadoPedido.TRAMITADO_ENVIADO, pedido.getEstado());
+    }
+
+    @Test
+    void confirmarEntrega_finalizaPedidoYLoPasaAlHistorico() {
+        Pedido pedido = pedido("pedido-1", EstadoPedido.TRAMITADO_ENVIADO);
+        pedido.getLineas().get(0).setEnviado(true);
+        when(pedidoRepository.findByIdAndClienteId("pedido-1", "cliente-1"))
+                .thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var respuesta = pedidoService.confirmarEntrega("cliente-1", "pedido-1");
+
+        assertEquals(EstadoPedido.FINALIZADO, respuesta.estado());
+    }
+
+    @Test
+    void cancelarPedido_restauraStockYNoPermiteCancelarDespuesDelEnvio() {
+        Pedido pedido = pedido("pedido-1", EstadoPedido.PAGADO);
+        when(pedidoRepository.findByIdAndClienteId("pedido-1", "cliente-1"))
+                .thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(mongoTemplate.updateFirst(any(Query.class), any(Update.class), eq(Producto.class)))
+                .thenReturn(UpdateResult.acknowledged(1L, 1L, null));
+
+        var respuesta = pedidoService.cancelarPedido("cliente-1", "pedido-1");
+
+        assertEquals(EstadoPedido.CANCELADO, respuesta.estado());
+        verify(mongoTemplate).updateFirst(any(Query.class), any(Update.class), eq(Producto.class));
+
+        Pedido enviado = pedido("pedido-2", EstadoPedido.PAGADO);
+        enviado.getLineas().get(0).setEnviado(true);
+        when(pedidoRepository.findByIdAndClienteId("pedido-2", "cliente-1"))
+                .thenReturn(Optional.of(enviado));
+        assertThrows(ConflictException.class,
+                () -> pedidoService.cancelarPedido("cliente-1", "pedido-2"));
+    }
+
+    @Test
+    void expirarPedidosPendientesDePago_cancelaYDevuelveStock() {
+        Pedido pedido = pedido("pedido-1", EstadoPedido.EN_PROCESO);
+        pedido.setFechaExpiracion(LocalDateTime.now().minusSeconds(1));
+        when(pedidoRepository.findByEstadoAndFechaExpiracionLessThanEqual(
+                eq(EstadoPedido.EN_PROCESO), any(LocalDateTime.class))).thenReturn(List.of(pedido));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(mongoTemplate.updateFirst(any(Query.class), any(Update.class), eq(Producto.class)))
+                .thenReturn(UpdateResult.acknowledged(1L, 1L, null));
+
+        pedidoService.expirarPedidosPendientesDePago();
+
+        assertEquals(EstadoPedido.CANCELADO, pedido.getEstado());
+        verify(mongoTemplate).updateFirst(any(Query.class), any(Update.class), eq(Producto.class));
+    }
+
+    @Test
+    void listarPedidosVendedor_migraPedidosAntiguosYDevuelveSoloSusLineas() {
+        Pedido antiguo = pedido("pedido-antiguo", EstadoPedido.RECIBIDO);
+        antiguo.getLineas().get(0).setIdVendedor(null);
+        when(pedidoRepository.findByEstado(EstadoPedido.RECIBIDO)).thenReturn(List.of(antiguo));
+        when(productoRepository.findById("producto-1")).thenReturn(Optional.of(producto()));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(pedidoRepository.findByLineas_IdVendedorAndEstadoIn(
+                eq("vendedor-1"), any())).thenReturn(List.of(antiguo));
+
+        var resultado = pedidoService.listarPedidosVendedor("vendedor-1", false);
+
+        assertEquals(1, resultado.size());
+        assertEquals(EstadoPedido.PAGADO, resultado.get(0).estado());
+        assertEquals(1, resultado.get(0).lineas().size());
+    }
+
+    private Pedido pedido(String id, EstadoPedido estado) {
+        Pedido pedido = new Pedido();
+        pedido.setId(id);
+        pedido.setClienteId("cliente-1");
+        pedido.setEstado(estado);
+        pedido.setFechaPedido(LocalDateTime.now());
+        pedido.setNombreCliente("Ana García");
+        pedido.setDireccionEnvio(new DireccionEnvioPedido(
+                "Ana García", "Calle Mayor 1", "Madrid", "Madrid", "28001", "España", "+34600000000"));
+        pedido.setLineas(new ArrayList<>(List.of(new LineaPedido(
+                "producto-1", "Teclado", "TEC-1", null, "vendedor-1", 1_250, 1, 1_250))));
+        return pedido;
+    }
+
     private void prepararCheckout(Carrito carrito, Producto producto, MetodoPago metodoPago) {
         when(carritoRepository.findByClienteId("cliente-1")).thenReturn(Optional.of(carrito));
         when(metodoPagoRepository.findByIdAndClienteId("pago-1", "cliente-1"))
@@ -217,6 +342,7 @@ class PedidoServiceTest {
         producto.setReferencia("TEC-1");
         producto.setPrecioCent(1_250);
         producto.setNumStock(4);
+        producto.setIdVendedor("vendedor-1");
         producto.setActivo(true);
         return producto;
     }

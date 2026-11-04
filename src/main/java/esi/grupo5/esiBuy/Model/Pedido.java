@@ -16,6 +16,7 @@ public class Pedido {
     @Id
     private String id;
     private String clienteId;
+    private String nombreCliente;
     private List<LineaPedido> lineas = new ArrayList<>();
     private DireccionEnvioPedido direccionEnvio;
     private String metodoPagoId;
@@ -25,6 +26,7 @@ public class Pedido {
     private long totalCent;
     private EstadoPedido estado;
     private LocalDateTime fechaPedido;
+    private LocalDateTime fechaExpiracion;
 
     public Pedido() {
     }
@@ -43,6 +45,14 @@ public class Pedido {
 
     public void setClienteId(String clienteId) {
         this.clienteId = clienteId;
+    }
+
+    public String getNombreCliente() {
+        return nombreCliente;
+    }
+
+    public void setNombreCliente(String nombreCliente) {
+        this.nombreCliente = nombreCliente;
     }
 
     public List<LineaPedido> getLineas() {
@@ -115,5 +125,13 @@ public class Pedido {
 
     public void setFechaPedido(LocalDateTime fechaPedido) {
         this.fechaPedido = fechaPedido;
+    }
+
+    public LocalDateTime getFechaExpiracion() {
+        return fechaExpiracion;
+    }
+
+    public void setFechaExpiracion(LocalDateTime fechaExpiracion) {
+        this.fechaExpiracion = fechaExpiracion;
     }
 }

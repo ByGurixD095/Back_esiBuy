@@ -1,12 +1,14 @@
 package esi.grupo5.esiBuy.Model;
 
-/** Datos de un producto tal como estaban cuando se confirmó el pedido. */
+/** Datos de un producto y su tramitación tal como estaban al confirmar el pedido. */
 public class LineaPedido {
 
     private String productoId;
     private String nombre;
     private String referencia;
     private String urlImagen;
+    private String idVendedor;
+    private boolean enviado;
     private int precioUnitarioCent;
     private int cantidad;
     private long subtotalCent;
@@ -19,6 +21,7 @@ public class LineaPedido {
             String nombre,
             String referencia,
             String urlImagen,
+            String idVendedor,
             int precioUnitarioCent,
             int cantidad,
             long subtotalCent) {
@@ -26,6 +29,7 @@ public class LineaPedido {
         this.nombre = nombre;
         this.referencia = referencia;
         this.urlImagen = urlImagen;
+        this.idVendedor = idVendedor;
         this.precioUnitarioCent = precioUnitarioCent;
         this.cantidad = cantidad;
         this.subtotalCent = subtotalCent;
@@ -61,6 +65,22 @@ public class LineaPedido {
 
     public void setUrlImagen(String urlImagen) {
         this.urlImagen = urlImagen;
+    }
+
+    public String getIdVendedor() {
+        return idVendedor;
+    }
+
+    public void setIdVendedor(String idVendedor) {
+        this.idVendedor = idVendedor;
+    }
+
+    public boolean isEnviado() {
+        return enviado;
+    }
+
+    public void setEnviado(boolean enviado) {
+        this.enviado = enviado;
     }
 
     public int getPrecioUnitarioCent() {

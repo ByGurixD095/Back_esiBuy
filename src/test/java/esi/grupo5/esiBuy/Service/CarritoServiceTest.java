@@ -144,4 +144,16 @@ class CarritoServiceTest {
         assertEquals(2, carrito.getItems().get(0).getCantidad());
     }
 
+    @Test
+    void vaciarCarrito_eliminaTodasLasLineasYGuardaElCarrito() {
+        Carrito carrito = new Carrito("cliente-1");
+        carrito.setItems(new ArrayList<>(List.of(new ItemCarrito("producto-1", 2))));
+        when(carritoRepository.findByClienteId("cliente-1")).thenReturn(Optional.of(carrito));
+
+        carritoService.vaciarCarrito("cliente-1");
+
+        assertTrue(carrito.getItems().isEmpty());
+        verify(carritoRepository).save(carrito);
+    }
+
 }

@@ -6,7 +6,7 @@ import java.util.List;
 import esi.grupo5.esiBuy.Model.EstadoPedido;
 import esi.grupo5.esiBuy.Model.enums.TipoMetodoPago;
 
-/** Vista pública de un pedido del cliente propietario. */
+/** Vista de un pedido para el cliente propietario o las líneas de un vendedor. */
 public record PedidoResponseDTO(
         String id,
         List<LineaPedidoResponseDTO> lineas,
@@ -17,6 +17,7 @@ public record PedidoResponseDTO(
         String referenciaMetodoPago,
         long totalCent,
         EstadoPedido estado,
-        LocalDateTime fechaPedido
+        LocalDateTime fechaPedido,
+        String nombreCliente
 ) {
 }

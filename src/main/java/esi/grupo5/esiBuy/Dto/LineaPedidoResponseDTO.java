@@ -6,6 +6,7 @@ public record LineaPedidoResponseDTO(
         String nombre,
         String referencia,
         String urlImagen,
+        boolean enviado,
         int precioUnitarioCent,
         int cantidad,
         long subtotalCent

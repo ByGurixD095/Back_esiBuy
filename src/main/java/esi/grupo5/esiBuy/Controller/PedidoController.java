@@ -8,6 +8,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -40,6 +42,58 @@ public class PedidoController {
     public ResponseEntity<List<PedidoResponseDTO>> listarPedidos(Authentication authentication) {
         String clienteId = (String) authentication.getPrincipal();
         return ResponseEntity.ok(pedidoService.listarPedidos(clienteId));
+    }
+
+    @GetMapping("/activos")
+    public ResponseEntity<List<PedidoResponseDTO>> listarPedidosActivos(Authentication authentication) {
+        String clienteId = (String) authentication.getPrincipal();
+        return ResponseEntity.ok(pedidoService.listarPedidosCliente(clienteId, false));
+    }
+
+    @GetMapping("/historico")
+    public ResponseEntity<List<PedidoResponseDTO>> listarHistorico(Authentication authentication) {
+        String clienteId = (String) authentication.getPrincipal();
+        return ResponseEntity.ok(pedidoService.listarPedidosCliente(clienteId, true));
+    }
+
+    @PostMapping("/{pedidoId}/pagar")
+    public ResponseEntity<PedidoResponseDTO> pagarPedido(
+            Authentication authentication,
+            @PathVariable String pedidoId) {
+        String clienteId = (String) authentication.getPrincipal();
+        return ResponseEntity.ok(pedidoService.pagarPedido(clienteId, pedidoId));
+    }
+
+    @PostMapping("/{pedidoId}/cancelar")
+    public ResponseEntity<PedidoResponseDTO> cancelarPedido(
+            Authentication authentication,
+            @PathVariable String pedidoId) {
+        String clienteId = (String) authentication.getPrincipal();
+        return ResponseEntity.ok(pedidoService.cancelarPedido(clienteId, pedidoId));
+    }
+
+    @PostMapping("/{pedidoId}/confirmar-entrega")
+    public ResponseEntity<PedidoResponseDTO> confirmarEntrega(
+            Authentication authentication,
+            @PathVariable String pedidoId) {
+        String clienteId = (String) authentication.getPrincipal();
+        return ResponseEntity.ok(pedidoService.confirmarEntrega(clienteId, pedidoId));
+    }
+
+    @GetMapping("/vendedor")
+    public ResponseEntity<List<PedidoResponseDTO>> listarPedidosVendedor(
+            Authentication authentication,
+            @RequestParam(defaultValue = "false") boolean historico) {
+        String vendedorId = (String) authentication.getPrincipal();
+        return ResponseEntity.ok(pedidoService.listarPedidosVendedor(vendedorId, historico));
+    }
+
+    @PatchMapping("/{pedidoId}/enviar")
+    public ResponseEntity<PedidoResponseDTO> marcarEnviado(
+            Authentication authentication,
+            @PathVariable String pedidoId) {
+        String vendedorId = (String) authentication.getPrincipal();
+        return ResponseEntity.ok(pedidoService.marcarEnviado(vendedorId, pedidoId));
     }
 
     @GetMapping("/{pedidoId}")

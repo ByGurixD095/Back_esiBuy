@@ -74,6 +74,25 @@ class SecurityPedidosTest {
     }
 
     @Test
+    void vendedor_puedeConsultarSuColaDePedidos() throws Exception {
+        simularLogin("VENDEDOR");
+        when(pedidoService.listarPedidosVendedor("cliente-1", false)).thenReturn(List.of());
+
+        mockMvc.perform(get("/pedidos/vendedor").cookie(new Cookie("accessToken", "token")))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void cliente_noPuedeConsultarLaColaDePedidosDelVendedor() throws Exception {
+        simularLogin("CLIENTE");
+
+        mockMvc.perform(get("/pedidos/vendedor").cookie(new Cookie("accessToken", "token")))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(pedidoService);
+    }
+
+    @Test
     void sinAutenticacion_noPuedeConsultarPedidos() throws Exception {
         mockMvc.perform(get("/pedidos"))
                 .andExpect(status().isUnauthorized());

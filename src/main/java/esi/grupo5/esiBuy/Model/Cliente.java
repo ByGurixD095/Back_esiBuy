@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.data.annotation.TypeAlias;
 
@@ -27,6 +29,8 @@ public class Cliente extends Usuario {
     /** Tipo de cliente, que determina las condiciones asociadas a la cuenta. */
     @NotNull
     private TipoCliente tipoCliente;
+
+    private List<DireccionGuardada> direcciones = new ArrayList<>();
 
     /** Crea un cliente con rol y tipo de cliente predeterminados. */
     public Cliente() {
@@ -127,4 +131,9 @@ public class Cliente extends Usuario {
     public TipoCliente getTipoCliente() { return tipoCliente; }
     /** @param tipoCliente tipo de cliente */
     public void setTipoCliente(TipoCliente tipoCliente) { this.tipoCliente = tipoCliente; }
+
+    /** @return direcciones de envío guardadas */
+    public List<DireccionGuardada> getDirecciones() { return direcciones; }
+    /** @param direcciones direcciones de envío guardadas */
+    public void setDirecciones(List<DireccionGuardada> direcciones) { this.direcciones = direcciones; }
 }

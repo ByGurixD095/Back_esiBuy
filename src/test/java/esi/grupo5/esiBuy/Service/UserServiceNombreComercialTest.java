@@ -5,6 +5,8 @@ import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.Usuario;
 import esi.grupo5.esiBuy.Model.Vendedor;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
+import esi.grupo5.esiBuy.Repository.PedidoRepository;
+import esi.grupo5.esiBuy.Repository.ProductoRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,9 +33,15 @@ class UserServiceNombreComercialTest {
 
     @Mock
     private AuthService authService;
+    @Mock
+    private PedidoRepository pedidoRepository;
+    @Mock
+    private ProductoRepository productoRepository;
 
     private UserService crearServicio() {
-        return new UserService(usuarioRepository, passwordEncoder, passwordValidatorService, authService);
+        return new UserService(
+                usuarioRepository, passwordEncoder, passwordValidatorService, authService,
+                pedidoRepository, productoRepository);
     }
 
     @Test

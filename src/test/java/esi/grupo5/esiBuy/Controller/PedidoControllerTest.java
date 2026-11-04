@@ -57,8 +57,9 @@ class PedidoControllerTest {
                         "Personal",
                         "**** 1234",
                         2_500,
-                        EstadoPedido.RECIBIDO,
-                        null));
+                        EstadoPedido.EN_PROCESO,
+                        null,
+                        "Ana García"));
 
         mockMvc.perform(post("/pedidos")
                         .principal(new UsernamePasswordAuthenticationToken("cliente-1", null))
@@ -80,7 +81,7 @@ class PedidoControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value("pedido-1"))
                 .andExpect(jsonPath("$.totalCent").value(2_500))
-                .andExpect(jsonPath("$.estado").value("RECIBIDO"));
+                .andExpect(jsonPath("$.estado").value("EN_PROCESO"));
 
         verify(pedidoService).crearPedido(
                 org.mockito.ArgumentMatchers.eq("cliente-1"),
