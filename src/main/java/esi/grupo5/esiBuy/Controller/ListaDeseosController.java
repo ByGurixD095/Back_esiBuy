@@ -39,19 +39,30 @@ public class ListaDeseosController {
 
     @GetMapping
     public ResponseEntity<List<ListaDeseos>> obtenerListas (Authentication authentication) {
+
         String idCliente = (String) authentication.getPrincipal();
         List<ListaDeseos> listas = listaDeseosService.obtenerListas(idCliente);
+        
         return ResponseEntity.ok(listas);
     }
 
     @GetMapping ("/{id}/productos")
     public ResponseEntity<List<Producto>> obtenerProductosLista (@PathVariable String id, Authentication authentication) {
+
         String idCliente = (String) authentication.getPrincipal();
         List<Producto> productos = listaDeseosService.obtenerProductosLista(id, idCliente);
 
         return ResponseEntity.ok(productos);
     }
 
+    @PostMapping ("/{id}/productos/{idProducto}")
+    public ResponseEntity<ListaDeseos> agregarProductoLista (@PathVariable String id, @PathVariable String idProducto, Authentication authentication) {
+        
+        String idCliente = (String) authentication.getPrincipal();
+        ListaDeseos lista = listaDeseosService.agregarProductoLista(id, idProducto, idCliente);
+
+        return ResponseEntity.ok(lista);
+    }
     
 
 
