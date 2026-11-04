@@ -29,6 +29,7 @@ export interface LineaPedido {
   nombre: string;
   referencia: string;
   urlImagen: string | null;
+  enviado?: boolean;
   precioUnitarioCent: number;
   cantidad: number;
   subtotalCent: number;
@@ -45,6 +46,7 @@ export interface Pedido {
   totalCent: number;
   estado: string;
   fechaPedido: string | null;
+  nombreCliente?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -53,10 +55,57 @@ export class PedidosService {
   private readonly apiUrl = `${environment.apiUrl}/pedidos`;
 
   crear(datos: CrearPedidoRequest): Observable<PedidoCreado> {
-    return this.http.post<PedidoCreado>(this.apiUrl, datos);
+    return this.http.post<PedidoCreado>(this.apiUrl, datos, { withCredentials: true });
   }
 
   listar(): Observable<Pedido[]> {
-    return this.http.get<Pedido[]>(this.apiUrl);
+    return this.http.get<Pedido[]>(this.apiUrl, { withCredentials: true });
+  }
+
+  listarActivos(): Observable<Pedido[]> {
+    return this.http.get<Pedido[]>(`${this.apiUrl}/activos`, { withCredentials: true });
+  }
+
+  listarHistorico(): Observable<Pedido[]> {
+    return this.http.get<Pedido[]>(`${this.apiUrl}/historico`, { withCredentials: true });
+  }
+
+  listarVendedor(historico = false): Observable<Pedido[]> {
+    return this.http.get<Pedido[]>(`${this.apiUrl}/vendedor`, {
+      params: historico ? { historico: true } : {},
+      withCredentials: true,
+    });
+  }
+
+  pagar(pedidoId: string): Observable<Pedido> {
+    return this.http.post<Pedido>(
+      `${this.apiUrl}/${encodeURIComponent(pedidoId)}/pagar`,
+      null,
+      { withCredentials: true },
+    );
+  }
+
+  cancelar(pedidoId: string): Observable<Pedido> {
+    return this.http.post<Pedido>(
+      `${this.apiUrl}/${encodeURIComponent(pedidoId)}/cancelar`,
+      null,
+      { withCredentials: true },
+    );
+  }
+
+  confirmarEntrega(pedidoId: string): Observable<Pedido> {
+    return this.http.post<Pedido>(
+      `${this.apiUrl}/${encodeURIComponent(pedidoId)}/confirmar-entrega`,
+      null,
+      { withCredentials: true },
+    );
+  }
+
+  enviar(pedidoId: string): Observable<Pedido> {
+    return this.http.patch<Pedido>(
+      `${this.apiUrl}/${encodeURIComponent(pedidoId)}/enviar`,
+      null,
+      { withCredentials: true },
+    );
   }
 }

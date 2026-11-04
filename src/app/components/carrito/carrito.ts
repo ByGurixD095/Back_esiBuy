@@ -4,6 +4,7 @@ import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { CarritoService, ItemCarrito } from '../../services/carrito.service';
+import { DireccionGuardada, DireccionesService } from '../../services/direcciones.service';
 import { MetodoPago, MetodosPagoService } from '../../services/metodos-pago-service/metodos-pago';
 import { CrearPedidoRequest, PedidoCreado, PedidosService } from '../../services/pedidos.service';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
@@ -18,6 +19,7 @@ import { MarcoPagina } from '../marco-pagina/marco-pagina';
 export class Carrito implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly carritoService = inject(CarritoService);
+  private readonly direccionesService = inject(DireccionesService);
   private readonly metodosPagoService = inject(MetodosPagoService);
   private readonly pedidosService = inject(PedidosService);
 
@@ -26,12 +28,20 @@ export class Carrito implements OnInit {
   readonly error = signal<string | null>(null);
   readonly actualizandoIds = signal<ReadonlySet<string>>(new Set());
   readonly productoPendienteEliminar = signal<ItemCarrito | null>(null);
+  readonly confirmacionVaciar = signal(false);
+  readonly vaciandoCarrito = signal(false);
   readonly checkoutAbierto = signal(false);
   readonly metodosPago = signal<MetodoPago[]>([]);
   readonly cargandoMetodosPago = signal(false);
   readonly errorMetodosPago = signal('');
+  readonly direcciones = signal<DireccionGuardada[]>([]);
+  readonly cargandoDirecciones = signal(false);
+  readonly errorDirecciones = signal('');
   readonly creandoPedido = signal(false);
+  readonly procesandoPago = signal(false);
   readonly errorPedido = signal('');
+  readonly errorPago = signal('');
+  readonly pedidoPendientePago = signal<PedidoCreado | null>(null);
   readonly pedidoConfirmado = signal<PedidoCreado | null>(null);
   readonly cantidadUnidades = computed(() => this.items().reduce((total, item) => total + item.cantidad, 0));
   readonly totalCentimos = computed(() =>
@@ -40,34 +50,7 @@ export class Carrito implements OnInit {
 
   readonly checkoutForm = new FormGroup({
     metodoPagoId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    nombreCompleto: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(120)],
-    }),
-    direccion: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(200)],
-    }),
-    ciudad: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(100)],
-    }),
-    provincia: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(100)],
-    }),
-    codigoPostal: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(20)],
-    }),
-    pais: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(100)],
-    }),
-    telefono: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.pattern(/\S/), Validators.maxLength(30)],
-    }),
+    direccionId: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
   });
 
   ngOnInit(): void {
@@ -132,6 +115,34 @@ export class Carrito implements OnInit {
     this.productoPendienteEliminar.set(null);
   }
 
+  solicitarVaciado(): void {
+    if (!this.vaciandoCarrito() && this.actualizandoIds().size === 0) {
+      this.confirmacionVaciar.set(true);
+    }
+  }
+
+  cancelarVaciado(): void {
+    this.confirmacionVaciar.set(false);
+  }
+
+  confirmarVaciado(): void {
+    if (this.vaciandoCarrito() || this.actualizandoIds().size > 0) return;
+
+    this.confirmacionVaciar.set(false);
+    this.vaciandoCarrito.set(true);
+    this.error.set(null);
+    this.carritoService.vaciar().subscribe({
+      next: () => {
+        this.items.set([]);
+        this.vaciandoCarrito.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.error.set(this.auth.errorMessage(error, 'No se ha podido vaciar la cesta.'));
+        this.vaciandoCarrito.set(false);
+      },
+    });
+  }
+
   confirmarEliminacion(): void {
     const item = this.productoPendienteEliminar();
     if (!item || this.actualizandoIds().has(item.productoId)) return;
@@ -154,7 +165,9 @@ export class Carrito implements OnInit {
   abrirCheckout(): void {
     this.checkoutAbierto.set(true);
     this.errorPedido.set('');
+    this.errorPago.set('');
     this.cargarMetodosPago();
+    this.cargarDirecciones();
   }
 
   cerrarCheckout(): void {
@@ -187,25 +200,51 @@ export class Carrito implements OnInit {
     });
   }
 
+  cargarDirecciones(): void {
+    this.cargandoDirecciones.set(true);
+    this.errorDirecciones.set('');
+    this.direccionesService.listar().subscribe({
+      next: (direcciones) => {
+        this.direcciones.set(direcciones);
+        const direccionId = this.checkoutForm.controls.direccionId.value;
+        if (!direcciones.some((direccion) => direccion.id === direccionId)) {
+          this.checkoutForm.controls.direccionId.setValue(direcciones[0]?.id ?? '');
+        }
+        this.cargandoDirecciones.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.errorDirecciones.set(
+          this.auth.errorMessage(error, 'No se han podido cargar tus direcciones de envío.'),
+        );
+        this.cargandoDirecciones.set(false);
+      },
+    });
+  }
+
   confirmarPedido(): void {
     if (this.creandoPedido()) return;
-    if (this.checkoutForm.invalid || this.metodosPago().length === 0) {
+    if (this.checkoutForm.invalid || this.metodosPago().length === 0 || this.direcciones().length === 0) {
       this.checkoutForm.markAllAsTouched();
-      this.errorPedido.set('Completa los datos de envío y selecciona un método de pago.');
+      this.errorPedido.set('Selecciona una dirección guardada y un método de pago.');
       return;
     }
 
     const valores = this.checkoutForm.getRawValue();
+    const direccion = this.direcciones().find((item) => item.id === valores.direccionId);
+    if (!direccion) {
+      this.errorPedido.set('La dirección seleccionada ya no está disponible. Actualiza la lista.');
+      return;
+    }
     const datos: CrearPedidoRequest = {
       metodoPagoId: valores.metodoPagoId,
       direccionEnvio: {
-        nombreCompleto: valores.nombreCompleto.trim(),
-        direccion: valores.direccion.trim(),
-        ciudad: valores.ciudad.trim(),
-        provincia: valores.provincia.trim(),
-        codigoPostal: valores.codigoPostal.trim(),
-        pais: valores.pais.trim(),
-        telefono: valores.telefono.trim(),
+        nombreCompleto: direccion.nombreCompleto,
+        direccion: direccion.direccion,
+        ciudad: direccion.ciudad,
+        provincia: direccion.provincia,
+        codigoPostal: direccion.codigoPostal,
+        pais: direccion.pais,
+        telefono: direccion.telefono,
       },
     };
 
@@ -213,16 +252,48 @@ export class Carrito implements OnInit {
     this.errorPedido.set('');
     this.pedidosService.crear(datos).subscribe({
       next: (pedido) => {
-        this.pedidoConfirmado.set(pedido);
+        this.pedidoPendientePago.set(pedido);
         this.items.set([]);
-        this.checkoutAbierto.set(false);
         this.creandoPedido.set(false);
       },
       error: (error: HttpErrorResponse) => {
         this.errorPedido.set(
-          this.auth.errorMessage(error, 'No se ha podido realizar el pedido. Revisa la cesta e inténtalo de nuevo.'),
+          error.status === 409
+            ? 'Ha cambiado la disponibilidad de algún producto. Hemos actualizado la cesta; revísala antes de volver a intentarlo.'
+            : this.auth.errorMessage(error, 'No se ha podido realizar el pedido. Revisa la cesta e inténtalo de nuevo.'),
         );
         this.creandoPedido.set(false);
+        if (error.status === 409) this.cargarCarrito();
+      },
+    });
+  }
+
+  confirmarPago(): void {
+    const pedido = this.pedidoPendientePago();
+    if (!pedido || this.procesandoPago()) return;
+
+    this.procesandoPago.set(true);
+    this.errorPago.set('');
+    this.pedidosService.pagar(pedido.id).subscribe({
+      next: (pedidoPagado) => {
+        this.pedidoConfirmado.set(pedidoPagado);
+        this.pedidoPendientePago.set(null);
+        this.procesandoPago.set(false);
+        this.checkoutAbierto.set(false);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.procesandoPago.set(false);
+        if (error.status === 409) {
+          this.pedidoPendientePago.set(null);
+          this.errorPago.set(
+            'No se pudo completar el pago dentro del plazo. Hemos actualizado el carrito; revísalo antes de realizar otro pedido.',
+          );
+          this.cargarCarrito();
+        } else {
+          this.errorPago.set(
+            this.auth.errorMessage(error, 'No se ha podido confirmar el pago simulado. Puedes volver a intentarlo.'),
+          );
+        }
       },
     });
   }
@@ -231,9 +302,10 @@ export class Carrito implements OnInit {
     return this.actualizandoIds().has(productoId);
   }
 
-  campoEnvioInvalido(campo: keyof typeof this.checkoutForm.controls): boolean {
-    const control = this.checkoutForm.controls[campo];
-    return control.invalid && (control.touched || control.dirty);
+  direccionSeleccionada(): DireccionGuardada | null {
+    return this.direcciones().find(
+      (direccion) => direccion.id === this.checkoutForm.controls.direccionId.value,
+    ) ?? null;
   }
 
   formatearPrecio(precioCent: number): string {
