@@ -61,5 +61,12 @@ public class CarritoController {
         carritoService.eliminarProducto(clienteId, productoId);
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping
+    public ResponseEntity<Void> vaciarCarrito(Authentication authentication) {
+        String clienteId = (String) authentication.getPrincipal();
+        carritoService.vaciarCarrito(clienteId);
+        return ResponseEntity.noContent().build();
+    }
     
 }

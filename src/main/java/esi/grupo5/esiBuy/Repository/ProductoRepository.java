@@ -36,6 +36,8 @@ public interface ProductoRepository extends MongoRepository<Producto, String> {
      */
     Optional<Producto> findByIdAndIdVendedor(String id, String idVendedor);
 
+    boolean existsByIdAndIdVendedor(String id, String idVendedor);
+
     /**
      * Indica si algún producto referencia la categoría indicada.
      *
@@ -43,5 +45,7 @@ public interface ProductoRepository extends MongoRepository<Producto, String> {
      * @return true si hay al menos un producto con esa categoría
      */
     boolean existsByCategoriaId(String categoriaId);
+
+    long deleteByIdVendedor(String idVendedor);
 
 }

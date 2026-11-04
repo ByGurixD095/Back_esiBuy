@@ -112,6 +112,74 @@ texto no se migran automáticamente; deben actualizarse antes de usar este
 formato. Las operaciones administrativas requieren el rol de administrador.
 Los nombres duplicados se responden con HTTP 409.
 
+## Pedidos
+
+Los clientes pueden confirmar el carrito mediante `POST /pedidos`. La petición
+requiere el identificador de un método de pago previamente guardado y una
+dirección de envío completa:
+
+```json
+{
+  "metodoPagoId": "id-del-metodo",
+  "direccionEnvio": {
+    "nombreCompleto": "Ana García",
+    "direccion": "Calle Mayor 1",
+    "ciudad": "Madrid",
+    "provincia": "Madrid",
+    "codigoPostal": "28001",
+    "pais": "España",
+    "telefono": "+34600000000"
+  }
+}
+```
+
+`POST /pedidos` crea un pedido `EN_PROCESO`, reserva el stock durante 30
+minutos y vacía el carrito. No realiza ningún cobro. El cliente completa la
+simulación mediante `POST /pedidos/{pedidoId}/pagar`; el estado pasa a
+`PAGADO` automáticamente y el pedido aparece en la cola del vendedor, sin
+aceptación manual. Si no se completa el pago dentro del plazo, el pedido pasa
+a `CANCELADO` y se restaura el stock. El cliente también puede cancelar antes
+de que se envíe ninguna línea. La cesta completa se puede descartar con
+`DELETE /carrito`.
+
+El vendedor consulta su cola con `GET /pedidos/vendedor` y marca sus propias
+líneas como enviadas con `PATCH /pedidos/{pedidoId}/enviar`. En pedidos con
+varios vendedores, el estado global pasa a `TRAMITADO_ENVIADO` cuando todos
+han enviado sus líneas. El cliente confirma la entrega con
+`POST /pedidos/{pedidoId}/confirmar-entrega`, que cambia el estado a
+`FINALIZADO`. Los pedidos cancelados y finalizados se consultan en
+`GET /pedidos/historico` (cliente) o `GET /pedidos/vendedor?historico=true`
+(vendedor); `GET /pedidos` conserva la respuesta completa por compatibilidad.
+
+El pedido conserva copias de sus productos, precios, dirección y datos
+visibles del método de pago; no se guarda el número de tarjeta, solo su
+referencia enmascarada. Las líneas de producto compradas no se editan, y los
+pedidos finalizados o cancelados son de solo consulta. Los pedidos antiguos
+`RECIBIDO` se migran a `PAGADO` al consultarlos desde la cola del vendedor.
+Al eliminar un cliente se desvinculan sus pedidos y se conserva el nombre
+histórico para que sigan apareciendo al vendedor. No se puede eliminar un
+vendedor con pedidos activos; al eliminarlo, sus productos de catálogo se
+borran y las copias de producto del pedido se mantienen. El rol vendedor solo
+puede consultar y tramitar pedidos que contienen sus propias líneas; el rol
+cliente solo puede consultar y gestionar los suyos.
+
+### Direcciones de envío guardadas
+
+Las direcciones pertenecen al cliente autenticado y se almacenan en su cuenta.
+No se envía un identificador de cliente en las peticiones:
+
+- `GET /users/me/direcciones`: lista las direcciones guardadas.
+- `POST /users/me/direcciones`: crea una dirección y devuelve `201` con su `id`.
+- `PUT /users/me/direcciones/{direccionId}`: actualiza una dirección propia.
+- `DELETE /users/me/direcciones/{direccionId}`: elimina una dirección propia y devuelve `204`.
+
+Los cuerpos de creación y actualización usan los campos requeridos de
+`DireccionEnvioDTO`: `nombreCompleto`, `direccion`, `ciudad`, `provincia`,
+`codigoPostal`, `pais` y `telefono`. Un identificador inexistente o que no
+pertenezca al cliente devuelve `404`. Las direcciones se guardan dentro del
+documento del cliente y no alteran las copias de dirección ya guardadas en los
+pedidos.
+
 ## Cobertura con JaCoCo
 
 La cobertura se genera durante la fase `verify`, junto con la ejecución de los

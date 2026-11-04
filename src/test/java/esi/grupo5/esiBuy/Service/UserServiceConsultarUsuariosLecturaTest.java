@@ -17,6 +17,8 @@ import esi.grupo5.esiBuy.Model.Vendedor;
 import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Model.enums.TipoCliente;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
+import esi.grupo5.esiBuy.Repository.PedidoRepository;
+import esi.grupo5.esiBuy.Repository.ProductoRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +49,8 @@ class UserServiceConsultarUsuariosLecturaTest {
     @Mock private UsuarioRepository usuarioRepository;
     @Mock private PasswordValidatorService passwordValidatorService;
     @Mock private AuthService authService;
+    @Mock private PedidoRepository pedidoRepository;
+    @Mock private ProductoRepository productoRepository;
 
     private UserService service;
 
@@ -56,7 +60,9 @@ class UserServiceConsultarUsuariosLecturaTest {
                 usuarioRepository,
                 new BCryptPasswordEncoder(),
                 passwordValidatorService,
-                authService);
+                authService,
+                pedidoRepository,
+                productoRepository);
     }
 
     @Test

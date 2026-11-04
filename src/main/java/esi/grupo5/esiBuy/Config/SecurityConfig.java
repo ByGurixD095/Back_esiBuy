@@ -148,8 +148,16 @@ public class SecurityConfig {
                     .hasRole(ROL_CLIENTE);
                 auth.requestMatchers("/carrito/**")
                     .hasRole(ROL_CLIENTE);
+
+                auth.requestMatchers("/pedidos/vendedor", "/pedidos/vendedor/**")
+                    .hasRole(ROL_VENDEDOR);
+
+                auth.requestMatchers("/pedidos/**")
+                    .hasRole(ROL_CLIENTE);
                     
                 auth.requestMatchers("/users/me/metodoPago/**")
+                    .hasRole(ROL_CLIENTE);
+                auth.requestMatchers("/users/me/direcciones/**")
                     .hasRole(ROL_CLIENTE);
                     
                 auth.requestMatchers("/products/**")

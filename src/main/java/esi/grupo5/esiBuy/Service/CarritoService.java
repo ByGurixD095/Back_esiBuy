@@ -111,4 +111,11 @@ public class CarritoService {
         carritoRepository.save(carrito);
     }
 
+    public void vaciarCarrito(String clienteId) {
+        carritoRepository.findByClienteId(clienteId).ifPresent(carrito -> {
+            carrito.getItems().clear();
+            carritoRepository.save(carrito);
+        });
+    }
+
 }
