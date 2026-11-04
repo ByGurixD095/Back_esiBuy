@@ -51,6 +51,15 @@ describe('CarritoService', () => {
     peticion.flush(null);
   });
 
+  it('vacía toda la cesta mediante DELETE autenticado', () => {
+    service.vaciar().subscribe();
+
+    const peticion = httpTesting.expectOne('http://localhost:8080/carrito');
+    expect(peticion.request.method).toBe('DELETE');
+    expect(peticion.request.withCredentials).toBe(true);
+    peticion.flush(null);
+  });
+
   it('añade productos mediante POST autenticado', () => {
     service.anadirProducto('p1').subscribe();
 

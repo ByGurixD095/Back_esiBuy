@@ -41,4 +41,8 @@ export class CarritoService {
       withCredentials: true,
     });
   }
+
+  vaciar(): Observable<void> {
+    return this.http.delete<void>(this.apiUrl, { withCredentials: true });
+  }
 }

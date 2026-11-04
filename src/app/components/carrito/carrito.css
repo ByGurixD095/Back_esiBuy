@@ -143,9 +143,28 @@ h1 {
 }
 
 .items-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin: 0 0 12px;
   color: var(--esi-soft-ink);
   font-size: 14px;
+}
+
+.clear-cart-button {
+  border: 0;
+  padding: 4px 0;
+  color: var(--esi-error-text);
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.clear-cart-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
 }
 
 .inline-error {
@@ -502,6 +521,27 @@ h1 {
   background: #fff;
   color: var(--esi-ink);
   font: inherit;
+}
+
+.checkout-address {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border-radius: 8px;
+  color: var(--esi-soft-ink);
+  background: #f7f5ef;
+  font-size: 14px;
+}
+
+.checkout-address strong {
+  color: var(--esi-ink);
+}
+
+.checkout-address a {
+  width: fit-content;
+  margin-top: 6px;
+  color: var(--esi-orange-text);
+  font-weight: 700;
 }
 
 .checkout-field input:focus-visible,
