@@ -3,6 +3,8 @@ package esi.grupo5.esiBuy.Controller;
 import esi.grupo5.esiBuy.Dto.ProductoDTO;
 import esi.grupo5.esiBuy.Dto.FiltroCatalogoDTO;
 import esi.grupo5.esiBuy.Dto.ProductInfoDTO;
+import esi.grupo5.esiBuy.Dto.ValoracionRequestDTO;
+import esi.grupo5.esiBuy.Dto.ValoracionResponseDTO;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Service.ProductoService;
 
@@ -152,8 +154,21 @@ public class ProductoController {
      */
     @GetMapping("/{id}/info")
     public ResponseEntity<ProductInfoDTO> obtenerInfoProducto(
-            @PathVariable String id) {
-        return ResponseEntity.ok(productoService.infoProducto(id));
+            @PathVariable String id, Authentication authentication) {
+        String usuarioId = authentication == null ? null : (String) authentication.getPrincipal();
+        return ResponseEntity.ok(usuarioId == null
+                ? productoService.infoProducto(id)
+                : productoService.infoProducto(id, usuarioId));
+    }
+
+    @PostMapping("/{id}/valoraciones")
+    public ResponseEntity<ValoracionResponseDTO> crearValoracion(
+            @PathVariable String id,
+            Authentication authentication,
+            @Valid @RequestBody ValoracionRequestDTO dto) {
+        String usuarioId = (String) authentication.getPrincipal();
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(productoService.crearValoracion(id, usuarioId, dto));
     }
 
 }
