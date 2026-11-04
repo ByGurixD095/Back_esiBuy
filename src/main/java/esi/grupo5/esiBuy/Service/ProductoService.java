@@ -10,7 +10,6 @@ import esi.grupo5.esiBuy.Exception.ForbiddenException;
 import esi.grupo5.esiBuy.Exception.NotFoundException;
 import esi.grupo5.esiBuy.Model.Categoria;
 import esi.grupo5.esiBuy.Model.EstadoPedido;
-import esi.grupo5.esiBuy.Model.Pedido;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Model.Valoracion;
 import esi.grupo5.esiBuy.Repository.CategoriaRepository;
