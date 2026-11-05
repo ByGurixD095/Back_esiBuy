@@ -7,7 +7,9 @@ import esi.grupo5.esiBuy.Exception.NotFoundException;
 import esi.grupo5.esiBuy.Model.Categoria;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Repository.CategoriaRepository;
+import esi.grupo5.esiBuy.Repository.PedidoRepository;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
+import esi.grupo5.esiBuy.Repository.ValoracionRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -52,6 +54,12 @@ class ProductoServiceTest {
     @Mock
     private UserService usuarioService;
 
+    @Mock
+    private PedidoRepository pedidoRepository;
+
+    @Mock
+    private ValoracionRepository valoracionRepository;
+
     @InjectMocks
     private ProductoService productoService;
 
@@ -59,6 +67,8 @@ class ProductoServiceTest {
     void configurarCategoria() {
         lenient().when(categoriaRepository.findById("categoria-1"))
                 .thenReturn(Optional.of(new Categoria("categoria-1", "Ropa")));
+        lenient().when(valoracionRepository.findByProductoIdOrderByFechaDesc(any()))
+                .thenReturn(List.of());
     }
 
     @Test

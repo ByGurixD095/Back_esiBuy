@@ -129,6 +129,8 @@ public class SecurityConfig {
 
                 auth.requestMatchers(HttpMethod.GET, "/products/disponibles").permitAll();
                 auth.requestMatchers(HttpMethod.GET, "/products/*/info").permitAll();
+                auth.requestMatchers(HttpMethod.POST, "/products/*/valoraciones")
+                    .hasRole(ROL_CLIENTE);
                 auth.requestMatchers(HttpMethod.GET, "/categorias").permitAll();
 
                 auth.requestMatchers(HttpMethod.POST, "/users/administradores")

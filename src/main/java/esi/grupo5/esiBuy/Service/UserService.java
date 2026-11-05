@@ -497,4 +497,10 @@ public class UserService {
 
         return ((Vendedor) user).getNombreComercial();
     }
+
+    public String getNombreUsuarioById(String usuarioId) {
+        Usuario user = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+        return (user.getNombre() + " " + user.getApellidos()).trim();
+    }
 }

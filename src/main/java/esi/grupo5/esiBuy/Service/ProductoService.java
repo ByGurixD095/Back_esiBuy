@@ -3,11 +3,19 @@ package esi.grupo5.esiBuy.Service;
 import esi.grupo5.esiBuy.Dto.FiltroCatalogoDTO;
 import esi.grupo5.esiBuy.Dto.ProductInfoDTO;
 import esi.grupo5.esiBuy.Dto.ProductoDTO;
+import esi.grupo5.esiBuy.Dto.ValoracionRequestDTO;
+import esi.grupo5.esiBuy.Dto.ValoracionResponseDTO;
+import esi.grupo5.esiBuy.Exception.ConflictException;
+import esi.grupo5.esiBuy.Exception.ForbiddenException;
 import esi.grupo5.esiBuy.Exception.NotFoundException;
 import esi.grupo5.esiBuy.Model.Categoria;
+import esi.grupo5.esiBuy.Model.EstadoPedido;
 import esi.grupo5.esiBuy.Model.Producto;
+import esi.grupo5.esiBuy.Model.Valoracion;
 import esi.grupo5.esiBuy.Repository.CategoriaRepository;
+import esi.grupo5.esiBuy.Repository.PedidoRepository;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
+import esi.grupo5.esiBuy.Repository.ValoracionRepository;
 
 import java.util.List;
 import java.util.Map;
@@ -50,6 +58,8 @@ public class ProductoService {
     private final MongoTemplate mongoTemplate;
 
     private final UserService usuarioService;
+    private final PedidoRepository pedidoRepository;
+    private final ValoracionRepository valoracionRepository;
 
     /**
      * Crea el servicio de productos.
@@ -58,11 +68,14 @@ public class ProductoService {
      * @param mongoTemplate motor de consultas MongoDB
      */
     public ProductoService(ProductoRepository productoRepository, CategoriaRepository categoriaRepository,
-            MongoTemplate mongoTemplate, UserService usuarioService) {
+            MongoTemplate mongoTemplate, UserService usuarioService,
+            PedidoRepository pedidoRepository, ValoracionRepository valoracionRepository) {
         this.productoRepository = productoRepository;
         this.categoriaRepository = categoriaRepository;
         this.mongoTemplate = mongoTemplate;
         this.usuarioService = usuarioService;
+        this.pedidoRepository = pedidoRepository;
+        this.valoracionRepository = valoracionRepository;
     }
 
     /**
@@ -333,7 +346,7 @@ public class ProductoService {
      * @return información pública del producto
      * @throws NotFoundException si el producto no existe, está inactivo o no tiene vendedor
      */
-    public ProductInfoDTO infoProducto(String id) {
+    public ProductInfoDTO infoProducto(String id, String usuarioId) {
         Producto producto = productoRepository.findById(id)
                 .filter(Producto::isActivo)
                 .orElseThrow(() -> new NotFoundException("Producto no encontrado"));
@@ -341,6 +354,12 @@ public class ProductoService {
         String nombreComercial = usuarioService.getNombreComercialById(producto.getIdVendedor());
         Categoria categoria = categoriaRepository.findById(producto.getCategoriaId())
                 .orElseThrow(() -> new NotFoundException("Categoría no encontrada"));
+
+        List<Valoracion> valoraciones = valoracionRepository.findByProductoIdOrderByFechaDesc(id);
+        double media = valoraciones.stream().mapToInt(Valoracion::getEstrellas).average().orElse(0);
+        boolean puedeValorar = usuarioId != null
+                && !valoracionRepository.existsByProductoIdAndUsuarioId(id, usuarioId)
+                && haCompradoYFinalizado(usuarioId, id);
 
         return new ProductInfoDTO(
                 producto.getNombre(),
@@ -351,7 +370,52 @@ public class ProductoService {
                 producto.getUrlImagen(),
                 producto.getDescuento(),
                 producto.getDescuentoPremium(),
-                nombreComercial);
+                nombreComercial,
+                media,
+                valoraciones.stream()
+                        .map(valoracion -> new ValoracionResponseDTO(valoracion.getNombreUsuario(),
+                                valoracion.getEstrellas(), valoracion.getTexto(), valoracion.getFecha()))
+                        .toList(),
+                puedeValorar);
+    }
+
+    public ProductInfoDTO infoProducto(String id) {
+        return infoProducto(id, null);
+    }
+
+    public ValoracionResponseDTO crearValoracion(
+            String productoId, String usuarioId, ValoracionRequestDTO dto) {
+        productoRepository.findById(productoId)
+                .filter(Producto::isActivo)
+                .orElseThrow(() -> new NotFoundException("Producto no encontrado"));
+        if (!haCompradoYFinalizado(usuarioId, productoId)) {
+            throw new ForbiddenException("Solo puedes valorar productos de pedidos finalizados");
+        }
+        if (valoracionRepository.existsByProductoIdAndUsuarioId(productoId, usuarioId)) {
+            throw new ConflictException("Ya has valorado este producto");
+        }
+
+        Valoracion valoracion = new Valoracion();
+        valoracion.setProductoId(productoId);
+        valoracion.setUsuarioId(usuarioId);
+        valoracion.setNombreUsuario(usuarioService.getNombreUsuarioById(usuarioId));
+        valoracion.setEstrellas(dto.estrellas());
+        valoracion.setTexto(dto.texto().trim());
+        valoracion.setFecha(java.time.LocalDateTime.now());
+        try {
+            Valoracion guardada = valoracionRepository.save(valoracion);
+            return new ValoracionResponseDTO(guardada.getNombreUsuario(), guardada.getEstrellas(),
+                    guardada.getTexto(), guardada.getFecha());
+        } catch (org.springframework.dao.DuplicateKeyException error) {
+            throw new ConflictException("Ya has valorado este producto", error);
+        }
+    }
+
+    private boolean haCompradoYFinalizado(String usuarioId, String productoId) {
+        return pedidoRepository.findByClienteIdOrderByFechaPedidoDesc(usuarioId).stream()
+                .filter(pedido -> pedido.getEstado() == EstadoPedido.FINALIZADO)
+                .flatMap(pedido -> pedido.getLineas().stream())
+                .anyMatch(linea -> productoId.equals(linea.getProductoId()));
     }
 
     /**
