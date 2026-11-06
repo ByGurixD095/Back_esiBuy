@@ -2,6 +2,7 @@ package esi.grupo5.esiBuy.Controller;
 
 import java.util.List;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.http.HttpStatus;
@@ -63,8 +64,13 @@ public class ListaDeseosController {
 
         return ResponseEntity.ok(lista);
     }
-    
-
+        
+    @DeleteMapping("/{id}/productos/{idProducto}")
+        public ResponseEntity<Void> eliminarProductoLista(@PathVariable String id,@PathVariable String idProducto,Authentication authentication) {
+            String idCliente = (String) authentication.getPrincipal();
+            listaDeseosService.eliminarProductoLista(id, idProducto, idCliente);
+            return ResponseEntity.noContent().build();
+        }
 
 
 }

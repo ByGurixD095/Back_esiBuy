@@ -54,4 +54,16 @@ public class ListaDeseosService {
         return listaDeseosRepository.save(lista);
     }
 
+    public ListaDeseos eliminarProductoLista(String idLista, String idProducto, String idCliente) {
+        ListaDeseos lista = listaDeseosRepository.findByIdAndIdCliente(idLista, idCliente)
+                .orElseThrow(() -> new NotFoundException("Lista de deseos no encontrada"));
+
+        if (!lista.getProductosIds().contains(idProducto)) {
+            throw new NotFoundException("El producto no se encuentra en la lista de deseos");
+        }
+
+        lista.getProductosIds().remove(idProducto);
+        return listaDeseosRepository.save(lista);
+    }
+
 }
