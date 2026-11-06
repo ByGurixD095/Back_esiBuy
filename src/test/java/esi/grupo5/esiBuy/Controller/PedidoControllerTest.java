@@ -19,7 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import esi.grupo5.esiBuy.Dto.DireccionEnvioDTO;
 import esi.grupo5.esiBuy.Dto.PedidoResponseDTO;
-import esi.grupo5.esiBuy.Model.EstadoPedido;
+import esi.grupo5.esiBuy.Model.enums.EstadoPedido;
 import esi.grupo5.esiBuy.Model.enums.TipoMetodoPago;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Service.JwtService;

@@ -8,8 +8,8 @@ import java.util.Collection;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 
-import esi.grupo5.esiBuy.Model.EstadoPedido;
 import esi.grupo5.esiBuy.Model.Pedido;
+import esi.grupo5.esiBuy.Model.enums.EstadoPedido;
 
 /** Acceso a los pedidos persistidos. */
 public interface PedidoRepository extends MongoRepository<Pedido, String> {
