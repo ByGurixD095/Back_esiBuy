@@ -3,10 +3,13 @@ package esi.grupo5.esiBuy.Config;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.http.HttpMethod;
 
@@ -36,6 +39,8 @@ import org.springframework.beans.factory.annotation.Value;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SecurityConfig.class);
 
     private static final String ROL_ADMINISTRADOR = "ADMINISTRADOR";
     private static final String ROL_CLIENTE = "CLIENTE";
@@ -207,6 +212,17 @@ public class SecurityConfig {
         var authentication = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
         Map<String, Object> diagnostic = new LinkedHashMap<>();
+        String requestId = request.getHeader("X-Request-ID");
+        try {
+            requestId = UUID.fromString(requestId).toString();
+        } catch (IllegalArgumentException | NullPointerException invalidRequestId) {
+            requestId = UUID.randomUUID().toString();
+        }
+        String csrfCookieName = partitionedCookies ? "ESIBUY-XSRF-TOKEN" : "XSRF-TOKEN";
+        String csrfHeader = request.getHeader("X-XSRF-TOKEN");
+        String csrfCookie = cookieValue(request, csrfCookieName);
+        int csrfCookieCount = cookieCount(request, csrfCookieName);
+        diagnostic.put("requestId", requestId);
         diagnostic.put("error", "access_denied");
         String reason = exception instanceof MissingCsrfTokenException ? "csrf_cookie_missing"
                 : exception instanceof InvalidCsrfTokenException ? "csrf_token_mismatch"
@@ -215,9 +231,20 @@ public class SecurityConfig {
         diagnostic.put("reason", reason);
         diagnostic.put("method", request.getMethod());
         diagnostic.put("path", request.getRequestURI());
-        diagnostic.put("csrfHeaderPresent", request.getHeader("X-XSRF-TOKEN") != null);
-        diagnostic.put("csrfCookiePresent", hasCookie(request, "ESIBUY-XSRF-TOKEN"));
+        diagnostic.put("csrfEnabled", csrfEnabled);
+        diagnostic.put("csrfCookieName", csrfCookieName);
+        diagnostic.put("csrfHeaderPresent", csrfHeader != null && !csrfHeader.isBlank());
+        diagnostic.put("csrfHeaderLength", csrfHeader == null ? 0 : csrfHeader.length());
+        diagnostic.put("csrfCookiePresent", csrfCookie != null);
+        diagnostic.put("csrfCookieLength", csrfCookie == null ? 0 : csrfCookie.length());
+        diagnostic.put("csrfCookieCount", csrfCookieCount);
+        diagnostic.put("csrfCookieDuplicated", csrfCookieCount > 1);
+        diagnostic.put("csrfHeaderMatchesCookie", csrfHeader != null && csrfCookie != null
+                && csrfHeader.equals(csrfCookie));
         diagnostic.put("accessTokenCookiePresent", hasCookie(request, "accessToken"));
+        diagnostic.put("origin", request.getHeader("Origin"));
+        diagnostic.put("refererPresent", request.getHeader("Referer") != null);
+        diagnostic.put("secFetchSite", request.getHeader("Sec-Fetch-Site"));
         if (!csrfFailure && authentication != null && authentication.isAuthenticated()) {
             diagnostic.put("authorities", authentication.getAuthorities().stream()
                     .map(authority -> authority.getAuthority()).toList());
@@ -230,6 +257,13 @@ public class SecurityConfig {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         response.setHeader("Cache-Control", "no-store");
+        response.setHeader("X-Request-ID", requestId);
+        LOGGER.warn("Access denied requestId={} reason={} method={} path={} csrfHeaderPresent={} "
+                        + "csrfCookiePresent={} csrfCookieCount={} csrfHeaderMatchesCookie={} origin={}",
+                requestId, reason, request.getMethod(), request.getRequestURI(),
+                csrfHeader != null && !csrfHeader.isBlank(), csrfCookie != null, csrfCookieCount,
+                csrfHeader != null && csrfCookie != null && csrfHeader.equals(csrfCookie),
+                request.getHeader("Origin"));
         new ObjectMapper().writeValue(response.getOutputStream(), diagnostic);
     }
 
@@ -240,5 +274,24 @@ public class SecurityConfig {
             if (name.equals(cookie.getName())) return true;
         }
         return false;
+    }
+
+    private String cookieValue(HttpServletRequest request, String name) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) return null;
+        for (Cookie cookie : cookies) {
+            if (name.equals(cookie.getName())) return cookie.getValue();
+        }
+        return null;
+    }
+
+    private int cookieCount(HttpServletRequest request, String name) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) return 0;
+        int count = 0;
+        for (Cookie cookie : cookies) {
+            if (name.equals(cookie.getName())) count++;
+        }
+        return count;
     }
 }

@@ -60,9 +60,13 @@ Configura los valores privados solicitados por Render:
 Render asigna el dominio público de la API al crear el servicio; no es necesario
 configurar ese dominio en CORS. Configura el frontend para llamar a ese dominio
 HTTPS y enviar credenciales (`credentials: "include"`). En cada sesión nueva,
-el frontend debe solicitar `GET /csrf`, conservar `token` y enviar su valor en
-la cabecera indicada por `headerName` en las peticiones `POST`, `PUT`, `PATCH` y
-`DELETE`. El token JWT se entrega solo en cookies `HttpOnly`, no en el JSON.
+el frontend debe solicitar `GET /csrf` también con `credentials: "include"` para
+que el navegador guarde la cookie CSRF que devuelve la API. Después debe conservar
+`token` y enviar su valor en la cabecera indicada por `headerName` en las peticiones
+`POST`, `PUT`, `PATCH` y `DELETE`, siempre con `credentials: "include"`. El token
+del header debe corresponder a la cookie CSRF; si falta esa cookie, la API responde
+403 con `reason: "csrf_cookie_missing"`. El token JWT se entrega solo en cookies
+`HttpOnly`, no en el JSON.
 
 **Importante:** `esibuy.web.app` y el dominio `onrender.com` son sitios distintos.
 Aunque las cookies de producción se configuran como `SameSite=None; Secure`, los
