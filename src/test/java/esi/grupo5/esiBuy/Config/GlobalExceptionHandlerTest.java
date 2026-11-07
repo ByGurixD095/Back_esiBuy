@@ -44,7 +44,7 @@ class GlobalExceptionHandlerTest {
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertEquals(Map.of(
-                "error", "INTERNAL_ERROR",
-                "message", "Error interno"), response.getBody());
+                "error", "SERVER_ERROR",
+                "message", "No se pudo completar la solicitud. Inténtalo de nuevo más tarde."), response.getBody());
     }
 }

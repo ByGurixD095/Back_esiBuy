@@ -1,7 +1,6 @@
 package esi.grupo5.esiBuy.Config;
 
 import java.io.IOException;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -29,7 +28,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.session.SessionManagementFilter;
 
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -133,10 +131,9 @@ public class SecurityConfig {
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             ).exceptionHandling(exceptions -> exceptions
-                .authenticationEntryPoint((request, response, authException) -> 
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token expirado o no proporcionado")
-                )
-                .accessDeniedHandler(this::writeAccessDeniedDiagnostic)
+                .authenticationEntryPoint((request, response, exception) ->
+                        this.writeAuthenticationRequired(response))
+                .accessDeniedHandler(this::writeAccessDeniedResponse)
             )
             .authorizeHttpRequests(auth -> {
 
@@ -211,94 +208,48 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /** Returns a safe, machine-readable reason for frontend diagnosis without exposing tokens. */
-    private void writeAccessDeniedDiagnostic(HttpServletRequest request, HttpServletResponse response,
+    private void writeAuthenticationRequired(HttpServletResponse response) throws IOException {
+        String requestId = UUID.randomUUID().toString();
+        Map<String, String> error = Map.of(
+                "requestId", requestId,
+                "error", "authentication_required",
+                "message", "Inicia sesión para continuar.");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.setHeader("Cache-Control", "no-store");
+        response.setHeader("X-Request-ID", requestId);
+        new ObjectMapper().writeValue(response.getOutputStream(), error);
+    }
+
+    /** Writes a minimal access-denied response with a user-facing message. */
+    private void writeAccessDeniedResponse(HttpServletRequest request, HttpServletResponse response,
             AccessDeniedException exception) throws IOException {
         boolean csrfFailure = exception instanceof MissingCsrfTokenException
                 || exception instanceof InvalidCsrfTokenException;
         var authentication = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
-        Map<String, Object> diagnostic = new LinkedHashMap<>();
-        String requestId = request.getHeader("X-Request-ID");
-        try {
-            requestId = UUID.fromString(requestId).toString();
-        } catch (IllegalArgumentException | NullPointerException invalidRequestId) {
-            requestId = UUID.randomUUID().toString();
-        }
-        String csrfCookieName = partitionedCookies ? "ESIBUY-XSRF-TOKEN" : "XSRF-TOKEN";
-        String csrfHeader = request.getHeader("X-XSRF-TOKEN");
-        String csrfCookie = cookieValue(request, csrfCookieName);
-        int csrfCookieCount = cookieCount(request, csrfCookieName);
-        diagnostic.put("requestId", requestId);
-        diagnostic.put("error", "access_denied");
+        String requestId = UUID.randomUUID().toString();
         String reason = exception instanceof MissingCsrfTokenException ? "csrf_cookie_missing"
                 : exception instanceof InvalidCsrfTokenException ? "csrf_token_mismatch"
                 : (authentication == null || !authentication.isAuthenticated()
                     ? "authentication_required" : "role_forbidden");
-        diagnostic.put("reason", reason);
-        diagnostic.put("method", request.getMethod());
-        diagnostic.put("path", request.getRequestURI());
-        diagnostic.put("csrfEnabled", csrfEnabled);
-        diagnostic.put("csrfCookieName", csrfCookieName);
-        diagnostic.put("csrfHeaderPresent", csrfHeader != null && !csrfHeader.isBlank());
-        diagnostic.put("csrfHeaderLength", csrfHeader == null ? 0 : csrfHeader.length());
-        diagnostic.put("csrfCookiePresent", csrfCookie != null);
-        diagnostic.put("csrfCookieLength", csrfCookie == null ? 0 : csrfCookie.length());
-        diagnostic.put("csrfCookieCount", csrfCookieCount);
-        diagnostic.put("csrfCookieDuplicated", csrfCookieCount > 1);
-        diagnostic.put("csrfHeaderMatchesCookie", csrfHeader != null && csrfCookie != null
-                && csrfHeader.equals(csrfCookie));
-        diagnostic.put("accessTokenCookiePresent", hasCookie(request, "accessToken"));
-        diagnostic.put("origin", request.getHeader("Origin"));
-        diagnostic.put("refererPresent", request.getHeader("Referer") != null);
-        diagnostic.put("secFetchSite", request.getHeader("Sec-Fetch-Site"));
-        if (!csrfFailure && authentication != null && authentication.isAuthenticated()) {
-            diagnostic.put("authorities", authentication.getAuthorities().stream()
-                    .map(authority -> authority.getAuthority()).toList());
-            if (request.getRequestURI().startsWith("/carrito")) {
-                diagnostic.put("requiredAuthority", "ROLE_CLIENTE");
-            }
-        }
+        String message = csrfFailure
+                ? "No se pudo validar la solicitud. Recarga la página e inténtalo de nuevo."
+                : "No tienes permisos para realizar esta acción.";
+        Map<String, String> error = Map.of(
+                "requestId", requestId,
+                "error", "access_denied",
+                "reason", reason,
+                "message", message);
 
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         response.setHeader("Cache-Control", "no-store");
         response.setHeader("X-Request-ID", requestId);
-        LOGGER.warn("Access denied requestId={} reason={} method={} path={} csrfHeaderPresent={} "
-                        + "csrfCookiePresent={} csrfCookieCount={} csrfHeaderMatchesCookie={} origin={}",
-                requestId, reason, request.getMethod(), request.getRequestURI(),
-                csrfHeader != null && !csrfHeader.isBlank(), csrfCookie != null, csrfCookieCount,
-                csrfHeader != null && csrfCookie != null && csrfHeader.equals(csrfCookie),
-                request.getHeader("Origin"));
-        new ObjectMapper().writeValue(response.getOutputStream(), diagnostic);
-    }
-
-    private boolean hasCookie(HttpServletRequest request, String name) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies == null) return false;
-        for (Cookie cookie : cookies) {
-            if (name.equals(cookie.getName())) return true;
-        }
-        return false;
-    }
-
-    private String cookieValue(HttpServletRequest request, String name) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies == null) return null;
-        for (Cookie cookie : cookies) {
-            if (name.equals(cookie.getName())) return cookie.getValue();
-        }
-        return null;
-    }
-
-    private int cookieCount(HttpServletRequest request, String name) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies == null) return 0;
-        int count = 0;
-        for (Cookie cookie : cookies) {
-            if (name.equals(cookie.getName())) count++;
-        }
-        return count;
+        LOGGER.warn("Access denied requestId={} reason={} method={}",
+                requestId, reason, request.getMethod());
+        new ObjectMapper().writeValue(response.getOutputStream(), error);
     }
 }

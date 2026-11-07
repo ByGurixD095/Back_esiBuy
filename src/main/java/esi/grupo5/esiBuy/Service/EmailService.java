@@ -14,15 +14,11 @@ import jakarta.mail.Transport;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Envía mensajes HTML y correos de recuperación mediante SMTP. */
 @Service
 public class EmailService {
 
-    /** Logger para registrar los envíos. */
-    private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
     /** Límite de conexión, lectura y escritura SMTP en milisegundos. */
     private static final String TIMEOUT_PROPERTY = "10000";
 
@@ -76,10 +72,7 @@ public class EmailService {
         message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
         message.setSubject(subject, "UTF-8");
         message.setContent(htmlContent, "text/html; charset=UTF-8");
-        logger.info("Enviando email a {} con asunto '{}'", to, subject);
-
         Transport.send(message);
-        logger.info("Email enviado correctamente a {}", to);
     }
 
     /**
@@ -162,8 +155,6 @@ public class EmailService {
                 </html>
                 """.formatted(nombreApp, nombre, resetLink, nombreApp);
                 
-        logger.info("Preparando email de recuperación de contraseña para {}", to);
-
         sendHtmlEmail(to, subject, htmlContent);
     }
 }

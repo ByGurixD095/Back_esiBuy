@@ -20,12 +20,10 @@ $bytes = [byte[]]::new(32)
 ```
 
 Copia el resultado en `jwt.secret`. Para `mfa.encryption.key`, usa una clave
-aleatoria de exactamente 16, 24 o 32 caracteres ASCII. El perfil local `dev`
-mantiene una clave heredada para no romper los datos de desarrollo existentes;
-no uses esa clave para una instalación nueva de producción. Si ya hay secretos
-TOTP cifrados en MongoDB, conserva la clave usada para cifrarlos: cambiarla
-impedirá descifrarlos y requerirá que esos usuarios vuelvan a configurar MFA.
-Puedes generar una clave de 32 caracteres con PowerShell:
+aleatoria de exactamente 16, 24 o 32 caracteres ASCII. Si ya hay secretos TOTP
+cifrados en MongoDB, conserva de forma segura la clave usada para cifrarlos:
+cambiarla impedirá descifrarlos y requerirá que esos usuarios vuelvan a
+configurar MFA. Puedes generar una clave de 32 caracteres con PowerShell:
 
 ```powershell
 $bytes = [byte[]]::new(24)
@@ -64,8 +62,7 @@ el frontend debe solicitar `GET /csrf` también con `credentials: "include"` par
 que el navegador guarde la cookie CSRF que devuelve la API. Después debe conservar
 `token` y enviar su valor en la cabecera indicada por `headerName` en las peticiones
 `POST`, `PUT`, `PATCH` y `DELETE`, siempre con `credentials: "include"`. El token
-del header debe corresponder a la cookie CSRF; si falta esa cookie, la API responde
-403 con `reason: "csrf_cookie_missing"`. El token JWT se entrega solo en cookies
+del header debe corresponder a la cookie CSRF. El token JWT se entrega solo en cookies
 `HttpOnly`, no en el JSON.
 
 **Importante:** `esibuy.web.app` y el dominio `onrender.com` son sitios distintos.
