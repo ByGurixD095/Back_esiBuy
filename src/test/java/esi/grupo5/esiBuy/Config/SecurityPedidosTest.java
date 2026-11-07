@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
@@ -80,6 +81,26 @@ class SecurityPedidosTest {
 
         mockMvc.perform(get("/pedidos/vendedor").cookie(new Cookie("accessToken", "token")))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void vendedor_puedeMarcarSuPedidoComoEnviado() throws Exception {
+        simularLogin("VENDEDOR");
+
+        mockMvc.perform(patch("/pedidos/{pedidoId}/enviar", "pedido-1")
+                        .cookie(new Cookie("accessToken", "token")))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void cliente_noPuedeMarcarPedidoComoEnviado() throws Exception {
+        simularLogin("CLIENTE");
+
+        mockMvc.perform(patch("/pedidos/{pedidoId}/enviar", "pedido-1")
+                        .cookie(new Cookie("accessToken", "token")))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(pedidoService);
     }
 
     @Test
