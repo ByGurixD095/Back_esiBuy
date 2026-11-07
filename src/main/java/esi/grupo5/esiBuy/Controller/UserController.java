@@ -176,7 +176,10 @@ public class UserController {
      * @return respuesta vacía con estado HTTP 200
      */
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(HttpServletResponse response) {
+    public ResponseEntity<Void> logout(
+            @CookieValue(name = "refreshToken", required = false) String refreshToken,
+            HttpServletResponse response) {
+        authService.revokeRefreshToken(refreshToken);
         cookieUtil.clearTokenCookies(response);
         return ResponseEntity.ok().build();
     }

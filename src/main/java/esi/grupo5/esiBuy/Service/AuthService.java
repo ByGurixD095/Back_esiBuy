@@ -277,6 +277,13 @@ public class AuthService {
         refreshTokenRepository.deleteByUusuario_Id(usuarioId);
     }
 
+    /** Revokes the refresh token presented by the browser during logout. */
+    public void revokeRefreshToken(String refreshToken) {
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            refreshTokenRepository.deleteByToken(refreshToken);
+        }
+    }
+
     /**
      * Verifica el token de recuperación y establece la nueva contraseña y su historial.
      *

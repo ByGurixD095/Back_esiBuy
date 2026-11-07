@@ -127,7 +127,7 @@ class UserControllerTest {
         assertEquals(HttpStatus.NO_CONTENT,
                 controller.modificarMiPerfil(new UserSelfUpdateDTO(
                         "Ana", null, null, null, null, null, null, null), authentication).getStatusCode());
-        assertEquals(HttpStatus.OK, controller.logout(mock(HttpServletResponse.class)).getStatusCode());
+        assertEquals(HttpStatus.OK, controller.logout(null, mock(HttpServletResponse.class)).getStatusCode());
 
         verify(userService).getUserById("user-1");
         verify(userService).modificarMiPerfil(eq("user-1"), any(UserSelfUpdateDTO.class));

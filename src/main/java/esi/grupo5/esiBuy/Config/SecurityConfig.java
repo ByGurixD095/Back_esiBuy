@@ -121,7 +121,10 @@ public class SecurityConfig {
                         repository = standardRepository;
                     }
                     csrf.csrfTokenRepository(repository)
-                            .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler());
+                            .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
+                            // Logout only expires this browser's auth cookies; a stale CSRF
+                            // token must not prevent the user from ending their session.
+                            .ignoringRequestMatchers("/users/logout");
                 } else {
                     csrf.disable();
                 }
@@ -141,6 +144,8 @@ public class SecurityConfig {
 
                 auth.requestMatchers("/error").permitAll();
                 auth.requestMatchers("/csrf").permitAll();
+                // Allow clearing auth cookies even when the access token has expired.
+                auth.requestMatchers(HttpMethod.POST, "/users/logout").permitAll();
 
                 auth.requestMatchers(
                     "/users/login",
