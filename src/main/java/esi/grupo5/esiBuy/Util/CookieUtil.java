@@ -2,6 +2,7 @@ package esi.grupo5.esiBuy.Util;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +18,7 @@ public class CookieUtil {
     private final JwtService jwtService;
     private final boolean secure;
     private final String sameSite;
+    private final boolean partitioned;
 
     /**
      * Crea la utilidad de cookies.
@@ -24,14 +26,23 @@ public class CookieUtil {
      * @param jwtService servicio de tokens JWT
      * @param secure indica si las cookies requieren HTTPS
      * @param sameSite política SameSite aplicada a las cookies
+     * @param partitioned indica si las cookies se particionan por sitio
      */
+    @Autowired
     public CookieUtil(
             JwtService jwtService,
             @Value("${app.cookie.secure:false}") boolean secure,
-            @Value("${app.cookie.same-site:Strict}") String sameSite) {
+            @Value("${app.cookie.same-site:Strict}") String sameSite,
+            @Value("${app.cookie.partitioned:false}") boolean partitioned) {
         this.jwtService = jwtService;
         this.secure = secure;
         this.sameSite = sameSite;
+        this.partitioned = partitioned;
+    }
+
+    /** Constructor compatible para usos que no configuran cookies particionadas. */
+    public CookieUtil(JwtService jwtService, boolean secure, String sameSite) {
+        this(jwtService, secure, sameSite, false);
     }
 
     /**
@@ -48,6 +59,7 @@ public class CookieUtil {
                 .maxAge(jwtService.getAccessTokenExpirationSeconds())
                 .sameSite(sameSite)
                 .secure(secure)
+                .partitioned(partitioned)
                 .build();
 
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", lr.refreshToken())
@@ -56,6 +68,7 @@ public class CookieUtil {
                 .maxAge(jwtService.getRefreshTokenExpirationSeconds())
                 .sameSite(sameSite)
                 .secure(secure)
+                .partitioned(partitioned)
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
@@ -87,6 +100,7 @@ public class CookieUtil {
                 .maxAge(0)
                 .sameSite(sameSite)
                 .secure(secure)
+                .partitioned(partitioned)
                 .build();
 
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", "")
@@ -95,6 +109,7 @@ public class CookieUtil {
                 .maxAge(0)
                 .sameSite(sameSite)
                 .secure(secure)
+                .partitioned(partitioned)
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
