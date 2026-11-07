@@ -26,7 +26,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.session.SessionManagementFilter;
 
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Cookie;
@@ -201,9 +201,11 @@ public class SecurityConfig {
                 auth.anyRequest().authenticated();
             });
 
-        http.addFilterBefore(
+        // Run JWT authentication after session management. Otherwise Spring can mistake
+        // the per-request JWT authentication for a new login and clear the CSRF cookie.
+        http.addFilterAfter(
             this.jwtAuthenticationFilter,
-            UsernamePasswordAuthenticationFilter.class
+            SessionManagementFilter.class
         );
 
         return http.build();

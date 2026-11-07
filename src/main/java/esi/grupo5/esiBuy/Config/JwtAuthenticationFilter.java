@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -68,8 +69,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        if (token != null && this.jwtService.isTokenValid(token)
-                && SecurityContextHolder.getContext().getAuthentication() == null) {
+        var currentAuthentication = SecurityContextHolder.getContext().getAuthentication();
+        boolean noUserAuthentication = currentAuthentication == null
+                || currentAuthentication instanceof AnonymousAuthenticationToken;
+
+        if (token != null && this.jwtService.isTokenValid(token) && noUserAuthentication) {
             String id = this.jwtService.extractId(token);
             if (usuarioRepository.existsByIdAndActivoTrueAndBloqueadoFalse(id)) {
                 String rol = this.jwtService.extractRol(token);
