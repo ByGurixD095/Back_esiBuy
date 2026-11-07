@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "sonarlint.rules": {
     "java:S1541": {
       "level": "on",
@@ -8,4 +9,10 @@
     }
   },
   "java.configuration.updateBuildConfiguration": "interactive"
+=======
+    "sonarlint.connectedMode.project": {
+        "connectionId": "http-seralu4-esi-uclm-es-1521-",
+        "projectKey": "2026-g05-frontend"
+    }
+>>>>>>> c76ad0dfca135cf849288a436c4c627235ce6ab5
 }

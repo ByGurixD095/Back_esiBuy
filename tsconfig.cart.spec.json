@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/cart-spec",
+    "types": ["vitest/globals"]
+  },
+  "include": [
+    "src/**/*.d.ts",
+    "src/app/services/carrito.service.spec.ts",
+    "src/app/components/carrito/carrito.spec.ts",
+    "src/app/components/catalogo/catalogo.spec.ts"
+  ]
+}

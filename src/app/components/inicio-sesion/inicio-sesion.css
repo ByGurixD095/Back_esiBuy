@@ -1,0 +1,84 @@
+:host {
+  display: block;
+}
+
+.pagina {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+h2 {
+  margin: 0 0 20px;
+  font-family: var(--esi-font-title);
+  font-size: 26px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.grupo {
+  display: flex;
+  align-items: stretch;
+  background: #fff;
+  border: 1px solid var(--esi-field-border);
+  border-radius: var(--esi-radius);
+}
+
+.grupo:focus-within {
+  outline: 3px solid var(--esi-orange);
+  outline-offset: 1px;
+}
+
+.grupo input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+}
+
+.grupo-boton {
+  min-width: 88px;
+  padding: 0 14px;
+  color: var(--esi-ink);
+  background: var(--esi-paper);
+  border: 0;
+  border-left: 1px solid var(--esi-line);
+  border-radius: 0 var(--esi-radius) var(--esi-radius) 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.grupo-boton:hover {
+  color: var(--esi-orange-text);
+}
+
+.grupo-boton:focus-visible {
+  outline: 3px solid var(--esi-orange);
+  outline-offset: -3px;
+}
+
+.aviso {
+  margin: 0;
+  color: var(--esi-soft-ink);
+  font-size: 12px;
+}
+
+.enlace-recuperacion {
+  align-self: center;
+  color: var(--esi-navy);
+  font-size: 14px;
+  text-decoration: underline;
+}
+
+.enlace-recuperacion:focus-visible {
+  outline: 2px solid var(--esi-orange);
+  outline-offset: 2px;
+}

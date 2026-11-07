@@ -1,0 +1,291 @@
+<app-marco-pagina panel="Mi cesta">
+  <section class="cart-page" aria-labelledby="cart-title">
+    <div class="cart-heading">
+      <div>
+        <p class="eyebrow">Tu selección</p>
+        <h1 id="cart-title">Tu cesta</h1>
+        <p class="intro-copy">Revisa los productos que quieres comprar. Puedes volver al catálogo cuando quieras.</p>
+      </div>
+      <a class="continue-link" routerLink="/products">Seguir comprando</a>
+    </div>
+
+    @if (errorPago()) {
+      <p class="inline-error" role="alert">
+        {{ errorPago() }}
+        <a routerLink="/pedidos">Consultar mis pedidos</a>
+      </p>
+    }
+
+    @if (cargando()) {
+      <section class="cart-state" aria-live="polite" aria-busy="true">
+        <span class="loader" aria-hidden="true"></span>
+        <h2>Cargando tu cesta</h2>
+        <p>Estamos recuperando los productos que has añadido.</p>
+      </section>
+    } @else if (pedidoConfirmado(); as pedido) {
+      <section class="cart-state order-success" role="status" aria-live="polite">
+        <span class="state-symbol" aria-hidden="true">✓</span>
+        <h2>¡Pago confirmado!</h2>
+        <p>Tu pedido <strong>{{ pedido.id }}</strong> ya está confirmado.</p>
+        <p class="success-total">Total: {{ formatearPrecio(pedido.totalCent) }}</p>
+        <a class="primary-link" routerLink="/pedidos">Consultar mis pedidos</a>
+        <a class="primary-link" routerLink="/products">Volver al catálogo</a>
+      </section>
+    } @else if (pedidoPendientePago(); as pedido) {
+      <section class="cart-state order-success" aria-labelledby="payment-title">
+        <span class="state-symbol" aria-hidden="true">€</span>
+        <h2 id="payment-title">Confirmación de pago</h2>
+        <p>
+          El pedido <strong>{{ pedido.id }}</strong> está reservado. Este paso simula el pago y no realiza ningún cobro.
+        </p>
+        <p class="success-total">Total: {{ formatearPrecio(pedido.totalCent) }}</p>
+        <button type="button" class="buy-button" [disabled]="procesandoPago()" (click)="confirmarPago()">
+          {{ procesandoPago() ? 'Confirmando…' : 'Confirmar pago simulado' }}
+        </button>
+        <a class="continue-link" routerLink="/pedidos">Volver a mis pedidos</a>
+      </section>
+    } @else if (error() && items().length === 0) {
+      <section class="cart-state error-state" role="alert">
+        <span class="state-symbol" aria-hidden="true">!</span>
+        <h2>No se ha podido cargar la cesta</h2>
+        <p>{{ error() }}</p>
+        <button type="button" class="retry-button" (click)="cargarCarrito()">Reintentar</button>
+      </section>
+    } @else if (items().length === 0) {
+      <section class="cart-state empty-state" aria-live="polite">
+        <span class="empty-symbol" aria-hidden="true">○</span>
+        <h2>Tu cesta está vacía</h2>
+        <p>Cuando añadas productos al carrito, aparecerán aquí para que puedas revisarlos.</p>
+        <a class="primary-link" routerLink="/products">Explorar el catálogo</a>
+      </section>
+    } @else {
+      <div class="cart-layout">
+        <div class="cart-items" aria-label="Productos de la cesta">
+          @if (error(); as mensajeError) {
+            <p class="inline-error" role="alert">{{ mensajeError }}</p>
+          }
+          <p class="items-caption">
+            {{ items().length }} {{ items().length === 1 ? 'artículo' : 'artículos' }}
+            · {{ cantidadUnidades() }} {{ cantidadUnidades() === 1 ? 'unidad' : 'unidades' }}
+            <button
+              type="button"
+              class="clear-cart-button"
+              [disabled]="vaciandoCarrito() || actualizandoIds().size > 0"
+              (click)="solicitarVaciado()"
+            >{{ vaciandoCarrito() ? 'Vaciando…' : 'Vaciar cesta' }}</button>
+          </p>
+
+          @for (item of items(); track item.productoId) {
+            <article class="cart-item">
+              <div class="item-image">
+                @if (item.urlImagen) {
+                  <img [src]="item.urlImagen" [alt]="item.nombre" />
+                } @else {
+                  <span>Sin imagen</span>
+                }
+              </div>
+
+              <div class="item-details">
+                <h2>{{ item.nombre }}</h2>
+                <p class="unit-price">{{ formatearPrecio(item.precioCent) }} <span>por unidad</span></p>
+                <div class="item-actions">
+                  <label [for]="'cantidad-' + item.productoId">Cantidad</label>
+                  <div class="quantity-control">
+                    <button
+                      type="button"
+                      [attr.aria-label]="'Reducir cantidad de ' + item.nombre"
+                      [disabled]="estaActualizando(item.productoId) || item.cantidad <= 1"
+                      (click)="actualizarCantidad(item, item.cantidad - 1)"
+                    >−</button>
+                    <input
+                      [id]="'cantidad-' + item.productoId"
+                      type="number"
+                      min="1"
+                      step="1"
+                      [value]="item.cantidad"
+                      [disabled]="estaActualizando(item.productoId)"
+                      (change)="editarCantidad($event, item)"
+                    />
+                    <button
+                      type="button"
+                      [attr.aria-label]="'Aumentar cantidad de ' + item.nombre"
+                      [disabled]="estaActualizando(item.productoId)"
+                      (click)="actualizarCantidad(item, item.cantidad + 1)"
+                    >+</button>
+                  </div>
+                  @if (estaActualizando(item.productoId)) {
+                    <span class="updating-note" aria-live="polite">Guardando...</span>
+                  }
+                </div>
+              </div>
+
+              <div class="item-total">
+                <strong>{{ formatearPrecio(item.precioCent * item.cantidad) }}</strong>
+                <button
+                  type="button"
+                  class="remove-button"
+                  [disabled]="estaActualizando(item.productoId)"
+                  [attr.aria-label]="'Eliminar ' + item.nombre + ' del carrito'"
+                  (click)="eliminarProducto(item)"
+                >
+                  {{ estaActualizando(item.productoId) ? '⏳' : '🗑️' }}
+                </button>
+              </div>
+            </article>
+          }
+        </div>
+
+        <aside class="order-summary" aria-labelledby="summary-title">
+          <h2 id="summary-title">Resumen</h2>
+          <div class="summary-row">
+            <span>Productos ({{ cantidadUnidades() }})</span>
+            <strong>{{ formatearPrecio(totalCentimos()) }}</strong>
+          </div>
+          <div class="summary-row total-row">
+            <span>Subtotal</span>
+            <strong>{{ formatearPrecio(totalCentimos()) }}</strong>
+          </div>
+          <p class="summary-note">Los descuentos aplicables se calcularán al finalizar la compra.</p>
+          <button
+            type="button"
+            class="buy-button"
+            [disabled]="creandoPedido() || actualizandoIds().size > 0"
+            (click)="abrirCheckout()"
+          >{{ checkoutAbierto() ? 'Actualizar métodos de pago' : 'Tramitar pedido' }}</button>
+        </aside>
+      </div>
+
+      @if (checkoutAbierto()) {
+        <section id="zona-confirmacion" class="checkout-panel" aria-labelledby="checkout-title">
+          <div class="checkout-heading">
+            <div>
+              <p class="eyebrow">Último paso</p>
+              <h2 id="checkout-title">Datos del pedido</h2>
+              <p>Indica dónde recibirlo y elige uno de tus métodos de pago guardados.</p>
+            </div>
+            <button type="button" class="cancel-button" [disabled]="creandoPedido()" (click)="cerrarCheckout()">
+              Cerrar
+            </button>
+          </div>
+
+          @if (errorPedido()) {
+            <p class="inline-error" role="alert">{{ errorPedido() }}</p>
+          }
+
+          @if (cargandoMetodosPago() || cargandoDirecciones()) {
+            <p class="checkout-status" role="status" aria-live="polite">Cargando tus datos guardados...</p>
+          } @else if (errorMetodosPago()) {
+            <div class="checkout-status checkout-error">
+              <p role="alert">{{ errorMetodosPago() }}</p>
+              <button type="button" class="retry-button" (click)="cargarMetodosPago()">Reintentar</button>
+            </div>
+          } @else if (errorDirecciones()) {
+            <div class="checkout-status checkout-error">
+              <p role="alert">{{ errorDirecciones() }}</p>
+              <button type="button" class="retry-button" (click)="cargarDirecciones()">Reintentar</button>
+              <a class="primary-link" routerLink="/account/direcciones">Gestionar direcciones</a>
+            </div>
+          } @else if (metodosPago().length === 0) {
+            <div class="checkout-status">
+              <p>Aún no tienes métodos de pago guardados.</p>
+              <a class="primary-link" routerLink="/account/metodos-pago">Añadir método de pago</a>
+            </div>
+          } @else if (direcciones().length === 0) {
+            <div class="checkout-status">
+              <p>Aún no tienes direcciones de envío guardadas.</p>
+              <a class="primary-link" routerLink="/account/direcciones">Añadir dirección de envío</a>
+            </div>
+          } @else {
+            <form [formGroup]="checkoutForm" (ngSubmit)="confirmarPedido()" novalidate>
+              <div class="checkout-fields">
+                <div class="checkout-field field-wide">
+                  <label for="metodo-pago-pedido">Método de pago</label>
+                  <select id="metodo-pago-pedido" formControlName="metodoPagoId">
+                    @for (metodo of metodosPago(); track metodo.id) {
+                      <option [value]="metodo.id">
+                        {{ metodo.alias }} · {{ metodo.tipo }}
+                        @if (metodo.referencia) {
+                          ({{ metodo.referencia }})
+                        }
+                      </option>
+                    }
+                  </select>
+                </div>
+
+                <div class="checkout-field field-wide">
+                  <label for="direccion-pedido">Dirección de envío</label>
+                  <select id="direccion-pedido" formControlName="direccionId">
+                    @for (direccion of direcciones(); track direccion.id) {
+                      <option [value]="direccion.id">
+                        {{ direccion.nombreCompleto }} · {{ direccion.direccion }}, {{ direccion.ciudad }}
+                      </option>
+                    }
+                  </select>
+                </div>
+                @if (direccionSeleccionada(); as direccion) {
+                  <div class="checkout-address field-wide">
+                    <strong>{{ direccion.nombreCompleto }}</strong>
+                    <span>{{ direccion.direccion }}</span>
+                    <span>{{ direccion.codigoPostal }} {{ direccion.ciudad }}, {{ direccion.provincia }}</span>
+                    <span>{{ direccion.pais }} · {{ direccion.telefono }}</span>
+                    <a routerLink="/account/direcciones">Administrar mis direcciones</a>
+                  </div>
+                } @else {
+                  <div class="checkout-address field-wide">
+                    <p>Selecciona una dirección guardada.</p>
+                    <a routerLink="/account/direcciones">Añadir dirección</a>
+                  </div>
+                }
+              </div>
+              <p class="checkout-total">Total del pedido <strong>{{ formatearPrecio(totalCentimos()) }}</strong></p>
+              <button type="submit" class="buy-button checkout-submit" [disabled]="creandoPedido()">
+                {{ creandoPedido() ? 'Realizando pedido...' : 'Confirmar pedido' }}
+              </button>
+            </form>
+          }
+        </section>
+      }
+    }
+
+    @if (productoPendienteEliminar(); as item) {
+      <div class="confirmation-backdrop">
+        <section
+          class="confirmation-dialog"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="remove-dialog-title"
+          aria-describedby="remove-dialog-message"
+        >
+          <h2 id="remove-dialog-title">Eliminar producto</h2>
+          <p id="remove-dialog-message">
+            ¿Está seguro de que quiere eliminar <strong>{{ item.nombre }}</strong> del carrito?
+          </p>
+          <div class="confirmation-actions">
+            <button type="button" class="cancel-button" (click)="cancelarEliminacion()">Cancelar</button>
+            <button type="button" class="confirm-remove-button" (click)="confirmarEliminacion()">
+              Sí, eliminar
+            </button>
+          </div>
+        </section>
+      </div>
+    }
+
+    @if (confirmacionVaciar()) {
+      <div class="confirmation-backdrop">
+        <section
+          class="confirmation-dialog"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="clear-dialog-title"
+        >
+          <h2 id="clear-dialog-title">Vaciar la cesta</h2>
+          <p>¿Quieres quitar todos los artículos de la cesta?</p>
+          <div class="confirmation-actions">
+            <button type="button" class="cancel-button" (click)="cancelarVaciado()">Cancelar</button>
+            <button type="button" class="confirm-remove-button" (click)="confirmarVaciado()">Vaciar cesta</button>
+          </div>
+        </section>
+      </div>
+    }
+  </section>
+</app-marco-pagina>

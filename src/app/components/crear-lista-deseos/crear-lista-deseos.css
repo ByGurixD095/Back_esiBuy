@@ -1,0 +1,41 @@
+.pagina-lista {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.descripcion {
+  margin: 0.5rem 0 1.5rem;
+  color: #5d6b7e;
+}
+
+.volver-listas {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  color: #1a2b4a;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.volver-listas:hover {
+  text-decoration: underline;
+}
+
+.volver-listas:focus-visible {
+  outline: 3px solid var(--esi-orange);
+  outline-offset: 3px;
+}
+
+.pagina-lista form {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 480px;
+  padding: 1.5rem;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(20, 35, 60, 0.12);
+}
+
+.ayuda-error {
+  color: #8f1f1f;
+}

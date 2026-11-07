@@ -1,0 +1,41 @@
+<section class="selector-avatar" aria-labelledby="imagen-perfil-titulo">
+  <div class="selector-cabecera">
+    <div>
+      <h3 id="imagen-perfil-titulo">Foto de perfil <span class="requerido">Obligatoria</span></h3>
+      <p>Sube una foto o elige un avatar. Si no eliges ninguno, te asignaremos uno al azar.</p>
+    </div>
+    @if (value()) {
+      <img class="vista-previa" [src]="value()" alt="Vista previa de tu imagen de perfil" />
+    }
+  </div>
+
+  <input
+    id="imagen-perfil-archivo"
+    class="entrada-archivo"
+    type="file"
+    accept="image/jpeg,image/png,image/webp"
+    aria-describedby="imagen-perfil-ayuda"
+    (change)="cargarFoto($event)"
+  />
+  <label class="boton-subir" for="imagen-perfil-archivo">Subir mi foto</label>
+  <small id="imagen-perfil-ayuda" class="ayuda-archivo">JPG, PNG o WebP. Máximo 2 MB.</small>
+
+  <div class="avatares" role="group" aria-label="Avatares disponibles">
+    @for (avatar of avatares(); track avatar.ruta) {
+      <button
+        type="button"
+        class="opcion-avatar"
+        [class.seleccionado]="value() === avatar.ruta"
+        [attr.aria-pressed]="value() === avatar.ruta"
+        [attr.aria-label]="'Elegir avatar ' + avatar.nombre"
+        (click)="seleccionarAvatar(avatar.ruta)"
+      >
+        <img [src]="avatar.ruta" alt="" />
+      </button>
+    }
+  </div>
+
+  @if (error()) {
+    <small class="error-avatar" role="alert">{{ error() }}</small>
+  }
+</section>

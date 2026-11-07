@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ==============================================================================
 # ARCHIVO .gitignore PARA SPRING BOOT (JAVA), MAVEN, MONGO DB & VS CODE
 # ==============================================================================
@@ -48,11 +49,37 @@ dump/
 *.metadata.json
 
 # --- VS Code ---
+=======
+# See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+
+# Compiled output
+/dist
+/tmp
+/out-tsc
+/bazel-out
+
+# Node
+/node_modules
+npm-debug.log
+yarn-error.log
+
+# IDEs and editors
+.idea/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# Visual Studio Code
+>>>>>>> c76ad0dfca135cf849288a436c4c627235ce6ab5
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+<<<<<<< HEAD
 *.code-workspace
 
 # --- Eclipse (usado internamente por plugins de Java en VS Code) ---
@@ -92,3 +119,28 @@ target/
 sonar*
 !sonar-project.properties
 .scannerwork/*
+=======
+!.vscode/mcp.json
+.history/*
+
+# Miscellaneous
+/.angular/cache
+Bocetos EsiBuy.html
+.sass-cache/
+/connect.lock
+/coverage
+/libpeerconnection.log
+testem.log
+/typings
+__screenshots__/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# SonarQube
+sonar-project.properties
+sonar-scanner.properties
+.scannerwork/
+.scannerwork/report-task.txt
+>>>>>>> c76ad0dfca135cf849288a436c4c627235ce6ab5

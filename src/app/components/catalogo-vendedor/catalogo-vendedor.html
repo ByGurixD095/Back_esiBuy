@@ -1,0 +1,186 @@
+﻿<main class="seller-shell">
+  <header class="seller-header">
+    <a class="brand" routerLink="/products" aria-label="EsiBuy, catálogo">
+      <img src="/assets/images/svg/logo.svg" alt="EsiBuy" />
+    </a>
+    <span class="header-context">Panel del vendedor</span>
+    <nav class="header-actions" aria-label="Acciones del vendedor">
+      <a routerLink="/products">Ver tienda</a>
+      <a routerLink="/pedidos-vendedor">Pedidos de venta</a>
+      <a class="new-product-link" routerLink="/products/new">Añadir producto</a>
+    </nav>
+  </header>
+
+  <section class="seller-content" aria-labelledby="seller-title">
+    <div class="seller-intro">
+      <div>
+        <p class="eyebrow">Gestión de inventario</p>
+        <h1 id="seller-title">Mis <em>productos.</em></h1>
+        <p class="intro-copy">Consulta y controla los artículos que tienes publicados en EsiBuy.</p>
+      </div>
+      <aside class="catalog-summary" aria-label="Resumen de tus productos">
+        <span class="summary-label">Total publicado</span>
+        @if (cargando()) {
+          <strong class="summary-number">...</strong>
+          <p>Consultando inventario</p>
+        } @else if (error()) {
+          <strong class="summary-number">!</strong>
+          <p>No se pudo consultar</p>
+        } @else {
+          <strong class="summary-number">{{ totalElementos() }}</strong>
+          <p>{{ totalElementos() === 1 ? 'producto' : 'productos' }}</p>
+        }
+        <span class="summary-line" aria-hidden="true"></span>
+        <small>Inventario asociado a tu cuenta</small>
+      </aside>
+    </div>
+
+    <div class="demo-tools">
+      <div>
+        <strong>¿Quieres probar la tienda?</strong>
+        <p>Carga 12 productos de ejemplo con imágenes en tu catálogo.</p>
+      </div>
+      <button type="button" class="demo-button" [disabled]="cargandoDemo()" (click)="cargarCatalogoDemo()">
+        {{ cargandoDemo() ? 'Cargando productos...' : 'Cargar catálogo de ejemplo' }}
+      </button>
+    </div>
+    @if (demoResultado(); as resultado) {
+      <p class="demo-result" role="status">{{ resultado }}</p>
+    }
+
+    <app-panel-filtros-productos [productos]="productos()" [categoriasDisponibles]="categoriasDisponibles()" [mostrarEstado]="true" (filtrosChange)="aplicarFiltros($event)" />
+    @if (errorCategorias(); as mensaje) {
+      <p class="state-panel error-state" role="alert">
+        {{ mensaje }}
+        <button type="button" class="state-action" (click)="cargarCategorias()">Reintentar</button>
+      </p>
+    }
+
+    @if (cargando()) {
+      <section class="state-panel" aria-live="polite" aria-busy="true">
+        <span class="loader" aria-hidden="true"></span>
+        <h2>Cargando tus productos</h2>
+        <p>Estamos consultando tu inventario.</p>
+      </section>
+    } @else if (error(); as catalogoError) {
+      <section class="state-panel error-state" role="alert">
+        <span class="state-symbol" aria-hidden="true">!</span>
+        <h2>No se ha podido cargar tu catálogo</h2>
+        <p>{{ catalogoError.message }}</p>
+        <button type="button" class="state-action" (click)="cargarCatalogo()">Reintentar</button>
+      </section>
+    } @else if (productos().length === 0) {
+      <section class="state-panel" aria-live="polite">
+        <span class="state-symbol" aria-hidden="true">○</span>
+        <h2>Aún no tienes productos</h2>
+        <p>Publica tu primer artículo para verlo aparecer aquí.</p>
+        <a class="state-action state-link" routerLink="/products/new">Añadir producto</a>
+      </section>
+    } @else {
+      <div class="results-toolbar" aria-live="polite">
+        <p>Mostrando <strong>{{ productos().length }}</strong> de <strong>{{ totalElementos() }}</strong> artículos</p>
+        <span>36 por página</span>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <caption class="visually-hidden">Productos publicados por el vendedor</caption>
+          <thead>
+            <tr>
+              <th scope="col">Producto</th>
+              <th scope="col">Categoría</th>
+              <th scope="col">Precio</th>
+              <th scope="col">Stock</th>
+              <th scope="col">Descuento</th>
+              <th scope="col">Premium</th>
+              <th scope="col">Estado</th>
+              <th scope="col">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (producto of productos(); track producto.id) {
+              <tr [class.row-inactive]="!producto.activo">
+                <td class="product-cell">
+                  @if (producto.urlImagen) {
+                    <img [src]="producto.urlImagen" [alt]="producto.nombre" loading="lazy" />
+                  } @else {
+                    <span class="image-placeholder" aria-hidden="true">—</span>
+                  }
+                  <span>
+                    <strong>{{ producto.nombre }}</strong>
+                    @if (producto.descripcion) { <small>{{ producto.descripcion }}</small> }
+                  </span>
+                </td>
+                <td data-label="Categoría">{{ producto.categoria }}</td>
+                <td class="price-cell" data-label="Precio">{{ formatearPrecio(producto.precioCent) }}</td>
+                <td data-label="Stock">{{ producto.numStock }}</td>
+                <td data-label="Descuento">
+                  @if (producto.descuento > 0) { <span class="discount">{{ producto.descuento }}%</span> } @else { <span>—</span> }
+                </td>
+                <td data-label="Premium">
+                  @if (producto.descuentoPremium > 0) { <span class="discount">{{ producto.descuentoPremium }}%</span> } @else { <span>—</span> }
+                </td>
+                <td data-label="Estado">
+                  <span class="status" [class.status-inactive]="!producto.activo">
+                    {{ producto.activo ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td class="product-actions">
+                  <a class="icon-action" [routerLink]="['/products', producto.id]" aria-label="Ver detalle de {{ producto.nombre }}" title="Ver detalle">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"></path>
+                      <circle cx="12" cy="12" r="2.5"></circle>
+                    </svg>
+                    <span class="visually-hidden">Ver</span>
+                  </a>
+                  <a class="icon-action" [routerLink]="['/products', producto.id, 'editar']" aria-label="Editar {{ producto.nombre }}" title="Editar producto">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="m4 16-.8 4.8L8 20l11.2-11.2a2.1 2.1 0 0 0-3-3L4 17.1Z"></path>
+                      <path d="m14.8 7.2 3 3"></path>
+                    </svg>
+                    <span class="visually-hidden">Editar</span>
+                  </a>
+                  <button class="icon-action" [class.delete-action]="producto.activo" [class.activate-action]="!producto.activo" type="button" (click)="cambiarEstadoProducto(producto)" [disabled]="productoEliminando() === producto.id" [attr.aria-label]="(producto.activo ? 'Desactivar ' : 'Activar ') + producto.nombre" [title]="producto.activo ? 'Desactivar producto' : 'Activar producto'">
+                    @if (productoEliminando() === producto.id) {
+                      <span class="icon-spinner" aria-hidden="true"></span>
+                    } @else if (producto.activo) {
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 3v8"></path>
+                        <path d="M6.3 6.8a8 8 0 1 0 11.4 0"></path>
+                      </svg>
+                    } @else {
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="m5 12.5 4.5 4.5L19 7.5"></path>
+                      </svg>
+                    }
+                    <span class="visually-hidden">{{ producto.activo ? 'Desactivar' : 'Activar' }}</span>
+                  </button>
+                  <button class="icon-action delete-action" type="button" (click)="borrarDefinitivamente(producto)" [disabled]="productoBorrandoFisico() === producto.id" [attr.aria-label]="'Eliminar definitivamente ' + producto.nombre" title="Eliminar producto">
+                    @if (productoBorrandoFisico() === producto.id) {
+                      <span class="icon-spinner" aria-hidden="true"></span>
+                    } @else {
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" stroke-linejoin="round" stroke-linecap="round"></path>
+                      </svg>
+                    }
+                    <span class="visually-hidden">Eliminar producto</span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (totalPaginas() > 1) {
+        <nav class="pagination" aria-label="Paginación de mis productos">
+          <button type="button" [disabled]="paginaActual() === 0" (click)="paginaAnterior()">Anterior</button>
+          <span>Página {{ paginaActual() + 1 }} de {{ totalPaginas() }}</span>
+          <button type="button" [disabled]="paginaActual() + 1 >= totalPaginas()" (click)="paginaSiguiente()">Siguiente</button>
+        </nav>
+      }
+    }
+  </section>
+
+  <footer class="seller-footer"><span>© 2026 EsiBuy</span><span>Panel del vendedor</span></footer>
+</main>

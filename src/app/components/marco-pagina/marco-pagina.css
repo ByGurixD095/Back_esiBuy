@@ -1,0 +1,171 @@
+:host {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: var(--esi-paper);
+  color: var(--esi-ink);
+  font-family: var(--esi-font-body);
+}
+
+/* --- NUEVO ESTILO DE CABECERA (Estilo Catálogo) --- */
+.catalog-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 76px;
+  padding: 0 clamp(1rem, 5vw, 5rem);
+  border-bottom: 1px solid #263452;
+  background: #0d162d;
+  flex-shrink: 0;
+}
+
+.brand {
+  position: absolute;
+  left: clamp(1rem, 5vw, 5rem);
+  display: flex;
+  align-items: center;
+  width: 142px;
+  color: var(--esi-ink);
+  text-decoration: none;
+}
+
+.brand img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.brand:focus-visible, .account-link:focus-visible, .pie a:focus-visible {
+  outline: 3px solid var(--esi-orange);
+  outline-offset: 3px;
+}
+
+.header-context {
+  color: #cbd5e1;
+  font: 700 0.9rem Arial, sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.header-actions {
+  position: absolute;
+  right: clamp(1rem, 5vw, 5rem);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.account-link {
+  color: #e2e8f0;
+  font: 14px Arial, sans-serif;
+  text-decoration: none;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.account-link:hover {
+  color: #ff9f43;
+  text-decoration: underline;
+}
+
+.cart-link .cart-count {
+  display: inline-grid;
+  min-width: 20px;
+  height: 20px;
+  margin-left: 5px;
+  padding: 0 5px;
+  place-items: center;
+  border-radius: 999px;
+  color: #0d162d;
+  background: #ff9f43;
+  font: 700 11px Arial, sans-serif;
+  vertical-align: middle;
+}
+
+.volver-link {
+  color: #ff9f43;
+  border-left: 1px solid #263452;
+  padding-left: 1rem;
+  margin-left: 0.5rem;
+}
+
+/* --- CONTENIDO Y PIE --- */
+.contenido {
+  flex: 1 0 auto;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1232px;
+  margin: 0 auto;
+  padding: 40px 24px 32px;
+}
+
+.pie {
+  border-top: 1px solid var(--esi-line);
+  color: var(--esi-soft-ink);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.pie-interior {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-sizing: border-box;
+  max-width: 1232px;
+  margin: 0 auto;
+  padding: 20px 24px;
+}
+
+.pie nav {
+  display: flex;
+  gap: 20px;
+}
+
+.pie a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--esi-soft-ink);
+  text-decoration: none;
+}
+
+.pie a:hover {
+  color: var(--esi-orange-text);
+  text-decoration: underline;
+}
+
+/* --- RESPONSIVIDAD PARA MÓVILES --- */
+@media (max-width: 850px) {
+  .catalog-header {
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 20px;
+    min-height: auto;
+  }
+  .brand {
+    position: relative;
+    left: 0;
+    width: 120px;
+  }
+  .header-context {
+    position: relative;
+  }
+  .header-actions {
+    position: relative;
+    right: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .volver-link {
+    border-left: none;
+    padding-left: 0;
+  }
+}

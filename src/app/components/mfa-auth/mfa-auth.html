@@ -1,0 +1,71 @@
+@if (mode() === 'setup') {
+<section class="mfa-panel">
+  <h2>Configura tus factores de autenticación</h2>
+  <p class="tutorial">
+    <strong>Deberás realizar la configuración la primera vez.</strong><br>
+    <br>1. Escanea el código QR o introduce la clave manual en Authenticator.
+    <br>2. Introduce el código de seis dígitos generado por la aplicación para confirmar la configuración.
+    <br>3. Guarda los códigos de respaldo que se te proporcionan. Son de un solo uso y no podrás consultarlos de nuevo.
+    <br>4. Después de guardar los códigos de respaldo, volverás al acceso para iniciar sesión.
+    <br>5. Tras iniciar sesión, se te pedirá un código de seis dígitos de la aplicación o un código de respaldo (2FA activo) + código de correo (3FA activo).
+  </p>
+
+  @if (qrCodeUri()) {
+  <img class="qr" [src]="qrCodeUri()" alt="Código QR para configurar la autenticación TOTP" />
+  }
+  <div class="secret">
+    <strong>Clave manual</strong>
+    <code>{{ manualSecretKey() }}</code>
+  </div>
+
+  <form [formGroup]="setupForm" (ngSubmit)="enviarConfiguracion()" novalidate>
+    <div class="esi-campo">
+      <label for="setup-code">Código de la aplicación</label>
+      <input id="setup-code" type="text" inputmode="numeric" formControlName="code" autocomplete="one-time-code" />
+    </div>
+    @if (errorMessage()) {
+    <p class="esi-alerta esi-alerta--error" role="alert">{{ errorMessage() }}</p>
+    }
+    <button class="esi-boton" type="submit">Confirmar configuración</button>
+  </form>
+</section>
+} @else if (mode() === 'verify') {
+<section class="mfa-panel">
+  <h2>Verificación en dos pasos</h2>
+  <p class="tutorial">
+    Introduce el código de seis dígitos de tu aplicación. También puedes usar un código de respaldo.
+  </p>
+  <form [formGroup]="verifyForm" (ngSubmit)="enviarVerificacion()" novalidate>
+    <div class="esi-campo">
+      <label for="totp-code">Código TOTP o código de respaldo</label>
+      <input id="totp-code" type="text" inputmode="numeric" formControlName="totpCode" autocomplete="one-time-code" />
+    </div>
+    <div class="esi-campo">
+      <label for="email-otp-code">
+        Código recibido por correo
+        @if (!requiereEmailOtp()) { <span>(opcional)</span> }
+      </label>
+      <input id="email-otp-code" type="text" inputmode="numeric" formControlName="emailOtpCode" autocomplete="one-time-code" />
+    </div>
+    @if (errorMessage()) {
+    <p class="esi-alerta esi-alerta--error" role="alert">{{ errorMessage() }}</p>
+    }
+    <button class="esi-boton" type="submit">Verificar y continuar</button>
+  </form>
+</section>
+} @else {
+<section class="mfa-panel backup-panel">
+  <h2>Guarda tus códigos de respaldo</h2>
+  <p class="esi-alerta esi-alerta--error" role="alert">
+    Estos códigos solo se muestran ahora. Son de un solo uso y no podrás consultarlos de nuevo.
+    Guárdalos en un lugar seguro.
+  </p>
+  <ul class="backup-codes">
+    @for (code of backupCodes(); track code) {
+    <li><code>{{ code }}</code></li>
+    }
+  </ul>
+  <p>Después de guardarlos, volverás al acceso para iniciar sesión.</p>
+  <button class="esi-boton" type="button" (click)="finalizarRespaldo.emit()">Continuar al login</button>
+</section>
+}

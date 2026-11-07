@@ -1,0 +1,72 @@
+<app-marco-pagina >
+  <div class="pagina">
+  <p class="esi-eyebrow">Acceso</p>
+  <h1 class="esi-titulo">Accede a <em>tu cuenta.</em></h1>
+
+  <section class="inicio-sesion esi-tarjeta">
+    @if (fase() === 'login') {
+    <h2>Iniciar sesión</h2>
+
+    <form [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+      <div class="esi-campo">
+        <label for="usuario">Correo electrónico</label>
+        <input
+          id="usuario"
+          type="email"
+          formControlName="usuario"
+          autocomplete="username"
+          placeholder="nombre@correo.es"
+        />
+      </div>
+
+      <div class="esi-campo">
+        <label for="contrasena">Contraseña</label>
+        <span class="grupo">
+          <input
+            id="contrasena"
+            [type]="mostrarContrasena() ? 'text' : 'password'"
+            formControlName="contrasena"
+            autocomplete="current-password"
+          />
+          <button
+            type="button"
+            class="grupo-boton"
+            [attr.aria-pressed]="mostrarContrasena()"
+            (click)="alternarContrasena()"
+          >
+            {{ mostrarContrasena() ? 'Ocultar' : 'Mostrar' }}
+          </button>
+        </span>
+      </div>
+
+      @if (mensajeError()) {
+      <p class="esi-alerta esi-alerta--error" role="alert">{{ mensajeError() }}</p>
+      }
+
+      <button type="submit" class="esi-boton" [disabled]="form.invalid || cargando()">
+        {{ cargando() ? 'Comprobando…' : 'Iniciar sesión' }}
+      </button>
+
+      <a class="enlace-recuperacion" routerLink="/recover-password">¿Has olvidado tu contraseña?</a>
+      <a class="enlace-recuperacion" routerLink="/register">¿Aún no tienes cuenta? Regístrate</a>
+
+      <p class="aviso">
+        Tras varios intentos fallidos se bloquea el acceso durante unos minutos.
+      </p>
+    </form>
+    } @else {
+    <app-mfa-auth
+      [mode]="fase()"
+      [qrCodeUri]="qrCodeUri()"
+      [manualSecretKey]="manualSecretKey()"
+      [requiereEmailOtp]="rolMfa() === 'ADMINISTRADOR' || rolMfa() === 'VENDEDOR'"
+      [backupCodes]="backupCodes()"
+      [errorMessage]="mensajeError()"
+      (confirmarConfiguracion)="confirmarConfiguracion($event)"
+      (verificar)="verificarMfa($event)"
+      (finalizarRespaldo)="finalizarRespaldo()"
+    />
+    }
+  </section>
+  </div>
+</app-marco-pagina>
