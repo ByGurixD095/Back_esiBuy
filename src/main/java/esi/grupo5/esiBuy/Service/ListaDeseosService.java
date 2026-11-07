@@ -66,4 +66,13 @@ public class ListaDeseosService {
         return listaDeseosRepository.save(lista);
     }
 
+    public ListaDeseos modificarLista(String idLista, String nuevoNombre, String idCliente) {
+
+        ListaDeseos lista = listaDeseosRepository.findByIdAndIdCliente(idLista, idCliente)
+                .orElseThrow(() -> new NotFoundException("Lista de deseos no encontrada"));
+
+        lista.setNombre(nuevoNombre);
+        return listaDeseosRepository.save(lista);
+    }
+
 }
