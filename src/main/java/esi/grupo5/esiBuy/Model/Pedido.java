@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import esi.grupo5.esiBuy.Model.enums.EstadoPedido;
 import esi.grupo5.esiBuy.Model.enums.TipoMetodoPago;
 
 /** Pedido confirmado, con una copia de sus productos, precios y dirección de envío. */

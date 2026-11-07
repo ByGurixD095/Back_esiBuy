@@ -1,4 +1,4 @@
-package esi.grupo5.esiBuy.Model;
+package esi.grupo5.esiBuy.Model.enums;
 
 /** Estados disponibles para el ciclo de vida de un pedido. */
 public enum EstadoPedido {
