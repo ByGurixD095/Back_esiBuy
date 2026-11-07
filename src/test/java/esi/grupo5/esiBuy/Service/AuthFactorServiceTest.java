@@ -8,6 +8,7 @@ import esi.grupo5.esiBuy.Exception.ExpiredTokenException;
 import esi.grupo5.esiBuy.Exception.NotFoundException;
 import esi.grupo5.esiBuy.Exception.ValidationException;
 import esi.grupo5.esiBuy.Model.Cliente;
+import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Model.Vendedor;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import jakarta.mail.MessagingException;
@@ -238,6 +239,13 @@ class AuthFactorServiceTest {
         assertEquals(emailOtpHash, usuario.getEmailOtpHash());
         assertNotNull(usuario.getEmailOtpExpiracion());
         verify(usuarioRepository, never()).save(usuario);
+    }
+
+    @Test
+    void requiereOtpEmail_adminSiempreExigeTercerFactor() {
+        Administrador admin = new Administrador();
+
+        assertTrue(service.requiereOtpEmail(admin));
     }
 
     @Test

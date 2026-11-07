@@ -191,6 +191,7 @@ class AuthServiceTest {
         when(usuarioRepository.findByEmail(vendedor.getEmail())).thenReturn(Optional.of(vendedor));
         when(encoder.matches("Password#1", "hash")).thenReturn(true);
         when(authFactorService.requiereMfaObligatorio(vendedor)).thenReturn(true);
+        when(authFactorService.requiereOtpEmail(vendedor)).thenReturn(true);
 
         LoginResponseDTO result = service.login(
                 new LoginRequestDTO(vendedor.getEmail(), "Password#1"), "127.0.0.1");
