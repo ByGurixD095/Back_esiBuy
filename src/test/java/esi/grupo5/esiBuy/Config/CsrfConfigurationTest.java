@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -22,7 +23,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {
         "app.security.csrf-enabled=true",
         "app.cookie.secure=true",
-        "app.cookie.same-site=None"
+        "app.cookie.same-site=None",
+        "app.cookie.partitioned=true"
 })
 class CsrfConfigurationTest {
 
@@ -41,7 +43,8 @@ class CsrfConfigurationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.headerName").value("X-XSRF-TOKEN"))
                 .andExpect(jsonPath("$.token").isNotEmpty())
-                .andExpect(cookie().exists("XSRF-TOKEN"));
+                .andExpect(cookie().exists("ESIBUY-XSRF-TOKEN"))
+                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("Partitioned")));
     }
 
     @Test
