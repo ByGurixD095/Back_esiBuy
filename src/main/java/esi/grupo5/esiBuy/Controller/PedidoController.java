@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import esi.grupo5.esiBuy.Dto.CrearPedidoRequestDTO;
+import esi.grupo5.esiBuy.Dto.EstadoPedidoResponseDTO;
 import esi.grupo5.esiBuy.Dto.PedidoResponseDTO;
 import esi.grupo5.esiBuy.Service.PedidoService;
 import jakarta.validation.Valid;
@@ -102,5 +103,13 @@ public class PedidoController {
             @PathVariable String pedidoId) {
         String clienteId = (String) authentication.getPrincipal();
         return ResponseEntity.ok(pedidoService.obtenerPedido(clienteId, pedidoId));
+    }
+
+    @GetMapping("/{pedidoId}/estado")
+    public ResponseEntity<EstadoPedidoResponseDTO> obtenerEstadoPedido(
+            Authentication authentication,
+            @PathVariable String pedidoId) {
+        String clienteId = (String) authentication.getPrincipal();
+        return ResponseEntity.ok(pedidoService.obtenerEstadoPedido(clienteId, pedidoId));
     }
 }

@@ -150,6 +150,11 @@ han enviado sus líneas. El cliente confirma la entrega con
 `FINALIZADO`. Los pedidos cancelados y finalizados se consultan en
 `GET /pedidos/historico` (cliente) o `GET /pedidos/vendedor?historico=true`
 (vendedor); `GET /pedidos` conserva la respuesta completa por compatibilidad.
+Para mostrar el seguimiento desde el historial, el cliente puede consultar
+`GET /pedidos/{pedidoId}/estado`. La respuesta incluye el estado de dominio y
+su etiqueta visible (`Pendiente de pago`, `En preparación`, `Enviado`,
+`Entregado` o `Cancelado`); `FINALIZADO` se presenta como `Entregado`. Solo el
+cliente propietario puede consultar ese estado.
 
 El pedido conserva copias de sus productos, precios, dirección y datos
 visibles del método de pago; no se guarda el número de tarjeta, solo su

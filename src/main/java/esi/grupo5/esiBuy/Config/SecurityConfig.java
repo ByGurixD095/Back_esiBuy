@@ -154,6 +154,9 @@ public class SecurityConfig {
                 auth.requestMatchers("/pedidos/vendedor", "/pedidos/vendedor/**")
                     .hasRole(ROL_VENDEDOR);
 
+                auth.requestMatchers(HttpMethod.PATCH, "/pedidos/*/enviar")
+                    .hasRole(ROL_VENDEDOR);
+
                 auth.requestMatchers("/pedidos/**")
                     .hasRole(ROL_CLIENTE);
                     

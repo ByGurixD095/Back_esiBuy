@@ -17,6 +17,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 
 import esi.grupo5.esiBuy.Dto.CrearPedidoRequestDTO;
 import esi.grupo5.esiBuy.Dto.DireccionEnvioDTO;
+import esi.grupo5.esiBuy.Dto.EstadoPedidoResponseDTO;
 import esi.grupo5.esiBuy.Dto.LineaPedidoResponseDTO;
 import esi.grupo5.esiBuy.Dto.PedidoResponseDTO;
 import esi.grupo5.esiBuy.Exception.BusinessException;
@@ -148,6 +149,22 @@ public class PedidoService {
         Pedido pedido = pedidoRepository.findByIdAndClienteId(pedidoId, clienteId)
                 .orElseThrow(() -> new NotFoundException("Pedido no encontrado"));
         return convertirAResponseDTO(pedido);
+    }
+
+    public EstadoPedidoResponseDTO obtenerEstadoPedido(String clienteId, String pedidoId) {
+        Pedido pedido = obtenerPedidoPersistido(clienteId, pedidoId);
+        return new EstadoPedidoResponseDTO(
+                pedido.getId(), pedido.getEstado(), etiquetaEstado(pedido.getEstado()));
+    }
+
+    private String etiquetaEstado(EstadoPedido estado) {
+        return switch (estado) {
+            case EN_PROCESO -> "Pendiente de pago";
+            case PAGADO, RECIBIDO -> "En preparación";
+            case TRAMITADO_ENVIADO -> "Enviado";
+            case FINALIZADO -> "Entregado";
+            case CANCELADO -> "Cancelado";
+        };
     }
 
     private Pedido construirPedido(
