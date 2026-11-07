@@ -3,6 +3,7 @@ package esi.grupo5.esiBuy.Service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -23,12 +24,18 @@ import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.DireccionGuardada;
 import esi.grupo5.esiBuy.Model.Vendedor;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
-
+import esi.grupo5.esiBuy.Repository.PedidoRepository;
+import esi.grupo5.esiBuy.Model.Pedido;
+import java.util.Collections;
+import static org.mockito.ArgumentMatchers.anyString;
 @ExtendWith(MockitoExtension.class)
 class DireccionServiceTest {
 
     @Mock
     private UsuarioRepository usuarioRepository;
+
+    @Mock
+    private PedidoRepository pedidoRepository;
 
     @InjectMocks
     private DireccionService direccionService;
@@ -39,6 +46,7 @@ class DireccionServiceTest {
     void setUp() {
         cliente = new Cliente();
         cliente.setDirecciones(new ArrayList<>());
+        lenient().when(pedidoRepository.findAllByClienteId(anyString())).thenReturn(Collections.emptyList());
     }
 
     @Test
