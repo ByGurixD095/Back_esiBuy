@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -66,12 +67,18 @@ public class ListaDeseosController {
     }
         
     @DeleteMapping("/{id}/productos/{idProducto}")
-        public ResponseEntity<Void> eliminarProductoLista(@PathVariable String id,@PathVariable String idProducto,Authentication authentication) {
-            String idCliente = (String) authentication.getPrincipal();
-            listaDeseosService.eliminarProductoLista(id, idProducto, idCliente);
-            return ResponseEntity.noContent().build();
-        }
+    public ResponseEntity<Void> eliminarProductoLista(@PathVariable String id,@PathVariable String idProducto,Authentication authentication) {
+        String idCliente = (String) authentication.getPrincipal();
+        listaDeseosService.eliminarProductoLista(id, idProducto, idCliente);
+        return ResponseEntity.noContent().build();
+    }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<ListaDeseos> modificarLista(@PathVariable String id,@Valid @RequestBody ListaDeseosDTO dto,Authentication authentication) {
+        String idCliente = (String) authentication.getPrincipal();
+        ListaDeseos lista = listaDeseosService.modificarLista(id, dto.getNombre(), idCliente);
+        return ResponseEntity.ok(lista);
+    }
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarLista(@PathVariable String id,Authentication authentication) {
         String idCliente = (String) authentication.getPrincipal();

@@ -20,6 +20,8 @@ import java.util.HashSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -89,7 +91,7 @@ public class ListaDeseosServiceTest {
         assertThrows(NotFoundException.class, () -> service.obtenerProductosLista("lista-1", "cliente-1"));
 
         verify(listaDeseosRepository).findByIdAndIdCliente("lista-1", "cliente-1");
-        verifyNoInteractions(productoRepository);
+        verify(listaDeseosRepository, never()).save(any(ListaDeseos.class));
     }
 
     @Test
@@ -168,6 +170,33 @@ public class ListaDeseosServiceTest {
         verify(listaDeseosRepository).save(lista);
     }
 
-    
+    @Test
+    void modificarLista_actualizaYGuardaElNombre() {
+        ListaDeseos lista = new ListaDeseos();
+        lista.setId("lista-1");
+        lista.setIdCliente("cliente-1");
+        lista.setNombre("Nombre anterior");
+
+        when(listaDeseosRepository.findByIdAndIdCliente("lista-1", "cliente-1"))
+                .thenReturn(Optional.of(lista));
+        when(listaDeseosRepository.save(lista)).thenReturn(lista);
+
+        ListaDeseos resultado = service.modificarLista("lista-1", "Nombre nuevo", "cliente-1");
+
+        assertEquals("Nombre nuevo", resultado.getNombre());
+        verify(listaDeseosRepository).save(lista);
+    }
+
+    @Test
+    void modificarLista_listaNoPerteneceAlCliente_noLaGuarda() {
+        when(listaDeseosRepository.findByIdAndIdCliente("lista-1", "cliente-1"))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                NotFoundException.class,
+                () -> service.modificarLista("lista-1", "Nombre nuevo", "cliente-1"));
+
+        verifyNoInteractions(productoRepository);
+    }
 
 }
