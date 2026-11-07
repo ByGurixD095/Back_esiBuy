@@ -72,5 +72,12 @@ public class ListaDeseosController {
             return ResponseEntity.noContent().build();
         }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminarLista(@PathVariable String id,Authentication authentication) {
+        String idCliente = (String) authentication.getPrincipal();
+        listaDeseosService.eliminarLista(id, idCliente);
+        return ResponseEntity.noContent().build();
+    }
+
 
 }

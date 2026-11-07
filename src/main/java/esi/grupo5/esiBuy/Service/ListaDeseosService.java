@@ -66,4 +66,10 @@ public class ListaDeseosService {
         return listaDeseosRepository.save(lista);
     }
 
+    public void eliminarLista(String idLista, String idCliente) {
+        ListaDeseos lista = listaDeseosRepository.findByIdAndIdCliente(idLista, idCliente)
+                .orElseThrow(() -> new NotFoundException("Lista de deseos no encontrada"));
+        listaDeseosRepository.delete(lista);
+    }
+
 }
