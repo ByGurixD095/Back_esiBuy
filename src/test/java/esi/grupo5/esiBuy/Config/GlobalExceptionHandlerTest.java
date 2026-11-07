@@ -9,7 +9,9 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class GlobalExceptionHandlerTest {
 
@@ -43,8 +45,14 @@ class GlobalExceptionHandlerTest {
                 handler.manejarErrorDeNegocio(new BusinessException("Error interno", 500, "INTERNAL_ERROR"));
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertEquals(Map.of(
-                "error", "SERVER_ERROR",
-                "message", "No se pudo completar la solicitud. Inténtalo de nuevo más tarde."), response.getBody());
+        Map<String, Object> body = response.getBody();
+        assertNotNull(body);
+        assertEquals("SERVER_ERROR", body.get("error"));
+        assertEquals("No se pudo completar la solicitud. Inténtalo de nuevo más tarde.", body.get("message"));
+
+        String requestId = (String) body.get("requestId");
+        assertNotNull(requestId);
+        assertDoesNotThrow(() -> java.util.UUID.fromString(requestId));
+        assertEquals(requestId, response.getHeaders().getFirst("X-Request-ID"));
     }
 }
