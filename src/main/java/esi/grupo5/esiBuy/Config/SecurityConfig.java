@@ -35,6 +35,8 @@ public class SecurityConfig {
     private boolean secureCookies;
     @Value("${app.cookie.same-site:Strict}")
     private String cookieSameSite;
+    @Value("${app.cookie.partitioned:false}")
+    private boolean partitionedCookies;
 
     /** Filtro que establece la identidad y el rol a partir de la cookie JWT. */
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -92,9 +94,13 @@ public class SecurityConfig {
             .csrf(csrf -> {
                 if (csrfEnabled) {
                     CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+                    if (partitionedCookies) {
+                        repository.setCookieName("ESIBUY-XSRF-TOKEN");
+                    }
                     repository.setCookieCustomizer(cookie -> cookie
                             .secure(secureCookies)
-                            .sameSite(cookieSameSite));
+                            .sameSite(cookieSameSite)
+                            .partitioned(partitionedCookies));
                     csrf.csrfTokenRepository(repository)
                             .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler());
                 } else {
