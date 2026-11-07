@@ -262,9 +262,7 @@ public class AuthFactorService {
      * @return {@code true} para administradores, vendedores y clientes con 3FA activo
      */
     private boolean requiereOtpEmail(Usuario usuario) {
-        return usuario.getRol() == Rol.ADMINISTRADOR
-                || usuario.getRol() == Rol.VENDEDOR
-                || usuario.is3faActivoCliente();
+        return usuario.is3faActivoCliente();
     }
 
     /** @return secreto TOTP generado aleatoriamente */

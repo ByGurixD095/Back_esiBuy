@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * @param mfaStatus estado del flujo de autenticación
  * @param email correo asociado al desafío MFA cuando corresponde
  * @param mfaSetupToken token temporal para configurar MFA cuando corresponde
+ * @param emailOtpRequired indica si este desafío requiere el código adicional enviado por correo
  */
 public record LoginResponseDTO(
         @JsonIgnore
@@ -22,7 +23,8 @@ public record LoginResponseDTO(
         String tipoCliente,
         String mfaStatus,
         String email,
-        String mfaSetupToken) {
+        String mfaSetupToken,
+        boolean emailOtpRequired) {
 
     /**
      * Crea una respuesta de autenticación satisfactoria sin datos adicionales de MFA.
@@ -33,7 +35,7 @@ public record LoginResponseDTO(
      * @param tipoCliente tipo de cliente, si corresponde
      */
     public LoginResponseDTO(String accessToken, String refreshToken, String rol, String tipoCliente) {
-        this(accessToken, refreshToken, rol, tipoCliente, "SUCCESS", null, null);
+        this(accessToken, refreshToken, rol, tipoCliente, "SUCCESS", null, null, false);
     }
 
     /**
@@ -48,6 +50,12 @@ public record LoginResponseDTO(
      */
     public LoginResponseDTO(String accessToken, String refreshToken, String rol, String tipoCliente,
                             String mfaStatus, String email) {
-        this(accessToken, refreshToken, rol, tipoCliente, mfaStatus, email, null);
+        this(accessToken, refreshToken, rol, tipoCliente, mfaStatus, email, null, false);
+    }
+
+    /** Compatibilidad con respuestas MFA que no incluyen token de configuración. */
+    public LoginResponseDTO(String accessToken, String refreshToken, String rol, String tipoCliente,
+                            String mfaStatus, String email, String mfaSetupToken) {
+        this(accessToken, refreshToken, rol, tipoCliente, mfaStatus, email, mfaSetupToken, false);
     }
 }

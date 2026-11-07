@@ -148,12 +148,11 @@ public class AuthService {
                     "REQUIRES_MFA_SETUP", usuario.getEmail(), setupToken);
         }
         
-        if (usuario.getRol().name().equals("ADMINISTRADOR")
-                || usuario.getRol().name().equals("VENDEDOR")
-                || usuario.is3faActivoCliente()) {
+        if (usuario.is3faActivoCliente()) {
             authFactorService.prepareVerification(usuario);
         }
-        return new LoginResponseDTO(null, null, usuario.getRol().toString(), tipoCliente, "REQUIRES_MFA_VERIFICATION", usuario.getEmail());
+        return new LoginResponseDTO(null, null, usuario.getRol().toString(), tipoCliente,
+                "REQUIRES_MFA_VERIFICATION", usuario.getEmail(), null, usuario.is3faActivoCliente());
     }
 
     /**
