@@ -92,16 +92,21 @@ export class PedidosVendedor implements OnInit {
     this.pedidoActualizando.set(pedidoId);
     this.avisoAccion.set('');
     accion.subscribe({
-      next: () => {
+      next: (pedidoActualizado) => {
         this.pedidoActualizando.set(null);
-        this.cargarPedidos();
+        this.pedidos.update((pedidos) =>
+          pedidos.map((pedido) => pedido.id === pedidoId ? pedidoActualizado : pedido),
+        );
+        this.avisoAccion.set('Se han actualizado tus líneas de envío.');
       },
       error: (error: HttpErrorResponse) => {
         this.pedidoActualizando.set(null);
         this.avisoAccion.set(
-          error.status === 409
-            ? 'El estado del pedido ha cambiado. Hemos actualizado la cola; revisa las acciones disponibles.'
-            : this.auth.errorMessage(error, fallback),
+          error.status === 403
+            ? 'El servidor ha rechazado el envío (403). Comprueba que la sesión sea de vendedor y que este pedido incluya productos de tu tienda.'
+            : error.status === 409
+              ? 'El estado del pedido ha cambiado. Hemos actualizado la cola; revisa las acciones disponibles.'
+              : this.auth.errorMessage(error, fallback),
         );
         this.cargarPedidos();
       },

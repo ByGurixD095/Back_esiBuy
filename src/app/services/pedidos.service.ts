@@ -24,6 +24,12 @@ export interface PedidoCreado {
   estado: string;
 }
 
+export interface EstadoPedido {
+  pedidoId: string;
+  estado: string;
+  estadoVisible: string;
+}
+
 export interface LineaPedido {
   productoId: string;
   nombre: string;
@@ -75,6 +81,13 @@ export class PedidosService {
       params: historico ? { historico: true } : {},
       withCredentials: true,
     });
+  }
+
+  consultarEstado(pedidoId: string): Observable<EstadoPedido> {
+    return this.http.get<EstadoPedido>(
+      `${this.apiUrl}/${encodeURIComponent(pedidoId)}/estado`,
+      { withCredentials: true },
+    );
   }
 
   pagar(pedidoId: string): Observable<Pedido> {

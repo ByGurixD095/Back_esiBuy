@@ -65,7 +65,7 @@
                 <h2>{{ pedido.id }}</h2>
                 <p class="order-date">{{ formatearFecha(pedido.fechaPedido) }}</p>
               </div>
-              <span class="order-status">{{ estadoLegible(pedido.estado) }}</span>
+              <span class="order-status">{{ estadoVisible(pedido) }}</span>
             </header>
 
             <div class="order-lines">
@@ -117,6 +117,20 @@
                 }
               </section>
             </div>
+
+            @if (vista() === 'historico') {
+              <div class="order-actions history-status-action">
+                <button
+                  type="button"
+                  class="secondary-action"
+                  [disabled]="estadoConsultando() !== null"
+                  (click)="consultarEstado(pedido)"
+                >{{ estadoConsultando() === pedido.id ? 'Consultando estado…' : 'Consultar estado actual' }}</button>
+                @if (errorEstado()[pedido.id]) {
+                  <p class="inline-notice" role="alert">{{ errorEstado()[pedido.id] }}</p>
+                }
+              </div>
+            }
 
             @if (vista() === 'activos' && (puedePagar(pedido) || puedeCancelar(pedido) || puedeConfirmarEntrega(pedido))) {
               <div class="order-actions">

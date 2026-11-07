@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
-import { Pedido, PedidosService } from '../../services/pedidos.service';
+import { EstadoPedido, Pedido, PedidosService } from '../../services/pedidos.service';
 import { MarcoPagina } from '../marco-pagina/marco-pagina';
 import { Observable } from 'rxjs';
 
@@ -23,6 +23,9 @@ export class MisPedidos implements OnInit {
   readonly avisoAccion = signal('');
   readonly vista = signal<'activos' | 'historico'>('activos');
   readonly pedidoActualizando = signal<string | null>(null);
+  readonly estadosConsultados = signal<Record<string, EstadoPedido>>({});
+  readonly estadoConsultando = signal<string | null>(null);
+  readonly errorEstado = signal<Record<string, string>>({});
 
   ngOnInit(): void {
     this.cargarPedidos();
@@ -37,6 +40,11 @@ export class MisPedidos implements OnInit {
     consulta.subscribe({
       next: (pedidos) => {
         this.pedidos.set(pedidos);
+        const idsVisibles = new Set(pedidos.map((pedido) => pedido.id));
+        this.estadosConsultados.update((estados) =>
+          Object.fromEntries(Object.entries(estados).filter(([pedidoId]) => idsVisibles.has(pedidoId))),
+        );
+        pedidos.forEach((pedido) => this.cargarEstadoActual(pedido.id));
         this.cargando.set(false);
       },
       error: (error: HttpErrorResponse) => {
@@ -51,6 +59,33 @@ export class MisPedidos implements OnInit {
     this.vista.set(vista);
     this.avisoAccion.set('');
     this.cargarPedidos();
+  }
+
+  consultarEstado(pedido: Pedido): void {
+    this.cargarEstadoActual(pedido.id, true);
+  }
+
+  private cargarEstadoActual(pedidoId: string, mostrarIndicador = false): void {
+    if (mostrarIndicador && this.estadoConsultando()) return;
+    if (mostrarIndicador) this.estadoConsultando.set(pedidoId);
+    this.errorEstado.update((errores) => ({ ...errores, [pedidoId]: '' }));
+    this.pedidosService.consultarEstado(pedidoId).subscribe({
+      next: (estado) => {
+        this.estadosConsultados.update((estados) => ({ ...estados, [pedidoId]: estado }));
+        if (this.estadoConsultando() === pedidoId) this.estadoConsultando.set(null);
+      },
+      error: (error: HttpErrorResponse) => {
+        this.errorEstado.update((errores) => ({
+          ...errores,
+          [pedidoId]: this.auth.errorMessage(error, 'No se ha podido consultar el estado del pedido.'),
+        }));
+        if (this.estadoConsultando() === pedidoId) this.estadoConsultando.set(null);
+      },
+    });
+  }
+
+  estadoVisible(pedido: Pedido): string {
+    return this.estadosConsultados()[pedido.id]?.estadoVisible ?? this.estadoLegible(pedido.estado);
   }
 
   puedeCancelar(pedido: Pedido): boolean {
