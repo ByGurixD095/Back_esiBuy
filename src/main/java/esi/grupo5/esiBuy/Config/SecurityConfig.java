@@ -1,5 +1,10 @@
 package esi.grupo5.esiBuy.Config;
 
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -12,12 +17,17 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.csrf.MissingCsrfTokenException;
+import org.springframework.security.web.csrf.InvalidCsrfTokenException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.beans.factory.annotation.Value;
@@ -118,6 +128,7 @@ public class SecurityConfig {
                 .authenticationEntryPoint((request, response, authException) -> 
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token expirado o no proporcionado")
                 )
+                .accessDeniedHandler(this::writeAccessDeniedDiagnostic)
             )
             .authorizeHttpRequests(auth -> {
 
@@ -186,5 +197,48 @@ public class SecurityConfig {
         );
 
         return http.build();
+    }
+
+    /** Returns a safe, machine-readable reason for frontend diagnosis without exposing tokens. */
+    private void writeAccessDeniedDiagnostic(HttpServletRequest request, HttpServletResponse response,
+            AccessDeniedException exception) throws IOException {
+        boolean csrfFailure = exception instanceof MissingCsrfTokenException
+                || exception instanceof InvalidCsrfTokenException;
+        var authentication = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        Map<String, Object> diagnostic = new LinkedHashMap<>();
+        diagnostic.put("error", "access_denied");
+        String reason = exception instanceof MissingCsrfTokenException ? "csrf_cookie_missing"
+                : exception instanceof InvalidCsrfTokenException ? "csrf_token_mismatch"
+                : (authentication == null || !authentication.isAuthenticated()
+                    ? "authentication_required" : "role_forbidden");
+        diagnostic.put("reason", reason);
+        diagnostic.put("method", request.getMethod());
+        diagnostic.put("path", request.getRequestURI());
+        diagnostic.put("csrfHeaderPresent", request.getHeader("X-XSRF-TOKEN") != null);
+        diagnostic.put("csrfCookiePresent", hasCookie(request, "ESIBUY-XSRF-TOKEN"));
+        diagnostic.put("accessTokenCookiePresent", hasCookie(request, "accessToken"));
+        if (!csrfFailure && authentication != null && authentication.isAuthenticated()) {
+            diagnostic.put("authorities", authentication.getAuthorities().stream()
+                    .map(authority -> authority.getAuthority()).toList());
+            if (request.getRequestURI().startsWith("/carrito")) {
+                diagnostic.put("requiredAuthority", "ROLE_CLIENTE");
+            }
+        }
+
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.setHeader("Cache-Control", "no-store");
+        new ObjectMapper().writeValue(response.getOutputStream(), diagnostic);
+    }
+
+    private boolean hasCookie(HttpServletRequest request, String name) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) return false;
+        for (Cookie cookie : cookies) {
+            if (name.equals(cookie.getName())) return true;
+        }
+        return false;
     }
 }
