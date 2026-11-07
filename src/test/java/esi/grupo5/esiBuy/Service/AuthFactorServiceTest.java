@@ -207,6 +207,7 @@ class AuthFactorServiceTest {
     @Test
     void verifyFactors_validaTotpYOtpDeEmailYLimpiaElOtp() {
         Vendedor usuario = vendedor("vendedor@test.com");
+        usuario.setIs3faActivoCliente(true);
         usuario.setEmailOtpHash(encoder.encode("654321"));
         usuario.setEmailOtpExpiracion(LocalDateTime.now().plusMinutes(5));
         when(usuarioRepository.findByEmail(usuario.getEmail())).thenReturn(Optional.of(usuario));
@@ -219,6 +220,24 @@ class AuthFactorServiceTest {
         assertNull(usuario.getEmailOtpHash());
         assertNull(usuario.getEmailOtpExpiracion());
         verify(usuarioRepository).save(usuario);
+    }
+
+    @Test
+    void verifyFactors_vendedorSin3faNoRequiereNiConsumeOtpDeEmail() {
+        Vendedor usuario = vendedor("vendedor@test.com");
+        String emailOtpHash = encoder.encode("654321");
+        usuario.setEmailOtpHash(emailOtpHash);
+        usuario.setEmailOtpExpiracion(LocalDateTime.now().plusMinutes(5));
+        when(usuarioRepository.findByEmail(usuario.getEmail())).thenReturn(Optional.of(usuario));
+        AuthFactorService serviceSpy = spy(service);
+        doReturn(true).when(serviceSpy).verificarCodigoTotp(usuario, "123456");
+
+        assertSame(usuario, serviceSpy.verifyFactors(
+                new MfaVerifyRequestDTO(usuario.getEmail(), "123456", null)));
+
+        assertEquals(emailOtpHash, usuario.getEmailOtpHash());
+        assertNotNull(usuario.getEmailOtpExpiracion());
+        verify(usuarioRepository, never()).save(usuario);
     }
 
     @Test

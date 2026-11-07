@@ -26,6 +26,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.doThrow;
@@ -155,7 +156,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void loginConMfaConfigurado_devuelveVerificacionYPreparaOtpCuandoEsVendedor() {
+    void loginConMfaConfiguradoParaVendedor_sin3faNoPreparaOtpEmail() {
         Vendedor vendedor = new Vendedor();
         vendedor.setId("seller-1");
         vendedor.setEmail("seller@test.com");
@@ -173,6 +174,29 @@ class AuthServiceTest {
         assertEquals("REQUIRES_MFA_VERIFICATION", result.mfaStatus());
         assertEquals(vendedor.getEmail(), result.email());
         assertNull(result.accessToken());
+        verify(authFactorService, never()).prepareVerification(vendedor);
+        verify(refreshTokenRepository, never()).save(any());
+    }
+
+    @Test
+    void loginConMfaConfiguradoParaVendedor_con3faPreparaOtpEmail() {
+        Vendedor vendedor = new Vendedor();
+        vendedor.setId("seller-1");
+        vendedor.setEmail("seller@test.com");
+        vendedor.setContrasena("hash");
+        vendedor.setActivo(true);
+        vendedor.setMfaConfigurado(true);
+        vendedor.setIs3faActivoCliente(true);
+        vendedor.setFechaCambioContrasena(LocalDateTime.now().plusDays(1));
+        when(usuarioRepository.findByEmail(vendedor.getEmail())).thenReturn(Optional.of(vendedor));
+        when(encoder.matches("Password#1", "hash")).thenReturn(true);
+        when(authFactorService.requiereMfaObligatorio(vendedor)).thenReturn(true);
+
+        LoginResponseDTO result = service.login(
+                new LoginRequestDTO(vendedor.getEmail(), "Password#1"), "127.0.0.1");
+
+        assertEquals("REQUIRES_MFA_VERIFICATION", result.mfaStatus());
+        assertTrue(result.emailOtpRequired());
         verify(authFactorService).prepareVerification(vendedor);
         verify(refreshTokenRepository, never()).save(any());
     }
