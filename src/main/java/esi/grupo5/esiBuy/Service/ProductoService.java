@@ -3,11 +3,25 @@ package esi.grupo5.esiBuy.Service;
 import esi.grupo5.esiBuy.Dto.FiltroCatalogoDTO;
 import esi.grupo5.esiBuy.Dto.ProductInfoDTO;
 import esi.grupo5.esiBuy.Dto.ProductoDTO;
+import esi.grupo5.esiBuy.Dto.ValoracionRequestDTO;
+import esi.grupo5.esiBuy.Dto.ValoracionResponseDTO;
+import esi.grupo5.esiBuy.Exception.ConflictException;
+import esi.grupo5.esiBuy.Exception.ForbiddenException;
 import esi.grupo5.esiBuy.Exception.NotFoundException;
+import esi.grupo5.esiBuy.Model.Categoria;
 import esi.grupo5.esiBuy.Model.Producto;
+import esi.grupo5.esiBuy.Model.Valoracion;
+import esi.grupo5.esiBuy.Model.enums.EstadoPedido;
+import esi.grupo5.esiBuy.Repository.CategoriaRepository;
+import esi.grupo5.esiBuy.Repository.PedidoRepository;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
+import esi.grupo5.esiBuy.Repository.ValoracionRepository;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import java.util.regex.Pattern;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -38,10 +52,14 @@ public class ProductoService {
 
     /** Repositorio CRUD de productos. */
     private final ProductoRepository productoRepository;
+    /** Repositorio CRUD de categorías. */
+    private final CategoriaRepository categoriaRepository;
     /** Motor de consultas MongoDB para filtros del catálogo. */
     private final MongoTemplate mongoTemplate;
 
     private final UserService usuarioService;
+    private final PedidoRepository pedidoRepository;
+    private final ValoracionRepository valoracionRepository;
 
     /**
      * Crea el servicio de productos.
@@ -49,10 +67,15 @@ public class ProductoService {
      * @param productoRepository repositorio de productos
      * @param mongoTemplate motor de consultas MongoDB
      */
-    public ProductoService(ProductoRepository productoRepository, MongoTemplate mongoTemplate, UserService usuarioService) {
+    public ProductoService(ProductoRepository productoRepository, CategoriaRepository categoriaRepository,
+            MongoTemplate mongoTemplate, UserService usuarioService,
+            PedidoRepository pedidoRepository, ValoracionRepository valoracionRepository) {
         this.productoRepository = productoRepository;
+        this.categoriaRepository = categoriaRepository;
         this.mongoTemplate = mongoTemplate;
         this.usuarioService = usuarioService;
+        this.pedidoRepository = pedidoRepository;
+        this.valoracionRepository = valoracionRepository;
     }
 
     /**
@@ -63,13 +86,15 @@ public class ProductoService {
      * @return producto persistido
      */
     public Producto crearProducto(ProductoDTO dto, String idVendedor) {
+        Categoria categoria = categoriaRepository.findById(dto.categoriaId())
+                .orElseThrow(() -> new NotFoundException("Categoría no encontrada"));
         Producto producto = new Producto(
                 dto.nombre(),
                 dto.referencia(),
                 valorPorDefecto(dto.numStock()),
                 dto.precioCent(),
                 dto.descripcion(),
-                dto.categoria(),
+                dto.categoriaId(),
                 dto.urlImagen(),
                 valorPorDefecto(dto.descuento()),
                 valorPorDefecto(dto.descuentoPremium())
@@ -78,7 +103,9 @@ public class ProductoService {
         producto.setActivo(dto.activo() == null || dto.activo());
         producto.setIdVendedor(idVendedor);
         
-        return productoRepository.save(producto);
+        producto = productoRepository.save(producto);
+        producto.setCategoria(categoria.getNombre());
+        return producto;
     }
 
     /**
@@ -88,7 +115,9 @@ public class ProductoService {
      * @return productos coincidentes
      */
     public List<Producto> obtenerProductosDisponibles(FiltroCatalogoDTO filtros) {
-        return mongoTemplate.find(construirConsulta(filtros, Sort.unsorted()), Producto.class);
+        List<Producto> productos = mongoTemplate.find(construirConsulta(filtros, Sort.unsorted()), Producto.class);
+        completarNombresCategorias(productos);
+        return productos;
     }
 
     /**
@@ -108,6 +137,7 @@ public class ProductoService {
         }
 
         List<Producto> productos = mongoTemplate.find(query, Producto.class);
+        completarNombresCategorias(productos);
         return new PageImpl<>(productos, pageable, total);
     }
 
@@ -125,7 +155,7 @@ public class ProductoService {
 
         if (filtros != null) {
             aplicarBusqueda(query, filtros.busqueda());
-            aplicarCategoria(query, filtros.categoria());
+            aplicarCategoria(query, filtros.categoriaId());
             aplicarRangoPrecio(query, filtros.precioMinCent(), filtros.precioMaxCent());
             aplicarOferta(query, filtros.soloOfertas());
         }
@@ -155,11 +185,11 @@ public class ProductoService {
      * Añade un filtro de categoría salvo que no se indique o se seleccione «Todas».
      *
      * @param query consulta que se modifica
-     * @param categoria categoría seleccionada
+     * @param categoriaId identificador de categoría seleccionada
      */
-    private void aplicarCategoria(Query query, String categoria) {
-        if (categoria != null && !categoria.isBlank() && !categoria.equalsIgnoreCase("Todas")) {
-            query.addCriteria(Criteria.where("categoria").is(categoria));
+    private void aplicarCategoria(Query query, String categoriaId) {
+        if (categoriaId != null && !categoriaId.isBlank()) {
+            query.addCriteria(Criteria.where("categoriaId").is(categoriaId));
         }
     }
 
@@ -231,7 +261,9 @@ public class ProductoService {
      * @return productos disponibles
      */
     public List<Producto> obtenerProductosDisponibles() {
-        return productoRepository.findByActivoTrueAndNumStockGreaterThan(0);
+        List<Producto> productos = productoRepository.findByActivoTrueAndNumStockGreaterThan(0);
+        completarNombresCategorias(productos);
+        return productos;
     }
 
     /**
@@ -244,7 +276,9 @@ public class ProductoService {
      */
     public Page<Producto> obtenerCatalogoVendedor(String idVendedor, int numeroPagina, int tamanoPagina) {
         Pageable pageable = PageRequest.of(numeroPagina, tamanoPagina);
-        return productoRepository.findByIdVendedor(idVendedor, pageable);
+        Page<Producto> pagina = productoRepository.findByIdVendedor(idVendedor, pageable);
+        completarNombresCategorias(pagina.getContent());
+        return pagina;
     }
 
     /**
@@ -256,7 +290,9 @@ public class ProductoService {
      * @throws NotFoundException si no existe o no pertenece al vendedor
      */
     public Producto obtenerProducto(String id, String idVendedor) {
-        return buscarProductoPropio(id, idVendedor);
+        Producto producto = buscarProductoPropio(id, idVendedor);
+        completarNombresCategorias(List.of(producto));
+        return producto;
     }
 
     /**
@@ -276,7 +312,9 @@ public class ProductoService {
         producto.setNumStock(dto.numStock() != null ? dto.numStock() : 0);
         producto.setPrecioCent(dto.precioCent());
         producto.setDescripcion(dto.descripcion());
-        producto.setCategoria(dto.categoria());
+        Categoria categoria = categoriaRepository.findById(dto.categoriaId())
+                .orElseThrow(() -> new NotFoundException("Categoría no encontrada"));
+        producto.setCategoriaId(categoria.getId());
         producto.setUrlImagen(dto.urlImagen());
         producto.setDescuento(valorPorDefecto(dto.descuento()));
         producto.setDescuentoPremium(valorPorDefecto(dto.descuentoPremium()));
@@ -284,7 +322,9 @@ public class ProductoService {
             producto.setActivo(dto.activo());
         }
 
-        return productoRepository.save(producto);
+        producto = productoRepository.save(producto);
+        producto.setCategoria(categoria.getNombre());
+        return producto;
     }
 
     /**
@@ -306,23 +346,76 @@ public class ProductoService {
      * @return información pública del producto
      * @throws NotFoundException si el producto no existe, está inactivo o no tiene vendedor
      */
-    public ProductInfoDTO infoProducto(String id) {
+    public ProductInfoDTO infoProducto(String id, String usuarioId) {
         Producto producto = productoRepository.findById(id)
                 .filter(Producto::isActivo)
                 .orElseThrow(() -> new NotFoundException("Producto no encontrado"));
 
         String nombreComercial = usuarioService.getNombreComercialById(producto.getIdVendedor());
+        Categoria categoria = categoriaRepository.findById(producto.getCategoriaId())
+                .orElseThrow(() -> new NotFoundException("Categoría no encontrada"));
+
+        List<Valoracion> valoraciones = valoracionRepository.findByProductoIdOrderByFechaDesc(id);
+        double media = valoraciones.stream().mapToInt(Valoracion::getEstrellas).average().orElse(0);
+        boolean puedeValorar = usuarioId != null
+                && !valoracionRepository.existsByProductoIdAndUsuarioId(id, usuarioId)
+                && haCompradoYFinalizado(usuarioId, id);
 
         return new ProductInfoDTO(
                 producto.getNombre(),
                 producto.getNumStock(),
                 producto.getPrecioCent(),
                 producto.getDescripcion(),
-                producto.getCategoria(),
+                categoria.getNombre(),
                 producto.getUrlImagen(),
                 producto.getDescuento(),
                 producto.getDescuentoPremium(),
-                nombreComercial);
+                nombreComercial,
+                media,
+                valoraciones.stream()
+                        .map(valoracion -> new ValoracionResponseDTO(valoracion.getNombreUsuario(),
+                                valoracion.getEstrellas(), valoracion.getTexto(), valoracion.getFecha()))
+                        .toList(),
+                puedeValorar);
+    }
+
+    public ProductInfoDTO infoProducto(String id) {
+        return infoProducto(id, null);
+    }
+
+    public ValoracionResponseDTO crearValoracion(
+            String productoId, String usuarioId, ValoracionRequestDTO dto) {
+        productoRepository.findById(productoId)
+                .filter(Producto::isActivo)
+                .orElseThrow(() -> new NotFoundException("Producto no encontrado"));
+        if (!haCompradoYFinalizado(usuarioId, productoId)) {
+            throw new ForbiddenException("Solo puedes valorar productos de pedidos finalizados");
+        }
+        if (valoracionRepository.existsByProductoIdAndUsuarioId(productoId, usuarioId)) {
+            throw new ConflictException("Ya has valorado este producto");
+        }
+
+        Valoracion valoracion = new Valoracion();
+        valoracion.setProductoId(productoId);
+        valoracion.setUsuarioId(usuarioId);
+        valoracion.setNombreUsuario(usuarioService.getNombreUsuarioById(usuarioId));
+        valoracion.setEstrellas(dto.estrellas());
+        valoracion.setTexto(dto.texto().trim());
+        valoracion.setFecha(java.time.LocalDateTime.now());
+        try {
+            Valoracion guardada = valoracionRepository.save(valoracion);
+            return new ValoracionResponseDTO(guardada.getNombreUsuario(), guardada.getEstrellas(),
+                    guardada.getTexto(), guardada.getFecha());
+        } catch (org.springframework.dao.DuplicateKeyException error) {
+            throw new ConflictException("Ya has valorado este producto", error);
+        }
+    }
+
+    private boolean haCompradoYFinalizado(String usuarioId, String productoId) {
+        return pedidoRepository.findByClienteIdOrderByFechaPedidoDesc(usuarioId).stream()
+                .filter(pedido -> pedido.getEstado() == EstadoPedido.FINALIZADO)
+                .flatMap(pedido -> pedido.getLineas().stream())
+                .anyMatch(linea -> productoId.equals(linea.getProductoId()));
     }
 
     /**
@@ -346,5 +439,28 @@ public class ProductoService {
      */
     private int valorPorDefecto(Integer valor) {
         return valor == null ? 0 : valor;
+    }
+
+    private void completarNombresCategorias(List<Producto> productos) {
+        Set<String> ids = productos.stream()
+                .map(Producto::getCategoriaId)
+                .filter(id -> id != null && !id.isBlank())
+                .collect(Collectors.toSet());
+        if (ids.isEmpty()) {
+            return;
+        }
+
+        Map<String, Categoria> categorias = StreamSupport.stream(
+                        categoriaRepository.findAllById(ids).spliterator(), false)
+                .collect(Collectors.toMap(Categoria::getId, categoria -> categoria));
+        for (Producto producto : productos) {
+            if (producto.getCategoriaId() != null) {
+                Categoria categoria = categorias.get(producto.getCategoriaId());
+                if (categoria == null) {
+                    throw new NotFoundException("Categoría no encontrada para el producto " + producto.getId());
+                }
+                producto.setCategoria(categoria.getNombre());
+            }
+        }
     }
 }

@@ -3,6 +3,7 @@ package esi.grupo5.esiBuy.Config;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.AfterEach;
@@ -14,6 +15,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.http.MediaType;
 
 import esi.grupo5.esiBuy.Controller.CategoriaController;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
@@ -78,5 +80,27 @@ class SecurityCategoriasEliminarTest {
     void sinLogin_noPuedeEliminarCategorias() throws Exception {
         mockMvc.perform(delete("/admin/categorias/c1"))
                 .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    void administrador_puedeModificarCategorias() throws Exception {
+        simularLogin("ADMINISTRADOR");
+
+        mockMvc.perform(put("/admin/categorias/c1")
+                        .cookie(new Cookie("accessToken", "token"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombre\":\"Hogar\"}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void cliente_noPuedeModificarCategorias() throws Exception {
+        simularLogin("CLIENTE");
+
+        mockMvc.perform(put("/admin/categorias/c1")
+                        .cookie(new Cookie("accessToken", "token"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombre\":\"Hogar\"}"))
+                .andExpect(status().isForbidden());
     }
 }

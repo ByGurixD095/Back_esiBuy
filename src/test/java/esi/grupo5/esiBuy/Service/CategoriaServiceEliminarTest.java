@@ -35,7 +35,7 @@ class CategoriaServiceEliminarTest {
     void eliminarCategoria_sinProductosLaElimina() {
         Categoria categoria = new Categoria("c1", "Ropa");
         when(categoriaRepository.findById("c1")).thenReturn(Optional.of(categoria));
-        when(productoRepository.existsByCategoria("Ropa")).thenReturn(false);
+        when(productoRepository.existsByCategoriaId("c1")).thenReturn(false);
 
         categoriaService.eliminarCategoria("c1");
 
@@ -55,7 +55,7 @@ class CategoriaServiceEliminarTest {
     void eliminarCategoria_conProductosLanzaConflictoYNoBorra() {
         Categoria categoria = new Categoria("c1", "Ropa");
         when(categoriaRepository.findById("c1")).thenReturn(Optional.of(categoria));
-        when(productoRepository.existsByCategoria("Ropa")).thenReturn(true);
+        when(productoRepository.existsByCategoriaId("c1")).thenReturn(true);
 
         assertThrows(ConflictException.class, () -> categoriaService.eliminarCategoria("c1"));
 

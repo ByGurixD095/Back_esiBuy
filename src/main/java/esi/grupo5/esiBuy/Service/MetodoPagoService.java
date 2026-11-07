@@ -88,10 +88,6 @@ public class MetodoPagoService {
                     "El tipo de método de pago es obligatorio");
         }
 
-        if (dto.alias() == null || dto.alias().isBlank()) {
-            throw new ValidationException("El alias es obligatorio");
-        }
-
         switch (dto.tipo()) {
             case TARJETA -> {
                 exigir(dto.numeroTarjeta(), "El número de tarjeta es obligatorio");
@@ -159,4 +155,36 @@ public class MetodoPagoService {
                     500, "SERVER_ERROR", e);
         }
     }
+
+    
+    public MetodoPagoResponseDTO modificarMetodoPago(String clienteId,String metodoPagoId,MetodoPagoRequestDTO dto) {
+        validarCliente(clienteId);
+        validarDatosMetodoPago(dto);
+
+        MetodoPago metodoPago = metodoPagoRepository.findByIdAndClienteId(metodoPagoId, clienteId)
+                .orElseThrow(() ->new NotFoundException("Método de pago no encontrado"));
+
+        metodoPago.setTipo(dto.tipo());
+        metodoPago.setAlias(dto.alias() == null || dto.alias().isBlank()? dto.tipo().name(): dto.alias().trim());
+        metodoPago.setReferencia(obtenerReferenciaSegura(dto));
+
+        metodoPago.setTitular(null);
+        metodoPago.setCaducidad(null);
+
+        if (dto.tipo() == TipoMetodoPago.TARJETA) {
+            metodoPago.setTitular(dto.titular().trim());
+            metodoPago.setCaducidad(dto.caducidad().trim());
+        }
+
+        try {
+            return convertirAResponseDTO(
+                    metodoPagoRepository.save(metodoPago)
+            );
+        } catch (DataAccessException e) {
+            throw new BusinessException(
+                    "Error interno al modificar el método de pago",
+                    500, "SERVER_ERROR", e);
+        }
+    }
+
 }

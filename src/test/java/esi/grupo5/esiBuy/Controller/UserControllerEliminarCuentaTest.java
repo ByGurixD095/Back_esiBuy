@@ -54,7 +54,7 @@ class UserControllerEliminarCuentaTest {
                         .cookie(new Cookie("accessToken", "token")))
                 .andExpect(status().isNoContent());
 
-        verify(userService).eliminarCuenta("cliente-1");
+        verify(userService).eliminarMiCuenta("cliente-1");
         verify(cookieUtil).clearTokenCookies(any());
     }
 
@@ -66,7 +66,7 @@ class UserControllerEliminarCuentaTest {
                         .cookie(new Cookie("accessToken", "token")))
                 .andExpect(status().isNoContent());
 
-        verify(userService).eliminarCuenta("vendedor-1");
+        verify(userService).eliminarMiCuenta("vendedor-1");
     }
 
     @Test
@@ -74,7 +74,7 @@ class UserControllerEliminarCuentaTest {
         mockMvc.perform(delete("/users/me"))
                 .andExpect(status().is4xxClientError());
 
-        verify(userService, never()).eliminarCuenta(any());
+        verify(userService, never()).eliminarMiCuenta(any());
     }
 
     @Test
@@ -88,7 +88,7 @@ class UserControllerEliminarCuentaTest {
                         .cookie(new Cookie("accessToken", "token")))
                 .andExpect(status().isUnauthorized());
 
-        verify(userService, never()).eliminarCuenta(any());
+        verify(userService, never()).eliminarMiCuenta(any());
     }
 
     private void simularSesion(String role, String id) {

@@ -40,6 +40,7 @@ public class CategoriaService {
             throw new ConflictException("Ya existe una categoría con ese nombre");
         }
 
+        categoria.setNombre(nombre.trim());
         return categoriaRepository.save(categoria);
     }
 
@@ -56,6 +57,23 @@ public class CategoriaService {
                         Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
                 .toList();
     }
+
+    public Categoria actualizarCategoria(String id, Categoria cambios) {
+        if (cambios == null || cambios.getNombre() == null || cambios.getNombre().isBlank()) {
+            throw new ValidationException("El nombre de la categoría no puede estar vacío");
+        }
+
+        Categoria categoria = categoriaRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Categoría no encontrada"));
+        String nombre = cambios.getNombre().trim();
+        String nombreRegex = "^" + Pattern.quote(nombre) + "$";
+        if (categoriaRepository.existsByIdNotAndNombreRegexIgnoreCase(id, nombreRegex)) {
+            throw new ConflictException("Ya existe una categoría con ese nombre");
+        }
+
+        categoria.setNombre(nombre);
+        return categoriaRepository.save(categoria);
+    }
     
     /**
      * Elimina una categoría si existe y ningún producto la usa.
@@ -68,7 +86,7 @@ public class CategoriaService {
         Categoria categoria = categoriaRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Categoría no encontrada"));
 
-        if (productoRepository.existsByCategoria(categoria.getNombre())) {
+        if (productoRepository.existsByCategoriaId(categoria.getId())) {
             throw new ConflictException(
                     "No se puede eliminar la categoría porque hay productos que la usan");
         }

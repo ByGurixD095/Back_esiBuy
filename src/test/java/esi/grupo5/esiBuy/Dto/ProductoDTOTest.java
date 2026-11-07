@@ -14,51 +14,51 @@ class ProductoDTOTest {
     @Test
     void datosValidos_yCamposOpcionalesNulos_noTienenErrores() {
         assertTrue(validator.validate(producto(
-                "Camiseta ESI", "REF-092026a", 1999, null, "Ropa", null,
+                "Camiseta ESI", "REF-092026a", 1999, null, "categoria-1", null,
                 10, 5, 10)).isEmpty());
     }
 
     @Test
     void nombreReferenciaPrecioYCategoriaSonObligatorios() {
-        assertInvalid(producto(null, "REF-092026a", 1999, null, "Ropa", null, 10, 5, 10));
-        assertInvalid(producto(" ", "REF-092026a", 1999, null, "Ropa", null, 10, 5, 10));
-        assertInvalid(producto("Camiseta ESI", "", 1999, null, "Ropa", null, 10, 5, 10));
-        assertInvalid(producto("Camiseta ESI", "REF-092026a", null, null, "Ropa", null, 10, 5, 10));
+        assertInvalid(producto(null, "REF-092026a", 1999, null, "categoria-1", null, 10, 5, 10));
+        assertInvalid(producto(" ", "REF-092026a", 1999, null, "categoria-1", null, 10, 5, 10));
+        assertInvalid(producto("Camiseta ESI", "", 1999, null, "categoria-1", null, 10, 5, 10));
+        assertInvalid(producto("Camiseta ESI", "REF-092026a", null, null, "categoria-1", null, 10, 5, 10));
         assertInvalid(producto("Camiseta ESI", "REF-092026a", 1999, null, "", null, 10, 5, 10));
     }
 
     @Test
     void stockYPrecioNoPuedenSerNegativos() {
-        assertInvalid(producto("Camiseta ESI", "REF-092026a", -1, null, "Ropa", null, 10, 5, 10));
-        assertInvalid(producto("Camiseta ESI", "REF-092026a", 1999, null, "Ropa", null, -1, 5, 10));
+        assertInvalid(producto("Camiseta ESI", "REF-092026a", -1, null, "categoria-1", null, 10, 5, 10));
+        assertInvalid(producto("Camiseta ESI", "REF-092026a", 1999, null, "categoria-1", null, -1, 5, 10));
     }
 
     @Test
     void descuentosDebenEstarEntreCeroYCien() {
-        assertInvalid(producto("Camiseta ESI", "REF-092026a", 1999, null, "Ropa", null, 10, -1, 10));
-        assertInvalid(producto("Camiseta ESI", "REF-092026a", 1999, null, "Ropa", null, 10, 101, 10));
-        assertInvalid(producto("Camiseta ESI", "REF-092026a", 1999, null, "Ropa", null, 10, 5, -1));
-        assertInvalid(producto("Camiseta ESI", "REF-092026a", 1999, null, "Ropa", null, 10, 5, 101));
+        assertInvalid(producto("Camiseta ESI", "REF-092026a", 1999, null, "categoria-1", null, 10, -1, 10));
+        assertInvalid(producto("Camiseta ESI", "REF-092026a", 1999, null, "categoria-1", null, 10, 101, 10));
+        assertInvalid(producto("Camiseta ESI", "REF-092026a", 1999, null, "categoria-1", null, 10, 5, -1));
+        assertInvalid(producto("Camiseta ESI", "REF-092026a", 1999, null, "categoria-1", null, 10, 5, 101));
     }
 
     @Test
     void descripcionEImagenPuedenSerNulasPeroNoVacias() {
-        assertInvalid(producto("Camiseta ESI", "REF-092026a", 1999, "", "Ropa", null, 10, 5, 10));
-        assertInvalid(producto("Camiseta ESI", "REF-092026a", 1999, null, "Ropa", "", 10, 5, 10));
-        assertInvalid(producto("Camiseta ESI", "REF-092026a", 1999, "   ", "Ropa", null, 10, 5, 10));
-        assertInvalid(producto("Camiseta ESI", "REF-092026a", 1999, null, "Ropa", "   ", 10, 5, 10));
+        assertInvalid(producto("Camiseta ESI", "REF-092026a", 1999, "", "categoria-1", null, 10, 5, 10));
+        assertInvalid(producto("Camiseta ESI", "REF-092026a", 1999, null, "categoria-1", "", 10, 5, 10));
+        assertInvalid(producto("Camiseta ESI", "REF-092026a", 1999, "   ", "categoria-1", null, 10, 5, 10));
+        assertInvalid(producto("Camiseta ESI", "REF-092026a", 1999, null, "categoria-1", "   ", 10, 5, 10));
     }
 
     @Test
     void permiteCeroValoresNumericosYDescuentoMaximo() {
         assertTrue(validator.validate(producto(
-                "Camiseta ESI", "REF-092026a", 0, null, "Ropa", null, 0, 100, 100)).isEmpty());
+                "Camiseta ESI", "REF-092026a", 0, null, "categoria-1", null, 0, 100, 100)).isEmpty());
     }
 
     private ProductoDTO producto(String nombre, String referencia, Integer precio, String descripcion,
-                                 String categoria, String urlImagen, Integer stock, Integer descuento,
+                                 String categoriaId, String urlImagen, Integer stock, Integer descuento,
                                  Integer descuentoPremium) {
-        return new ProductoDTO(nombre, referencia, precio, descripcion, categoria, urlImagen,
+        return new ProductoDTO(nombre, referencia, precio, descripcion, categoriaId, urlImagen,
                 stock, descuento, descuentoPremium, null);
     }
 

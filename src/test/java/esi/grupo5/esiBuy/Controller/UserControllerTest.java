@@ -142,7 +142,7 @@ class UserControllerTest {
 
         assertEquals(HttpStatus.NO_CONTENT, controller.eliminarMiCuenta(authentication, response).getStatusCode());
 
-        verify(userService).eliminarCuenta("cliente-1");
+        verify(userService).eliminarMiCuenta("cliente-1");
         verify(cookieUtil).clearTokenCookies(response);
     }
 

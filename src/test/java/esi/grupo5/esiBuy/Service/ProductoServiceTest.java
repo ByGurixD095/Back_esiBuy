@@ -4,13 +4,18 @@ import esi.grupo5.esiBuy.Dto.ProductoDTO;
 import esi.grupo5.esiBuy.Dto.FiltroCatalogoDTO;
 import esi.grupo5.esiBuy.Dto.ProductInfoDTO;
 import esi.grupo5.esiBuy.Exception.NotFoundException;
+import esi.grupo5.esiBuy.Model.Categoria;
 import esi.grupo5.esiBuy.Model.Producto;
+import esi.grupo5.esiBuy.Repository.CategoriaRepository;
+import esi.grupo5.esiBuy.Repository.PedidoRepository;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
+import esi.grupo5.esiBuy.Repository.ValoracionRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -32,6 +37,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class ProductoServiceTest {
@@ -40,13 +46,30 @@ class ProductoServiceTest {
     private ProductoRepository productoRepository;
 
     @Mock
+    private CategoriaRepository categoriaRepository;
+
+    @Mock
     private MongoTemplate mongoTemplate;
 
     @Mock
     private UserService usuarioService;
 
+    @Mock
+    private PedidoRepository pedidoRepository;
+
+    @Mock
+    private ValoracionRepository valoracionRepository;
+
     @InjectMocks
     private ProductoService productoService;
+
+    @BeforeEach
+    void configurarCategoria() {
+        lenient().when(categoriaRepository.findById("categoria-1"))
+                .thenReturn(Optional.of(new Categoria("categoria-1", "Ropa")));
+        lenient().when(valoracionRepository.findByProductoIdOrderByFechaDesc(any()))
+                .thenReturn(List.of());
+    }
 
     @Test
     void crearProducto_copiaLosCamposYLoActivaPorDefecto() {
@@ -61,6 +84,7 @@ class ProductoServiceTest {
         assertEquals(10, resultado.getNumStock());
         assertEquals(1999, resultado.getPrecioCent());
         assertEquals("Camiseta oficial", resultado.getDescripcion());
+        assertEquals("categoria-1", resultado.getCategoriaId());
         assertEquals("Ropa", resultado.getCategoria());
         assertEquals("url_imagen.jpg", resultado.getUrlImagen());
         assertEquals("vendedor-1", resultado.getIdVendedor());
@@ -106,7 +130,7 @@ class ProductoServiceTest {
     @Test
     void crearProducto_preservaCamposOpcionalesNulosYCeros() {
         ProductoDTO dto = new ProductoDTO(
-                "Camiseta ESI", "REF-092026a", 0, null, "Ropa", null, 0, 0, 0, null);
+                "Camiseta ESI", "REF-092026a", 0, null, "categoria-1", null, 0, 0, 0, null);
         when(productoRepository.save(any(Producto.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -123,7 +147,7 @@ class ProductoServiceTest {
     @Test
     void crearProducto_inicializaDescuentosNulosACero() {
         ProductoDTO dto = new ProductoDTO(
-                "Camiseta ESI", "REF-092026a", 1999, null, "Ropa", null, null, null, null, null);
+                "Camiseta ESI", "REF-092026a", 1999, null, "categoria-1", null, null, null, null, null);
         when(productoRepository.save(any(Producto.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -147,7 +171,7 @@ class ProductoServiceTest {
     @Test
     void infoProducto_soloBuscaProductosActivosYDevuelveElNombreComercial() {
         Producto producto = new Producto(
-                "Camiseta ESI", "REF-1", 2, 1999, "Descripción", "Ropa", "imagen.jpg", 5, 10);
+                "Camiseta ESI", "REF-1", 2, 1999, "Descripción", "categoria-1", "imagen.jpg", 5, 10);
         producto.setIdVendedor("vendedor-1");
         when(productoRepository.findById("producto-1")).thenReturn(Optional.of(producto));
         when(usuarioService.getNombreComercialById("vendedor-1")).thenReturn("Tienda ESI");
@@ -231,7 +255,7 @@ class ProductoServiceTest {
     @Test
     void obtenerProductosDisponibles_aplicaFiltrosPaginacionOrdenYBusquedaLiteral() {
         FiltroCatalogoDTO filtros = new FiltroCatalogoDTO(
-                "camiseta.*", " Ropa ", 1000, 5000, true, null);
+                "camiseta.*", "categoria-1", 1000, 5000, true, null);
         PageRequest pageable = PageRequest.of(1, 5, Sort.by(Sort.Direction.DESC, "nombre"));
         when(mongoTemplate.count(any(Query.class), eq(Producto.class))).thenReturn(6L);
         when(mongoTemplate.find(any(Query.class), eq(Producto.class))).thenReturn(List.of());
@@ -254,12 +278,13 @@ class ProductoServiceTest {
         assertNotNull(nombrePattern);
         assertTrue(nombrePattern.matcher("Camiseta.*").find());
         assertFalse(nombrePattern.matcher("CamisetaXX").find());
+        assertEquals("categoria-1", query.getQueryObject().get("categoriaId"));
     }
 
     @Test
     void obtenerProductosDisponibles_priorizaElOrdenDelCatalogoSobreElDePaginacion() {
         FiltroCatalogoDTO filtros = new FiltroCatalogoDTO(
-                null, null, null, null, null, "Precio Ascendente");
+                null, "categoria-1", null, null, null, "Precio Ascendente");
         PageRequest pageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "nombre"));
         when(mongoTemplate.count(any(Query.class), eq(Producto.class))).thenReturn(0L);
         when(mongoTemplate.find(any(Query.class), eq(Producto.class))).thenReturn(List.of());
@@ -278,7 +303,7 @@ class ProductoServiceTest {
                                     Integer descuentoPremium, Boolean activo) {
         return new ProductoDTO(
                 "Camiseta ESI", "REF-092026a", precio, "Camiseta oficial",
-                "Ropa", "url_imagen.jpg", stock, descuento, descuentoPremium, activo);
+                "categoria-1", "url_imagen.jpg", stock, descuento, descuentoPremium, activo);
     }
 
     private Pattern findPattern(Object value) {

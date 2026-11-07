@@ -30,8 +30,11 @@ import esi.grupo5.esiBuy.Model.Administrador;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.Usuario;
 import esi.grupo5.esiBuy.Model.Vendedor;
+import esi.grupo5.esiBuy.Model.enums.EstadoPedido;
 import esi.grupo5.esiBuy.Model.enums.Rol;
 import esi.grupo5.esiBuy.Model.enums.TipoCliente;
+import esi.grupo5.esiBuy.Repository.PedidoRepository;
+import esi.grupo5.esiBuy.Repository.ProductoRepository;
 import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 
 /** Gestiona el registro, consulta y actualización de perfiles de usuario. */
@@ -49,6 +52,8 @@ public class UserService {
     private final PasswordValidatorService passwordValidatorService;
     /** Servicio que continúa el flujo de autenticación tras el registro. */
     private final AuthService authService;
+    private final PedidoRepository pedidoRepository;
+    private final ProductoRepository productoRepository;
 
     /**
      * Crea el servicio de usuarios.
@@ -57,13 +62,18 @@ public class UserService {
      * @param passwordEncoder codificador de contraseñas
      * @param passwordValidatorService validador de contraseñas
      * @param authService servicio de autenticación posterior al registro
+     * @param pedidoRepository pedidos que deben conservarse al eliminar cuentas
+     * @param productoRepository productos propiedad de vendedores eliminados
      */
     public UserService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder,
-                       PasswordValidatorService passwordValidatorService, AuthService authService) {
+                       PasswordValidatorService passwordValidatorService, AuthService authService,
+                       PedidoRepository pedidoRepository, ProductoRepository productoRepository) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.passwordValidatorService = passwordValidatorService;
         this.authService = authService;
+        this.pedidoRepository = pedidoRepository;
+        this.productoRepository = productoRepository;
     }
 
     /**
@@ -178,16 +188,31 @@ public class UserService {
     }
 
     /**
-     * Elimina lógicamente una cuenta, la desactiva y revoca sus tokens de refresco.
+     * Elimina una cuenta, conserva los pedidos asociados y revoca sus tokens de refresco.
      * No permite eliminar al último administrador activo y desbloqueado.
+     * No permite eliminar vendedores con pedidos activos.
      *
      * @param id identificador de la cuenta que se eliminará
      * @throws NotFoundException si la cuenta no existe o ya está eliminada
      * @throws ForbiddenException si es el último administrador activo y desbloqueado
+     * @throws ConflictException si el vendedor tiene pedidos activos
      */
     public void eliminarCuenta(String id) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND_MESSAGE));
+
+        boolean vendedorConPedidosActivos = usuario.getRol() == Rol.VENDEDOR
+                && (pedidoRepository.existsByLineas_IdVendedorAndEstadoIn(
+                            id,
+                            List.of(EstadoPedido.EN_PROCESO, EstadoPedido.PAGADO,
+                                    EstadoPedido.TRAMITADO_ENVIADO))
+                        || pedidoRepository.findByEstado(EstadoPedido.RECIBIDO).stream()
+                                .anyMatch(pedido -> pedido.getLineas().stream()
+                                        .anyMatch(linea -> productoRepository.existsByIdAndIdVendedor(
+                                                linea.getProductoId(), id))));
+        if (vendedorConPedidosActivos) {
+            throw new ConflictException("No se puede eliminar el vendedor mientras tenga pedidos en curso");
+        }
 
         if (esAdministradorDisponible(usuario)
                 && usuarioRepository.countByRolAndActivoTrueAndBloqueadoFalse(
@@ -195,8 +220,30 @@ public class UserService {
             throw new ForbiddenException("No se puede eliminar su cuenta.");
         }
 
+        if (usuario.getRol() == Rol.CLIENTE) {
+            pedidoRepository.findAllByClienteId(id).forEach(pedido -> {
+                if (pedido.getNombreCliente() == null || pedido.getNombreCliente().isBlank()) {
+                    pedido.setNombreCliente((usuario.getNombre() + " " + usuario.getApellidos()).trim());
+                }
+                pedido.setClienteId(null);
+                pedidoRepository.save(pedido);
+            });
+        }
+
         usuarioRepository.delete(usuario);
+        if (usuario.getRol() == Rol.VENDEDOR) {
+            productoRepository.deleteByIdVendedor(id);
+        }
         authService.revocarRefreshTokens(id);
+    }
+
+    public void eliminarMiCuenta(String id) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND_MESSAGE));
+        if (usuario.getRol() == Rol.ADMINISTRADOR) {
+            throw new ForbiddenException("Un administrador solo puede ser eliminado por otro administrador");
+        }
+        eliminarCuenta(id);
     }
 
     /** Determina si una cuenta es un administrador actualmente activo y desbloqueado. */
@@ -449,5 +496,11 @@ public class UserService {
         }
 
         return ((Vendedor) user).getNombreComercial();
+    }
+
+    public String getNombreUsuarioById(String usuarioId) {
+        Usuario user = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+        return (user.getNombre() + " " + user.getApellidos()).trim();
     }
 }

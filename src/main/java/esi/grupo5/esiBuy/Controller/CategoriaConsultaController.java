@@ -4,15 +4,13 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import esi.grupo5.esiBuy.Model.Categoria;
 import esi.grupo5.esiBuy.Service.CategoriaService;
 
-/** Expone la consulta administrativa de categorías (HU 31). */
+/** Expone la consulta pública de categorías (HU 31). */
 @RestController
-@RequestMapping("/admin/categorias")
 public class CategoriaConsultaController {
 
     /** Lógica de categorías. */
@@ -32,7 +30,7 @@ public class CategoriaConsultaController {
      *
      * @return 200 con la lista de categorías (vacía si no hay ninguna)
      */
-    @GetMapping
+    @GetMapping("/categorias")
     public ResponseEntity<List<Categoria>> listarCategorias() {
         return ResponseEntity.ok(categoriaService.listarCategorias());
     }

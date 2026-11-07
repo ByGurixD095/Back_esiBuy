@@ -34,8 +34,8 @@ class CategoriaServiceTest {
 
     @Test
     void crearCategoria_categoriaValidaLaGuardaYDevuelveLaGuardada() {
-        Categoria solicitada = new Categoria(null, "  Ropa  ");
-        Categoria guardada = new Categoria("categoria-1", "  Ropa  ");
+        Categoria solicitada = new Categoria(null, "Ropa");
+        Categoria guardada = new Categoria("categoria-1", "Ropa");
         when(categoriaRepository.save(solicitada)).thenReturn(guardada);
 
         Categoria resultado = categoriaService.crearCategoria(solicitada);
@@ -81,6 +81,48 @@ class CategoriaServiceTest {
     @Test
     void crearCategoria_sinDatosLanzaValidacion() {
         assertThrows(ValidationException.class, () -> categoriaService.crearCategoria(null));
+        verifyNoInteractions(categoriaRepository);
+    }
+
+    @Test
+    void actualizarCategoria_cambiaNombreSinAlterarElIdentificador() {
+        Categoria existente = new Categoria("c1", "Ropa");
+        when(categoriaRepository.findById("c1")).thenReturn(java.util.Optional.of(existente));
+        when(categoriaRepository.save(existente)).thenReturn(existente);
+
+        Categoria resultado = categoriaService.actualizarCategoria("c1", new Categoria(null, "  Moda  "));
+
+        org.junit.jupiter.api.Assertions.assertEquals("c1", resultado.getId());
+        org.junit.jupiter.api.Assertions.assertEquals("Moda", resultado.getNombre());
+        verify(categoriaRepository).existsByIdNotAndNombreRegexIgnoreCase("c1", "^\\QModa\\E$");
+        verify(categoriaRepository).save(existente);
+    }
+
+    @Test
+    void actualizarCategoria_nombreDuplicadoLanzaConflicto() {
+        when(categoriaRepository.findById("c1"))
+                .thenReturn(java.util.Optional.of(new Categoria("c1", "Ropa")));
+        when(categoriaRepository.existsByIdNotAndNombreRegexIgnoreCase("c1", "^\\QModa\\E$"))
+                .thenReturn(true);
+
+        assertThrows(ConflictException.class,
+                () -> categoriaService.actualizarCategoria("c1", new Categoria(null, "Moda")));
+        verify(categoriaRepository, never()).save(org.mockito.ArgumentMatchers.any(Categoria.class));
+    }
+
+    @Test
+    void actualizarCategoria_inexistenteLanzaNotFound() {
+        when(categoriaRepository.findById("x")).thenReturn(java.util.Optional.empty());
+
+        assertThrows(esi.grupo5.esiBuy.Exception.NotFoundException.class,
+                () -> categoriaService.actualizarCategoria("x", new Categoria(null, "Moda")));
+        verify(categoriaRepository, never()).save(org.mockito.ArgumentMatchers.any(Categoria.class));
+    }
+
+    @Test
+    void actualizarCategoria_nombreVacioLanzaValidacion() {
+        assertThrows(ValidationException.class,
+                () -> categoriaService.actualizarCategoria("c1", new Categoria(null, "  ")));
         verifyNoInteractions(categoriaRepository);
     }
 }

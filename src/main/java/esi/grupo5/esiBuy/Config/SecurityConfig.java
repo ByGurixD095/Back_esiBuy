@@ -129,6 +129,9 @@ public class SecurityConfig {
 
                 auth.requestMatchers(HttpMethod.GET, "/products/disponibles").permitAll();
                 auth.requestMatchers(HttpMethod.GET, "/products/*/info").permitAll();
+                auth.requestMatchers(HttpMethod.POST, "/products/*/valoraciones")
+                    .hasRole(ROL_CLIENTE);
+                auth.requestMatchers(HttpMethod.GET, "/categorias").permitAll();
 
                 auth.requestMatchers(HttpMethod.POST, "/users/administradores")
                     .hasRole(ROL_ADMINISTRADOR);
@@ -147,8 +150,18 @@ public class SecurityConfig {
                     .hasRole(ROL_CLIENTE);
                 auth.requestMatchers("/carrito/**")
                     .hasRole(ROL_CLIENTE);
+
+                auth.requestMatchers("/pedidos/vendedor", "/pedidos/vendedor/**")
+                    .hasRole(ROL_VENDEDOR);
+                auth.requestMatchers(HttpMethod.PATCH, "/pedidos/*/enviar")
+                    .hasRole(ROL_VENDEDOR);
+
+                auth.requestMatchers("/pedidos/**")
+                    .hasRole(ROL_CLIENTE);
                     
                 auth.requestMatchers("/users/me/metodoPago/**")
+                    .hasRole(ROL_CLIENTE);
+                auth.requestMatchers("/users/me/direcciones/**")
                     .hasRole(ROL_CLIENTE);
                     
                 auth.requestMatchers("/products/**")
