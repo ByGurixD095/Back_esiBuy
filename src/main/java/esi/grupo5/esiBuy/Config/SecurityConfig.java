@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -93,14 +94,17 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())
             .csrf(csrf -> {
                 if (csrfEnabled) {
-                    CookieCsrfTokenRepository repository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+                    CsrfTokenRepository repository;
                     if (partitionedCookies) {
-                        repository.setCookieName("ESIBUY-XSRF-TOKEN");
+                        repository = new PartitionedCookieCsrfTokenRepository(secureCookies, cookieSameSite);
+                    } else {
+                        CookieCsrfTokenRepository standardRepository =
+                                CookieCsrfTokenRepository.withHttpOnlyFalse();
+                        standardRepository.setCookieCustomizer(cookie -> cookie
+                                .secure(secureCookies)
+                                .sameSite(cookieSameSite));
+                        repository = standardRepository;
                     }
-                    repository.setCookieCustomizer(cookie -> cookie
-                            .secure(secureCookies)
-                            .sameSite(cookieSameSite)
-                            .partitioned(partitionedCookies));
                     csrf.csrfTokenRepository(repository)
                             .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler());
                 } else {
