@@ -14,8 +14,17 @@ public record ProductInfoDTO(
     String vendedor,
     double mediaEstrellas,
     List<ValoracionResponseDTO> valoraciones,
-    boolean puedeValorar
+    boolean puedeValorar,
+    boolean soloPremium
 ) {
+    public ProductInfoDTO(String nombre, int numStock, int precioCent, String descripcion,
+            String categoria, String urlImagen, int descuento, int descuentoPremium,
+            String vendedor, double mediaEstrellas, List<ValoracionResponseDTO> valoraciones,
+            boolean puedeValorar) {
+        this(nombre, numStock, precioCent, descripcion, categoria, urlImagen, descuento,
+                descuentoPremium, vendedor, mediaEstrellas, valoraciones, puedeValorar, false);
+    }
+
     public ProductInfoDTO(
             String nombre,
             int numStock,

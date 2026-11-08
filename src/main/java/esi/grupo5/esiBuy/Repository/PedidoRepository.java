@@ -26,6 +26,8 @@ public interface PedidoRepository extends MongoRepository<Pedido, String> {
 
     boolean existsByLineas_IdVendedorAndEstadoIn(String idVendedor, Collection<EstadoPedido> estados);
 
+    boolean existsByLineas_ProductoId(String productoId);
+
     @Query("{ 'clienteId': ?0 }")
     List<Pedido> findAllByClienteId(String clienteId);
 }

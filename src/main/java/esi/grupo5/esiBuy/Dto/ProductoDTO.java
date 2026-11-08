@@ -20,6 +20,7 @@ import jakarta.validation.constraints.PositiveOrZero;
  * @param descuento porcentaje de descuento general
  * @param descuentoPremium porcentaje de descuento para clientes prémium
  * @param activo estado de publicación; si se omite al crear, se crea activo
+ * @param soloPremium indica si el producto solo está disponible para clientes prémium
  */
 public record ProductoDTO(
 
@@ -53,5 +54,15 @@ public record ProductoDTO(
         @Max(100)
         Integer descuentoPremium,
 
-        Boolean activo
-) {}
+        Boolean activo,
+
+        Boolean soloPremium
+) {
+    /** Constructor compatible con clientes que aún no envían el indicador prémium. */
+    public ProductoDTO(String nombre, String referencia, Integer precioCent, String descripcion,
+            String categoriaId, String urlImagen, Integer numStock, Integer descuento,
+            Integer descuentoPremium, Boolean activo) {
+        this(nombre, referencia, precioCent, descripcion, categoriaId, urlImagen, numStock,
+                descuento, descuentoPremium, activo, false);
+    }
+}

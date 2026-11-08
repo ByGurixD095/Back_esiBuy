@@ -69,9 +69,14 @@ public class ProductoController {
     @GetMapping("/disponibles")
     public ResponseEntity<Page<Producto>> obtenerProductosDisponibles(
             FiltroCatalogoDTO filtros,
-            @PageableDefault(size = 36) Pageable pageable
+            @PageableDefault(size = 36) Pageable pageable,
+            Authentication authentication
     ) {
-        return ResponseEntity.ok(productoService.obtenerProductosDisponibles(filtros, pageable));
+        String usuarioId = authentication == null ? null : (String) authentication.getPrincipal();
+        Page<Producto> productos = usuarioId == null
+                ? productoService.obtenerProductosDisponibles(filtros, pageable)
+                : productoService.obtenerProductosDisponibles(filtros, pageable, usuarioId);
+        return ResponseEntity.ok(productos);
     }
 
     /**

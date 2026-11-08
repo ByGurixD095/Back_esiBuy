@@ -1,6 +1,7 @@
 package esi.grupo5.esiBuy.Service;
 
 import esi.grupo5.esiBuy.Dto.FiltroCatalogoDTO;
+import esi.grupo5.esiBuy.Dto.ClienteResponseDTO;
 import esi.grupo5.esiBuy.Dto.ProductInfoDTO;
 import esi.grupo5.esiBuy.Dto.ProductoDTO;
 import esi.grupo5.esiBuy.Dto.ValoracionRequestDTO;
@@ -12,6 +13,7 @@ import esi.grupo5.esiBuy.Model.Categoria;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Model.Valoracion;
 import esi.grupo5.esiBuy.Model.enums.EstadoPedido;
+import esi.grupo5.esiBuy.Model.enums.TipoCliente;
 import esi.grupo5.esiBuy.Repository.CategoriaRepository;
 import esi.grupo5.esiBuy.Repository.PedidoRepository;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
@@ -102,6 +104,7 @@ public class ProductoService {
                 valorPorDefecto(dto.descuento()),
                 valorPorDefecto(dto.descuentoPremium())
         );
+        producto.setSoloPremium(Boolean.TRUE.equals(dto.soloPremium()));
 
         producto.setActivo(dto.activo() == null || dto.activo());
         producto.setIdVendedor(idVendedor);
@@ -118,7 +121,13 @@ public class ProductoService {
      * @return productos coincidentes
      */
     public List<Producto> obtenerProductosDisponibles(FiltroCatalogoDTO filtros) {
-        List<Producto> productos = mongoTemplate.find(construirConsulta(filtros, Sort.unsorted()), Producto.class);
+        return obtenerProductosDisponibles(filtros, Sort.unsorted(), null);
+    }
+
+    public List<Producto> obtenerProductosDisponibles(
+            FiltroCatalogoDTO filtros, Sort sort, String usuarioId) {
+        List<Producto> productos = mongoTemplate.find(
+                construirConsulta(filtros, sort, esClientePremium(usuarioId)), Producto.class);
         completarNombresCategorias(productos);
         return productos;
     }
@@ -131,7 +140,12 @@ public class ProductoService {
      * @return página de productos y total de resultados coincidentes
      */
     public Page<Producto> obtenerProductosDisponibles(FiltroCatalogoDTO filtros, Pageable pageable) {
-        Query query = construirConsulta(filtros, pageable.getSort());
+        return obtenerProductosDisponibles(filtros, pageable, null);
+    }
+
+    public Page<Producto> obtenerProductosDisponibles(
+            FiltroCatalogoDTO filtros, Pageable pageable, String usuarioId) {
+        Query query = construirConsulta(filtros, pageable.getSort(), esClientePremium(usuarioId));
         long total = mongoTemplate.count(query, Producto.class);
 
         if (!pageable.isUnpaged()) {
@@ -152,9 +166,12 @@ public class ProductoService {
      * @param ordenAlternativo orden de la página cuando el filtro no especifica orden
      * @return consulta MongoDB construida
      */
-    private Query construirConsulta(FiltroCatalogoDTO filtros, Sort ordenAlternativo) {
+    private Query construirConsulta(FiltroCatalogoDTO filtros, Sort ordenAlternativo, boolean clientePremium) {
         Query query = new Query();
         query.addCriteria(Criteria.where(ACTIVO_FIELD).is(true).and(STOCK_FIELD).gt(0));
+        if (!clientePremium) {
+            query.addCriteria(Criteria.where("soloPremium").ne(true));
+        }
 
         if (filtros != null) {
             aplicarBusqueda(query, filtros.busqueda());
@@ -321,6 +338,7 @@ public class ProductoService {
         producto.setUrlImagen(dto.urlImagen());
         producto.setDescuento(valorPorDefecto(dto.descuento()));
         producto.setDescuentoPremium(valorPorDefecto(dto.descuentoPremium()));
+        producto.setSoloPremium(Boolean.TRUE.equals(dto.soloPremium()));
         if (dto.activo() != null) {
             producto.setActivo(dto.activo());
         }
@@ -339,6 +357,9 @@ public class ProductoService {
      */
     public void eliminarProducto(String id, String idVendedor) {
         Producto producto = buscarProductoPropio(id, idVendedor);
+        if (pedidoRepository.existsByLineas_ProductoId(id)) {
+            throw new ConflictException("No se puede eliminar un producto que ya forma parte de un pedido");
+        }
         productoRepository.delete(producto);
     }
 
@@ -353,6 +374,9 @@ public class ProductoService {
         Producto producto = productoRepository.findById(id)
                 .filter(Producto::isActivo)
                 .orElseThrow(() -> new NotFoundException(PRODUCTO_NO_ENCONTRADO));
+        if (producto.isSoloPremium() && !esClientePremium(usuarioId)) {
+            throw new NotFoundException(PRODUCTO_NO_ENCONTRADO);
+        }
 
         String nombreComercial = usuarioService.getNombreComercialById(producto.getIdVendedor());
         Categoria categoria = categoriaRepository.findById(producto.getCategoriaId())
@@ -379,7 +403,8 @@ public class ProductoService {
                         .map(valoracion -> new ValoracionResponseDTO(valoracion.getNombreUsuario(),
                                 valoracion.getEstrellas(), valoracion.getTexto(), valoracion.getFecha()))
                         .toList(),
-                puedeValorar);
+                puedeValorar,
+                producto.isSoloPremium());
     }
 
     public ProductInfoDTO infoProducto(String id) {
@@ -450,6 +475,7 @@ public class ProductoService {
                 .filter(id -> id != null && !id.isBlank())
                 .collect(Collectors.toSet());
         if (ids.isEmpty()) {
+            productos.forEach(producto -> producto.setCategoria("Sin categoría"));
             return;
         }
 
@@ -457,13 +483,16 @@ public class ProductoService {
                         categoriaRepository.findAllById(ids).spliterator(), false)
                 .collect(Collectors.toMap(Categoria::getId, categoria -> categoria));
         for (Producto producto : productos) {
-            if (producto.getCategoriaId() != null) {
-                Categoria categoria = categorias.get(producto.getCategoriaId());
-                if (categoria == null) {
-                    throw new NotFoundException("Categoría no encontrada para el producto " + producto.getId());
-                }
-                producto.setCategoria(categoria.getNombre());
-            }
+            Categoria categoria = categorias.get(producto.getCategoriaId());
+            producto.setCategoria(categoria == null ? "Sin categoría" : categoria.getNombre());
         }
+    }
+
+    private boolean esClientePremium(String usuarioId) {
+        if (usuarioId == null) {
+            return false;
+        }
+        return usuarioService.getUserById(usuarioId) instanceof ClienteResponseDTO cliente
+                && cliente.getTipoCliente() == TipoCliente.PREMIUM;
     }
 }

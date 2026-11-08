@@ -30,6 +30,7 @@ import esi.grupo5.esiBuy.Exception.ConflictException;
 import esi.grupo5.esiBuy.Exception.NotFoundException;
 import esi.grupo5.esiBuy.Exception.ValidationException;
 import esi.grupo5.esiBuy.Model.Carrito;
+import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.DireccionEnvioPedido;
 import esi.grupo5.esiBuy.Model.LineaPedido;
 import esi.grupo5.esiBuy.Model.ItemCarrito;
@@ -38,6 +39,7 @@ import esi.grupo5.esiBuy.Model.Pedido;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Model.enums.EstadoPedido;
 import esi.grupo5.esiBuy.Model.enums.TipoMetodoPago;
+import esi.grupo5.esiBuy.Model.enums.TipoCliente;
 import esi.grupo5.esiBuy.Repository.CarritoRepository;
 import esi.grupo5.esiBuy.Repository.MetodoPagoRepository;
 import esi.grupo5.esiBuy.Repository.PedidoRepository;
@@ -104,6 +106,44 @@ class PedidoServiceTest {
                 any(Update.class),
                 any(FindAndModifyOptions.class),
                 eq(Carrito.class));
+    }
+
+    @Test
+    void crearPedido_aplicaElDescuentoPremiumAlPrecioUnitarioYTotal() {
+        Carrito carrito = carritoConProducto();
+        Producto producto = producto();
+        producto.setDescuento(20);
+        producto.setDescuentoPremium(40);
+        prepararCheckout(carrito, producto, metodoPago());
+        Cliente cliente = new Cliente();
+        cliente.setTipoCliente(TipoCliente.PREMIUM);
+        when(usuarioRepository.findById("cliente-1")).thenReturn(Optional.of(cliente));
+        when(mongoTemplate.updateFirst(any(Query.class), any(Update.class), eq(Producto.class)))
+                .thenReturn(UpdateResult.acknowledged(1L, 1L, null));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> {
+            Pedido pedido = invocation.getArgument(0);
+            pedido.setId("pedido-premium");
+            return pedido;
+        });
+        when(mongoTemplate.findAndModify(any(Query.class), any(Update.class),
+                any(FindAndModifyOptions.class), eq(Carrito.class))).thenReturn(carrito);
+
+        var resultado = pedidoService.crearPedido("cliente-1", solicitud());
+
+        assertEquals(750, resultado.lineas().get(0).precioUnitarioCent());
+        assertEquals(1_500, resultado.totalCent());
+    }
+
+    @Test
+    void crearPedido_rechazaProductoExclusivoParaClienteNormal() {
+        Carrito carrito = carritoConProducto();
+        Producto producto = producto();
+        producto.setSoloPremium(true);
+        prepararCheckout(carrito, producto, metodoPago());
+
+        assertThrows(ValidationException.class,
+                () -> pedidoService.crearPedido("cliente-1", solicitud()));
+        verify(mongoTemplate, never()).updateFirst(any(Query.class), any(Update.class), eq(Producto.class));
     }
 
     @Test

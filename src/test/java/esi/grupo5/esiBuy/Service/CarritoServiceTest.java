@@ -19,10 +19,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import esi.grupo5.esiBuy.Repository.CarritoRepository;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
+import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Model.Carrito;
 import esi.grupo5.esiBuy.Model.ItemCarrito;
+import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Dto.ItemCarritoResponseDTO;
+import esi.grupo5.esiBuy.Model.enums.TipoCliente;
 import esi.grupo5.esiBuy.Exception.NotFoundException;
 import esi.grupo5.esiBuy.Exception.ValidationException;
 
@@ -34,6 +37,9 @@ class CarritoServiceTest {
 
     @Mock
     private ProductoRepository productoRepository;
+
+    @Mock
+    private UsuarioRepository usuarioRepository;
 
     @InjectMocks
     private CarritoService carritoService;
@@ -55,10 +61,12 @@ class CarritoServiceTest {
         producto.setId("producto-1");
         producto.setNombre("Ratón inalámbrico");
         producto.setPrecioCent(1999);
+        producto.setNumStock(10);
         producto.setUrlImagen("raton.jpg");
 
         when(carritoRepository.findByClienteId("cliente-1")).thenReturn(Optional.of(carrito));
-        when(productoRepository.findById("producto-1")).thenReturn(Optional.of(producto));
+        when(productoRepository.findAllById(org.mockito.ArgumentMatchers.anyIterable()))
+                .thenReturn(List.of(producto));
 
         List<ItemCarritoResponseDTO> resultado = carritoService.listarCarrito("cliente-1");
         assertEquals(1, resultado.size());
@@ -78,13 +86,59 @@ class CarritoServiceTest {
         producto.setId("producto-1");
         producto.setNombre("Ratón inalámbrico");
         producto.setPrecioCent(1999);
+        producto.setNumStock(10);
 
         when(carritoRepository.findByClienteId("cliente-1")).thenReturn(Optional.of(carrito));
-        when(productoRepository.findById("producto-1")).thenReturn(Optional.of(producto));
+        when(productoRepository.findAllById(org.mockito.ArgumentMatchers.anyIterable()))
+                .thenReturn(List.of(producto));
 
         carritoService.listarCarrito("cliente-1");
 
-        verify(productoRepository).findById("producto-1");
+        verify(productoRepository).findAllById(org.mockito.ArgumentMatchers.anyIterable());
+    }
+
+    @Test
+    void listarCarrito_limpiaProductosEliminadosYReajustaLaCantidadAlStock() {
+        Carrito carrito = new Carrito("cliente-1");
+        carrito.setItems(new ArrayList<>(List.of(
+                new ItemCarrito("producto-1", 5),
+                new ItemCarrito("producto-eliminado", 1))));
+        Producto producto = new Producto();
+        producto.setId("producto-1");
+        producto.setNombre("Ratón inalámbrico");
+        producto.setNumStock(2);
+        when(carritoRepository.findByClienteId("cliente-1")).thenReturn(Optional.of(carrito));
+        when(productoRepository.findAllById(org.mockito.ArgumentMatchers.anyIterable()))
+                .thenReturn(List.of(producto));
+
+        List<ItemCarritoResponseDTO> resultado = carritoService.listarCarrito("cliente-1");
+
+        assertEquals(1, resultado.size());
+        assertEquals(2, resultado.get(0).cantidad());
+        assertEquals(1, carrito.getItems().size());
+        verify(carritoRepository).save(carrito);
+    }
+
+    @Test
+    void listarCarrito_aplicaElDescuentoSegunElTipoDeCliente() {
+        Carrito carrito = new Carrito("cliente-premium");
+        carrito.setItems(new ArrayList<>(List.of(new ItemCarrito("producto-1", 1))));
+        Producto producto = new Producto();
+        producto.setId("producto-1");
+        producto.setNumStock(5);
+        producto.setPrecioCent(1_000);
+        producto.setDescuento(10);
+        producto.setDescuentoPremium(25);
+        Cliente cliente = new Cliente();
+        cliente.setTipoCliente(TipoCliente.PREMIUM);
+        when(carritoRepository.findByClienteId("cliente-premium")).thenReturn(Optional.of(carrito));
+        when(productoRepository.findAllById(org.mockito.ArgumentMatchers.anyIterable()))
+                .thenReturn(List.of(producto));
+        when(usuarioRepository.findById("cliente-premium")).thenReturn(Optional.of(cliente));
+
+        List<ItemCarritoResponseDTO> resultado = carritoService.listarCarrito("cliente-premium");
+
+        assertEquals(750, resultado.get(0).precioCent());
     }
 
     @Test
@@ -93,6 +147,7 @@ class CarritoServiceTest {
         carrito.setItems(new ArrayList<>(List.of(new ItemCarrito("producto-1", 1))));
         Producto producto = new Producto();
         producto.setId("producto-1");
+        producto.setNumStock(5);
         producto.setNumStock(5);
         when(carritoRepository.findByClienteId("cliente-1")).thenReturn(Optional.of(carrito));
         when(productoRepository.findById("producto-1")).thenReturn(Optional.of(producto));
@@ -109,6 +164,7 @@ class CarritoServiceTest {
         carrito.setItems(new ArrayList<>(List.of(new ItemCarrito("producto-1", 1))));
         Producto producto = new Producto();
         producto.setId("producto-1");
+        producto.setNumStock(5);
         producto.setNumStock(1);
         when(carritoRepository.findByClienteId("cliente-1")).thenReturn(Optional.of(carrito));
         when(productoRepository.findById("producto-1")).thenReturn(Optional.of(producto));
@@ -132,6 +188,7 @@ class CarritoServiceTest {
     void anadirProducto_existenteIncrementaCantidadSinDuplicarLinea() {
         Producto producto = new Producto();
         producto.setId("producto-1");
+        producto.setNumStock(5);
         Carrito carrito = new Carrito("cliente-1");
         carrito.setItems(new ArrayList<>(List.of(new ItemCarrito("producto-1", 1))));
 

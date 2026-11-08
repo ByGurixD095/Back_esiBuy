@@ -24,14 +24,17 @@ import esi.grupo5.esiBuy.Exception.ConflictException;
 import esi.grupo5.esiBuy.Exception.NotFoundException;
 import esi.grupo5.esiBuy.Exception.ValidationException;
 import esi.grupo5.esiBuy.Model.Carrito;
+import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.DireccionEnvioPedido;
 import esi.grupo5.esiBuy.Model.ItemCarrito;
 import esi.grupo5.esiBuy.Model.LineaPedido;
 import esi.grupo5.esiBuy.Model.MetodoPago;
 import esi.grupo5.esiBuy.Model.Pedido;
 import esi.grupo5.esiBuy.Model.Producto;
+import esi.grupo5.esiBuy.Model.Usuario;
 import esi.grupo5.esiBuy.Model.enums.EstadoPedido;
 import esi.grupo5.esiBuy.Model.enums.TipoMetodoPago;
+import esi.grupo5.esiBuy.Model.enums.TipoCliente;
 import esi.grupo5.esiBuy.Repository.CarritoRepository;
 import esi.grupo5.esiBuy.Repository.MetodoPagoRepository;
 import esi.grupo5.esiBuy.Repository.PedidoRepository;
@@ -160,6 +163,9 @@ public class PedidoService {
             MetodoPago metodoPago) {
         List<LineaPedido> lineas = new ArrayList<>();
         long totalCent = 0;
+        Usuario usuario = usuarioRepository.findById(clienteId).orElse(null);
+        boolean clientePremium = usuario instanceof Cliente cliente
+                && cliente.getTipoCliente() == TipoCliente.PREMIUM;
 
         try {
             for (ItemCarrito item : items) {
@@ -171,7 +177,12 @@ public class PedidoService {
                         .orElseThrow(() -> new NotFoundException(
                                 "Un producto del carrito ya no está disponible"));
 
-                long subtotal = Math.multiplyExact((long) producto.getPrecioCent(), item.getCantidad());
+                if (producto.isSoloPremium() && !clientePremium) {
+                    throw new ValidationException("El carrito contiene un producto exclusivo para clientes prémium");
+                }
+
+                int precioUnitario = precioConDescuento(producto, clientePremium);
+                long subtotal = Math.multiplyExact((long) precioUnitario, item.getCantidad());
                 totalCent = Math.addExact(totalCent, subtotal);
                 lineas.add(new LineaPedido(
                         producto.getId(),
@@ -179,7 +190,7 @@ public class PedidoService {
                         producto.getReferencia(),
                         producto.getUrlImagen(),
                         producto.getIdVendedor(),
-                        producto.getPrecioCent(),
+                        precioUnitario,
                         item.getCantidad(),
                         subtotal));
             }
@@ -207,10 +218,19 @@ public class PedidoService {
         pedido.setEstado(EstadoPedido.EN_PROCESO);
         pedido.setFechaPedido(ahora);
         pedido.setFechaExpiracion(ahora.plusMinutes(PLAZO_PAGO_MINUTOS));
-        pedido.setNombreCliente(usuarioRepository.findById(clienteId)
-                .map(usuario -> (usuario.getNombre() + " " + usuario.getApellidos()).trim())
-                .orElse(direccionDTO.nombreCompleto().trim()));
+        pedido.setNombreCliente(usuario == null
+                ? direccionDTO.nombreCompleto().trim()
+                : obtenerNombreCompleto(usuario));
         return pedido;
+    }
+
+    private String obtenerNombreCompleto(Usuario usuario) {
+        return String.join(" ", usuario.getNombre(), usuario.getApellidos()).trim();
+    }
+
+    private int precioConDescuento(Producto producto, boolean clientePremium) {
+        int descuento = clientePremium ? producto.getDescuentoPremium() : producto.getDescuento();
+        return Math.toIntExact((long) producto.getPrecioCent() * (100 - descuento) / 100);
     }
 
     public PedidoResponseDTO pagarPedido(String clienteId, String pedidoId) {

@@ -6,6 +6,7 @@ import esi.grupo5.esiBuy.Model.Carrito;
 import esi.grupo5.esiBuy.Model.ItemCarrito;
 import esi.grupo5.esiBuy.Repository.CarritoRepository;
 import esi.grupo5.esiBuy.Repository.ProductoRepository;
+import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,9 @@ class CarritoServiceEliminarTest {
 
     @Mock
     private ProductoRepository productoRepository;
+
+    @Mock
+    private UsuarioRepository usuarioRepository;
 
     @InjectMocks
     private CarritoService carritoService;

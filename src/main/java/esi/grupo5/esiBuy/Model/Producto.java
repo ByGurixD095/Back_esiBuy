@@ -35,6 +35,8 @@ public class Producto {
     private int descuento;
     /** Porcentaje del descuento aplicable a clientes prémium. */
     private int descuentoPremium;
+    /** Indica si el catálogo y la compra están restringidos a clientes prémium. */
+    private boolean soloPremium;
     /** Identificador del vendedor propietario del producto. */
     private String idVendedor;
 
@@ -129,6 +131,11 @@ public class Producto {
     public int getDescuentoPremium() { return descuentoPremium; }
     /** @param descuentoPremium porcentaje de descuento prémium */
     public void setDescuentoPremium(int descuentoPremium) { this.descuentoPremium = descuentoPremium; }
+
+    /** @return {@code true} cuando solo pueden acceder clientes prémium */
+    public boolean isSoloPremium() { return soloPremium; }
+    /** @param soloPremium nuevo indicador de acceso exclusivo */
+    public void setSoloPremium(boolean soloPremium) { this.soloPremium = soloPremium; }
 
     /** @return identificador del vendedor propietario */
     public String getIdVendedor() {

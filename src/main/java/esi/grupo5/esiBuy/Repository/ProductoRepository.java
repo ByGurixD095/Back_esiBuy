@@ -19,6 +19,7 @@ public interface ProductoRepository extends MongoRepository<Producto, String> {
      * @return productos coincidentes
      */
     List<Producto> findByActivoTrueAndNumStockGreaterThan(int minStock);
+
     /**
      * Recupera una página de productos pertenecientes a un vendedor.
      *

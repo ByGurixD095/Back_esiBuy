@@ -4,6 +4,7 @@ import esi.grupo5.esiBuy.Dto.ProductoDTO;
 import esi.grupo5.esiBuy.Dto.FiltroCatalogoDTO;
 import esi.grupo5.esiBuy.Dto.ProductInfoDTO;
 import esi.grupo5.esiBuy.Exception.NotFoundException;
+import esi.grupo5.esiBuy.Exception.ConflictException;
 import esi.grupo5.esiBuy.Model.Categoria;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Repository.CategoriaRepository;
@@ -38,6 +39,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class ProductoServiceTest {
@@ -250,6 +252,33 @@ class ProductoServiceTest {
         productoService.eliminarProducto("producto-1", "vendedor-1");
         
         verify(productoRepository).delete(producto);
+    }
+
+    @Test
+    void eliminarProducto_rechazaProductoIncluidoEnPedidosHistoricos() {
+        Producto producto = new Producto();
+        producto.setId("producto-1");
+        producto.setIdVendedor("vendedor-1");
+        when(productoRepository.findByIdAndIdVendedor("producto-1", "vendedor-1"))
+                .thenReturn(Optional.of(producto));
+        when(pedidoRepository.existsByLineas_ProductoId("producto-1")).thenReturn(true);
+
+        org.junit.jupiter.api.Assertions.assertThrows(ConflictException.class,
+                () -> productoService.eliminarProducto("producto-1", "vendedor-1"));
+
+        verify(productoRepository, never()).delete(producto);
+    }
+
+    @Test
+    void obtenerProductosDisponibles_usaCategoriaFallbackSiLaCategoriaFueEliminada() {
+        Producto producto = new Producto();
+        producto.setId("producto-1");
+        producto.setCategoriaId("categoria-huerfana");
+        when(productoRepository.findByActivoTrueAndNumStockGreaterThan(0)).thenReturn(List.of(producto));
+
+        List<Producto> disponibles = productoService.obtenerProductosDisponibles();
+
+        assertEquals("Sin categoría", disponibles.get(0).getCategoria());
     }
 
     @Test
