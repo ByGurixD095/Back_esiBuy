@@ -259,10 +259,12 @@ public class AuthFactorService {
      * Determina si la cuenta debe verificar también un código enviado por correo.
      *
      * @param usuario cuenta cuya política se consulta
-     * @return {@code true} para administradores y cuentas con 3FA activado
+     * @return {@code true} para administradores, vendedores y cuentas con 3FA activado
      */
     public boolean requiereOtpEmail(Usuario usuario) {
-        return usuario.getRol() == Rol.ADMINISTRADOR || usuario.is3faActivoCliente();
+        return usuario.getRol() == Rol.ADMINISTRADOR
+                || usuario.getRol() == Rol.VENDEDOR
+                || usuario.is3faActivoCliente();
     }
 
     /** @return secreto TOTP generado aleatoriamente */
