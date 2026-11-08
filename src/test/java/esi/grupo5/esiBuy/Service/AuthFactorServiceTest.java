@@ -208,7 +208,6 @@ class AuthFactorServiceTest {
     @Test
     void verifyFactors_validaTotpYOtpDeEmailYLimpiaElOtp() {
         Vendedor usuario = vendedor("vendedor@test.com");
-        usuario.setIs3faActivoCliente(true);
         usuario.setEmailOtpHash(encoder.encode("654321"));
         usuario.setEmailOtpExpiracion(LocalDateTime.now().plusMinutes(5));
         when(usuarioRepository.findByEmail(usuario.getEmail())).thenReturn(Optional.of(usuario));
@@ -224,7 +223,7 @@ class AuthFactorServiceTest {
     }
 
     @Test
-    void verifyFactors_vendedorSin3faNoRequiereNiConsumeOtpDeEmail() {
+    void verifyFactors_vendedorSin3faRequiereOtpDeEmail() {
         Vendedor usuario = vendedor("vendedor@test.com");
         String emailOtpHash = encoder.encode("654321");
         usuario.setEmailOtpHash(emailOtpHash);
@@ -233,12 +232,20 @@ class AuthFactorServiceTest {
         AuthFactorService serviceSpy = spy(service);
         doReturn(true).when(serviceSpy).verificarCodigoTotp(usuario, "123456");
 
-        assertSame(usuario, serviceSpy.verifyFactors(
+        assertTrue(service.requiereOtpEmail(usuario));
+        assertThrows(ExpiredTokenException.class, () -> serviceSpy.verifyFactors(
                 new MfaVerifyRequestDTO(usuario.getEmail(), "123456", null)));
 
         assertEquals(emailOtpHash, usuario.getEmailOtpHash());
         assertNotNull(usuario.getEmailOtpExpiracion());
         verify(usuarioRepository, never()).save(usuario);
+    }
+
+    @Test
+    void requiereOtpEmail_vendedorSiempreExigeTercerFactor() {
+        Vendedor vendedor = new Vendedor();
+
+        assertTrue(service.requiereOtpEmail(vendedor));
     }
 
     @Test
