@@ -30,6 +30,7 @@ public class Pedido {
     private LocalDateTime fechaExpiracion;
 
     public Pedido() {
+        // Spring Data MongoDB necesita este constructor para materializar documentos.
     }
 
     public String getId() {

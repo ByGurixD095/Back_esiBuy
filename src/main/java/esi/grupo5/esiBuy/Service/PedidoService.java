@@ -31,6 +31,7 @@ import esi.grupo5.esiBuy.Model.MetodoPago;
 import esi.grupo5.esiBuy.Model.Pedido;
 import esi.grupo5.esiBuy.Model.Producto;
 import esi.grupo5.esiBuy.Model.enums.EstadoPedido;
+import esi.grupo5.esiBuy.Model.enums.TipoMetodoPago;
 import esi.grupo5.esiBuy.Repository.CarritoRepository;
 import esi.grupo5.esiBuy.Repository.MetodoPagoRepository;
 import esi.grupo5.esiBuy.Repository.PedidoRepository;
@@ -42,6 +43,8 @@ import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 public class PedidoService {
 
     private static final int PLAZO_PAGO_MINUTOS = 30;
+    private static final String STOCK_FIELD = "numStock";
+    private static final String PEDIDO_NO_ENCONTRADO = "Pedido no encontrado";
     private static final Set<EstadoPedido> ESTADOS_VISIBLES_VENDEDOR =
             Set.of(EstadoPedido.PAGADO, EstadoPedido.TRAMITADO_ENVIADO);
 
@@ -91,10 +94,10 @@ public class PedidoService {
             for (LineaPedido linea : pedido.getLineas()) {
                 Query productoDisponible = Query.query(Criteria.where("id").is(linea.getProductoId())
                         .and("activo").is(true)
-                        .and("numStock").gte(linea.getCantidad()));
+                        .and(STOCK_FIELD).gte(linea.getCantidad()));
                 UpdateResult resultado = mongoTemplate.updateFirst(
                         productoDisponible,
-                        new Update().inc("numStock", -linea.getCantidad()),
+                        new Update().inc(STOCK_FIELD, -linea.getCantidad()),
                         Producto.class);
 
                 if (resultado.getMatchedCount() != 1) {
@@ -146,7 +149,7 @@ public class PedidoService {
 
     public PedidoResponseDTO obtenerPedido(String clienteId, String pedidoId) {
         Pedido pedido = pedidoRepository.findByIdAndClienteId(pedidoId, clienteId)
-                .orElseThrow(() -> new NotFoundException("Pedido no encontrado"));
+                .orElseThrow(() -> new NotFoundException(PEDIDO_NO_ENCONTRADO));
         return convertirAResponseDTO(pedido);
     }
 
@@ -233,7 +236,7 @@ public class PedidoService {
 
     public PedidoResponseDTO marcarEnviado(String vendedorId, String pedidoId) {
         Pedido pedido = pedidoRepository.findById(pedidoId)
-                .orElseThrow(() -> new NotFoundException("Pedido no encontrado"));
+                .orElseThrow(() -> new NotFoundException(PEDIDO_NO_ENCONTRADO));
         if (pedido.getEstado() != EstadoPedido.PAGADO
                 && pedido.getEstado() != EstadoPedido.TRAMITADO_ENVIADO) {
             throw new ConflictException("El pedido no está disponible para tramitar");
@@ -275,26 +278,35 @@ public class PedidoService {
     }
 
     private void migrarPedidosAntiguos() {
-        for (Pedido pedido : pedidoRepository.findByEstado(EstadoPedido.RECIBIDO)) {
-            boolean actualizado = false;
-            for (LineaPedido linea : pedido.getLineas()) {
-                if (linea.getIdVendedor() == null) {
-                    productoRepository.findById(linea.getProductoId()).ifPresent(producto -> {
-                        linea.setIdVendedor(producto.getIdVendedor());
-                    });
-                    if (linea.getIdVendedor() != null) {
-                        actualizado = true;
-                    }
-                }
-            }
-            if (actualizado) {
-                pedido.setEstado(EstadoPedido.PAGADO);
-                pedido.setFechaExpiracion(null);
-                if (pedido.getNombreCliente() == null && pedido.getDireccionEnvio() != null) {
-                    pedido.setNombreCliente(pedido.getDireccionEnvio().getNombreCompleto());
-                }
-                pedidoRepository.save(pedido);
-            }
+        pedidoRepository.findByEstado(EstadoPedido.RECIBIDO).forEach(this::migrarPedidoAntiguo);
+    }
+
+    private void migrarPedidoAntiguo(Pedido pedido) {
+        boolean actualizado = false;
+        for (LineaPedido linea : pedido.getLineas()) {
+            actualizado |= completarVendedor(linea);
+        }
+        if (!actualizado) {
+            return;
+        }
+        pedido.setEstado(EstadoPedido.PAGADO);
+        pedido.setFechaExpiracion(null);
+        completarNombreCliente(pedido);
+        pedidoRepository.save(pedido);
+    }
+
+    private boolean completarVendedor(LineaPedido linea) {
+        if (linea.getIdVendedor() != null) {
+            return false;
+        }
+        productoRepository.findById(linea.getProductoId()).ifPresent(producto ->
+                linea.setIdVendedor(producto.getIdVendedor()));
+        return linea.getIdVendedor() != null;
+    }
+
+    private void completarNombreCliente(Pedido pedido) {
+        if (pedido.getNombreCliente() == null && pedido.getDireccionEnvio() != null) {
+            pedido.setNombreCliente(pedido.getDireccionEnvio().getNombreCompleto());
         }
     }
 
@@ -327,7 +339,7 @@ public class PedidoService {
         for (LineaPedido linea : pedido.getLineas()) {
             UpdateResult resultado = mongoTemplate.updateFirst(
                     Query.query(Criteria.where("id").is(linea.getProductoId())),
-                    new Update().inc("numStock", linea.getCantidad()),
+                    new Update().inc(STOCK_FIELD, linea.getCantidad()),
                     Producto.class);
             if (resultado.getMatchedCount() != 1) {
                 throw new BusinessException(
@@ -341,7 +353,7 @@ public class PedidoService {
 
     private Pedido obtenerPedidoPersistido(String clienteId, String pedidoId) {
         return pedidoRepository.findByIdAndClienteId(pedidoId, clienteId)
-                .orElseThrow(() -> new NotFoundException("Pedido no encontrado"));
+                .orElseThrow(() -> new NotFoundException(PEDIDO_NO_ENCONTRADO));
     }
 
     private void revertirPedido(Pedido pedido, List<LineaPedido> stockReservado, RuntimeException errorOriginal) {
@@ -360,7 +372,7 @@ public class PedidoService {
             try {
                 UpdateResult resultado = mongoTemplate.updateFirst(
                         Query.query(Criteria.where("id").is(linea.getProductoId())),
-                        new Update().inc("numStock", linea.getCantidad()),
+                        new Update().inc(STOCK_FIELD, linea.getCantidad()),
                         Producto.class);
                 if (resultado.getMatchedCount() != 1) {
                     throw new IllegalStateException(
@@ -423,13 +435,29 @@ public class PedidoService {
                 pedido.getId(),
                 lineas,
                 direccionDTO,
-                vendedorId == null ? pedido.getMetodoPagoId() : null,
-                vendedorId == null ? pedido.getTipoMetodoPago() : null,
-                vendedorId == null ? pedido.getAliasMetodoPago() : null,
-                vendedorId == null ? pedido.getReferenciaMetodoPago() : null,
+                obtenerMetodoPagoId(pedido, vendedorId),
+                obtenerTipoMetodoPago(pedido, vendedorId),
+                obtenerAliasMetodoPago(pedido, vendedorId),
+                obtenerReferenciaMetodoPago(pedido, vendedorId),
                 totalCent,
                 pedido.getEstado(),
                 pedido.getFechaPedido(),
                 pedido.getNombreCliente());
+    }
+
+    private String obtenerMetodoPagoId(Pedido pedido, String vendedorId) {
+        return vendedorId == null ? pedido.getMetodoPagoId() : null;
+    }
+
+    private TipoMetodoPago obtenerTipoMetodoPago(Pedido pedido, String vendedorId) {
+        return vendedorId == null ? pedido.getTipoMetodoPago() : null;
+    }
+
+    private String obtenerAliasMetodoPago(Pedido pedido, String vendedorId) {
+        return vendedorId == null ? pedido.getAliasMetodoPago() : null;
+    }
+
+    private String obtenerReferenciaMetodoPago(Pedido pedido, String vendedorId) {
+        return vendedorId == null ? pedido.getReferenciaMetodoPago() : null;
     }
 }

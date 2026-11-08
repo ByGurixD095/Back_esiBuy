@@ -15,6 +15,8 @@ import esi.grupo5.esiBuy.Exception.NotFoundException;
 @Service
 public class ListaDeseosService {
 
+    private static final String LISTA_NO_ENCONTRADA = "Lista de deseos no encontrada";
+
     private final ListaDeseosRepository listaDeseosRepository;
     private final ProductoRepository productoRepository;
 
@@ -36,7 +38,7 @@ public class ListaDeseosService {
     }
 
     public List<Producto> obtenerProductosLista (String idLista, String idCliente) {
-        ListaDeseos lista = listaDeseosRepository.findByIdAndIdCliente(idLista, idCliente).orElseThrow(() -> new NotFoundException("Lista de deseos no encontrada"));
+        ListaDeseos lista = listaDeseosRepository.findByIdAndIdCliente(idLista, idCliente).orElseThrow(() -> new NotFoundException(LISTA_NO_ENCONTRADA));
         List<Producto> productos = new ArrayList<>();
 
         productoRepository.findAllById(lista.getProductosIds()).forEach(productos::add);
@@ -45,7 +47,7 @@ public class ListaDeseosService {
     }
 
     public ListaDeseos agregarProductoLista (String idLista, String idProducto, String idCliente) {
-        ListaDeseos lista = listaDeseosRepository.findByIdAndIdCliente(idLista, idCliente).orElseThrow(() -> new NotFoundException ("Lista de deseos no encontrada"));
+        ListaDeseos lista = listaDeseosRepository.findByIdAndIdCliente(idLista, idCliente).orElseThrow(() -> new NotFoundException (LISTA_NO_ENCONTRADA));
 
         productoRepository.findById(idProducto).orElseThrow(() -> new NotFoundException("Producto no encontrado"));
 
@@ -56,7 +58,7 @@ public class ListaDeseosService {
 
     public ListaDeseos eliminarProductoLista(String idLista, String idProducto, String idCliente) {
         ListaDeseos lista = listaDeseosRepository.findByIdAndIdCliente(idLista, idCliente)
-                .orElseThrow(() -> new NotFoundException("Lista de deseos no encontrada"));
+                .orElseThrow(() -> new NotFoundException(LISTA_NO_ENCONTRADA));
 
         if (!lista.getProductosIds().contains(idProducto)) {
             throw new NotFoundException("El producto no se encuentra en la lista de deseos");
@@ -69,7 +71,7 @@ public class ListaDeseosService {
     public ListaDeseos modificarLista(String idLista, String nuevoNombre, String idCliente) {
 
         ListaDeseos lista = listaDeseosRepository.findByIdAndIdCliente(idLista, idCliente)
-                .orElseThrow(() -> new NotFoundException("Lista de deseos no encontrada"));
+                .orElseThrow(() -> new NotFoundException(LISTA_NO_ENCONTRADA));
 
         lista.setNombre(nuevoNombre);
         return listaDeseosRepository.save(lista);
@@ -77,7 +79,7 @@ public class ListaDeseosService {
     }
     public void eliminarLista(String idLista, String idCliente) {
         ListaDeseos lista = listaDeseosRepository.findByIdAndIdCliente(idLista, idCliente)
-                .orElseThrow(() -> new NotFoundException("Lista de deseos no encontrada"));
+                .orElseThrow(() -> new NotFoundException(LISTA_NO_ENCONTRADA));
         listaDeseosRepository.delete(lista);
     }
 

@@ -21,6 +21,8 @@ import esi.grupo5.esiBuy.Repository.UsuarioRepository;
 @Service
 public class MetodoPagoService {
 
+    private static final String SERVER_ERROR = "SERVER_ERROR";
+
     private final MetodoPagoRepository metodoPagoRepository;
     private final UsuarioRepository usuarioRepository;
 
@@ -52,7 +54,7 @@ public class MetodoPagoService {
         } catch (DataAccessException e) {
             throw new BusinessException(
                     "Error interno al registrar el método de pago",
-                    500, "SERVER_ERROR", e);
+                    500, SERVER_ERROR, e);
         }
     }
 
@@ -67,7 +69,7 @@ public class MetodoPagoService {
         } catch (DataAccessException e) {
             throw new BusinessException(
                     "Error interno al consultar los métodos de pago",
-                    500, "SERVER_ERROR", e);
+                    500, SERVER_ERROR, e);
         }
     }
 
@@ -152,7 +154,7 @@ public class MetodoPagoService {
         } catch (DataAccessException e) {
             throw new BusinessException(
                     "Error interno al eliminar el método de pago",
-                    500, "SERVER_ERROR", e);
+                    500, SERVER_ERROR, e);
         }
     }
 
@@ -183,7 +185,7 @@ public class MetodoPagoService {
         } catch (DataAccessException e) {
             throw new BusinessException(
                     "Error interno al modificar el método de pago",
-                    500, "SERVER_ERROR", e);
+                    500, SERVER_ERROR, e);
         }
     }
 

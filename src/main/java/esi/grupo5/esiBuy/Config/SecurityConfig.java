@@ -230,10 +230,7 @@ public class SecurityConfig {
         var authentication = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
         String requestId = UUID.randomUUID().toString();
-        String reason = exception instanceof MissingCsrfTokenException ? "csrf_cookie_missing"
-                : exception instanceof InvalidCsrfTokenException ? "csrf_token_mismatch"
-                : (authentication == null || !authentication.isAuthenticated()
-                    ? "authentication_required" : "role_forbidden");
+        String reason = determineAccessDeniedReason(exception, authentication);
         String message = csrfFailure
                 ? "No se pudo validar la solicitud. Recarga la página e inténtalo de nuevo."
                 : "No tienes permisos para realizar esta acción.";
@@ -251,5 +248,18 @@ public class SecurityConfig {
         LOGGER.warn("Access denied requestId={} reason={} method={}",
                 requestId, reason, request.getMethod());
         new ObjectMapper().writeValue(response.getOutputStream(), error);
+    }
+
+    private String determineAccessDeniedReason(
+            AccessDeniedException exception,
+            org.springframework.security.core.Authentication authentication) {
+        if (exception instanceof MissingCsrfTokenException) {
+            return "csrf_cookie_missing";
+        }
+        if (exception instanceof InvalidCsrfTokenException) {
+            return "csrf_token_mismatch";
+        }
+        return authentication == null || !authentication.isAuthenticated()
+                ? "authentication_required" : "role_forbidden";
     }
 }

@@ -14,6 +14,7 @@ import esi.grupo5.esiBuy.Exception.NotFoundException;
 import esi.grupo5.esiBuy.Exception.ValidationException;
 import esi.grupo5.esiBuy.Model.Cliente;
 import esi.grupo5.esiBuy.Model.DireccionGuardada;
+import esi.grupo5.esiBuy.Model.DireccionEnvioPedido;
 import esi.grupo5.esiBuy.Model.Usuario;
 import esi.grupo5.esiBuy.Model.enums.EstadoPedido;
 import esi.grupo5.esiBuy.Repository.PedidoRepository;
@@ -115,15 +116,27 @@ public class DireccionService {
         boolean enUso = pedidoRepository.findAllByClienteId(clienteId).stream()
                 .filter(p -> estadosActivos.contains(p.getEstado()))
                 .map(p -> p.getDireccionEnvio())
-                .anyMatch(d -> d != null &&
-                        d.getDireccion().equals(direccion.getDireccion()) &&
-                        d.getCiudad().equals(direccion.getCiudad()) &&
-                        d.getCodigoPostal().equals(direccion.getCodigoPostal()) &&
-                        d.getPais().equals(direccion.getPais()));
+                .anyMatch(d -> coincideCon(d, direccion));
                         
         if (enUso) {
             throw new ConflictException("No se puede modificar ni eliminar una dirección que está en uso en un pedido en curso.");
         }
+    }
+
+    private boolean coincideCon(DireccionEnvioPedido pedido, DireccionGuardada guardada) {
+        return pedido != null
+                && coincideUbicacion(pedido, guardada)
+                && coincideLocalidad(pedido, guardada);
+    }
+
+    private boolean coincideUbicacion(DireccionEnvioPedido pedido, DireccionGuardada guardada) {
+        return pedido.getDireccion().equals(guardada.getDireccion())
+                && pedido.getCiudad().equals(guardada.getCiudad());
+    }
+
+    private boolean coincideLocalidad(DireccionEnvioPedido pedido, DireccionGuardada guardada) {
+        return pedido.getCodigoPostal().equals(guardada.getCodigoPostal())
+                && pedido.getPais().equals(guardada.getPais());
     }
 
     private DireccionGuardadaResponseDTO convertir(DireccionGuardada direccion) {

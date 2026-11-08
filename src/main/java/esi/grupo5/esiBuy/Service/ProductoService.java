@@ -37,6 +37,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class ProductoService {
 
+    private static final String CATEGORIA_NO_ENCONTRADA = "Categoría no encontrada";
+    private static final String PRODUCTO_NO_ENCONTRADO = "Producto no encontrado";
+
     /** Nombre persistido del campo de estado activo. */
     private static final String ACTIVO_FIELD = "activo";
     /** Nombre persistido del campo de existencias. */
@@ -87,7 +90,7 @@ public class ProductoService {
      */
     public Producto crearProducto(ProductoDTO dto, String idVendedor) {
         Categoria categoria = categoriaRepository.findById(dto.categoriaId())
-                .orElseThrow(() -> new NotFoundException("Categoría no encontrada"));
+                .orElseThrow(() -> new NotFoundException(CATEGORIA_NO_ENCONTRADA));
         Producto producto = new Producto(
                 dto.nombre(),
                 dto.referencia(),
@@ -313,7 +316,7 @@ public class ProductoService {
         producto.setPrecioCent(dto.precioCent());
         producto.setDescripcion(dto.descripcion());
         Categoria categoria = categoriaRepository.findById(dto.categoriaId())
-                .orElseThrow(() -> new NotFoundException("Categoría no encontrada"));
+                .orElseThrow(() -> new NotFoundException(CATEGORIA_NO_ENCONTRADA));
         producto.setCategoriaId(categoria.getId());
         producto.setUrlImagen(dto.urlImagen());
         producto.setDescuento(valorPorDefecto(dto.descuento()));
@@ -349,11 +352,11 @@ public class ProductoService {
     public ProductInfoDTO infoProducto(String id, String usuarioId) {
         Producto producto = productoRepository.findById(id)
                 .filter(Producto::isActivo)
-                .orElseThrow(() -> new NotFoundException("Producto no encontrado"));
+                .orElseThrow(() -> new NotFoundException(PRODUCTO_NO_ENCONTRADO));
 
         String nombreComercial = usuarioService.getNombreComercialById(producto.getIdVendedor());
         Categoria categoria = categoriaRepository.findById(producto.getCategoriaId())
-                .orElseThrow(() -> new NotFoundException("Categoría no encontrada"));
+                .orElseThrow(() -> new NotFoundException(CATEGORIA_NO_ENCONTRADA));
 
         List<Valoracion> valoraciones = valoracionRepository.findByProductoIdOrderByFechaDesc(id);
         double media = valoraciones.stream().mapToInt(Valoracion::getEstrellas).average().orElse(0);
@@ -387,7 +390,7 @@ public class ProductoService {
             String productoId, String usuarioId, ValoracionRequestDTO dto) {
         productoRepository.findById(productoId)
                 .filter(Producto::isActivo)
-                .orElseThrow(() -> new NotFoundException("Producto no encontrado"));
+                .orElseThrow(() -> new NotFoundException(PRODUCTO_NO_ENCONTRADO));
         if (!haCompradoYFinalizado(usuarioId, productoId)) {
             throw new ForbiddenException("Solo puedes valorar productos de pedidos finalizados");
         }
@@ -428,7 +431,7 @@ public class ProductoService {
      */
     private Producto buscarProductoPropio(String id, String idVendedor) {
         return productoRepository.findByIdAndIdVendedor(id, idVendedor)
-                .orElseThrow(() -> new NotFoundException("Producto no encontrado"));
+                .orElseThrow(() -> new NotFoundException(PRODUCTO_NO_ENCONTRADO));
     }
 
     /**

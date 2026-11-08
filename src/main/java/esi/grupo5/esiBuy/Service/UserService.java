@@ -500,7 +500,7 @@ public class UserService {
 
     public String getNombreUsuarioById(String usuarioId) {
         Usuario user = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
+                .orElseThrow(() -> new NotFoundException(USER_NOT_FOUND_MESSAGE));
         return (user.getNombre() + " " + user.getApellidos()).trim();
     }
 }

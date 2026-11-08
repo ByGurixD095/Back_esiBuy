@@ -15,6 +15,7 @@ public class ListaDeseos {
     private Set<String> productosIds = new HashSet<>();
 
     public ListaDeseos() {
+        // Spring Data MongoDB necesita este constructor para materializar documentos.
     }
 
     public String getId() {
