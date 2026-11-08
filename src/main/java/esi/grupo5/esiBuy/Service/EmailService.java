@@ -4,8 +4,6 @@ import java.util.Properties;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import jakarta.mail.Authenticator;
 import jakarta.mail.Message;
@@ -20,7 +18,6 @@ import jakarta.mail.internet.MimeMessage;
 /** Envía mensajes HTML y correos de recuperación mediante SMTP. */
 @Service
 public class EmailService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(EmailService.class);
 
     /** Límite de conexión, lectura y escritura SMTP en milisegundos. */
     private static final String TIMEOUT_PROPERTY = "10000";
@@ -53,13 +50,6 @@ public class EmailService {
      * @throws MessagingException si falla la composición o el envío
      */
     public void sendHtmlEmail(String to, String subject, String htmlContent) throws MessagingException {
-        long started = System.nanoTime();
-        LOGGER.info("mail.smtp phase=started host=smtp.gmail.com port=587 starttls=true usernameConfigured={} recipientDomain={}",
-                username != null && !username.isBlank(), recipientDomain(to));
-        if (username == null || username.isBlank() || appPassword == null || appPassword.isBlank()) {
-            LOGGER.error("mail.smtp phase=configuration result=failed reason=missing_credentials");
-            throw new MessagingException("SMTP credentials are not configured");
-        }
         Properties props = new Properties();
         props.put("mail.smtp.auth", "true");
         props.put("mail.smtp.starttls.enable", "true");
@@ -82,21 +72,7 @@ public class EmailService {
         message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
         message.setSubject(subject, "UTF-8");
         message.setContent(htmlContent, "text/html; charset=UTF-8");
-        try {
-            Transport.send(message);
-            LOGGER.info("mail.smtp phase=send result=accepted elapsedMs={} recipientDomain={}",
-                    (System.nanoTime()-started)/1_000_000, recipientDomain(to));
-        } catch (MessagingException e) {
-            LOGGER.error("mail.smtp phase=send result=failed exceptionType={} elapsedMs={} recipientDomain={}",
-                    e.getClass().getSimpleName(), (System.nanoTime()-started)/1_000_000, recipientDomain(to), e);
-            throw e;
-        }
-    }
-
-    private String recipientDomain(String to) {
-        if (to == null) return "<missing>";
-        int at = to.lastIndexOf('@');
-        return at < 0 ? "<invalid>" : to.substring(at + 1);
+        Transport.send(message);
     }
 
     /**

@@ -103,12 +103,7 @@ public class GlobalExceptionHandler {
 
     private ResponseEntity<Map<String, Object>> buildInternalErrorResponse(Exception ex) {
         String requestId = UUID.randomUUID().toString();
-        Throwable root = ex;
-        while (root.getCause() != null && root.getCause() != root) root = root.getCause();
-        String phase = root.getClass().getName().startsWith("jakarta.mail.")
-                ? "email_delivery" : "request_processing";
-        LOGGER.error("Internal API error requestId={} phase={} exceptionType={} rootCauseType={}",
-                requestId, phase, ex.getClass().getSimpleName(), root.getClass().getSimpleName(), ex);
+        LOGGER.error("Internal API error requestId={}", requestId, ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
                 .header("X-Request-ID", requestId)
@@ -116,8 +111,6 @@ public class GlobalExceptionHandler {
                 .body(Map.of(
                         "error", "SERVER_ERROR",
                         "message", "No se pudo completar la solicitud. Inténtalo de nuevo más tarde.",
-                        "requestId", requestId,
-                        "diagnostics", Map.of("phase", phase, "exceptionType", ex.getClass().getSimpleName(),
-                                "rootCauseType", root.getClass().getSimpleName(), "logReference", requestId)));
+                        "requestId", requestId));
     }
 }
