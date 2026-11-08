@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import esi.grupo5.esiBuy.Dto.LoginRequestDTO;
 import esi.grupo5.esiBuy.Dto.LoginResponseDTO;
@@ -35,6 +37,7 @@ import jakarta.mail.MessagingException;
 /** Gestiona inicio de sesión, tokens, MFA y recuperación de contraseñas. */
 @Service
 public class AuthService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthService.class);
 
     /** Duración de los tokens de recuperación, en minutos. */
     private static final int RECOVERY_TOKEN_VALIDITY_MINUTES = 5;
@@ -107,15 +110,27 @@ public class AuthService {
      * @throws PasswordExpiredException si la contraseña ha caducado
      */
     public LoginResponseDTO login(LoginRequestDTO loginRequest, String ipAddress) {
+        long started = System.nanoTime();
+        String email = loginRequest == null ? null : loginRequest.username();
+        LOGGER.info("auth.login phase=started email={} ip={}", safeEmail(email), ipAddress);
+        if (loginRequest == null || email == null || loginRequest.password() == null) {
+            LOGGER.warn("auth.login phase=input_validation result=failed reason=missing_credentials");
+            throw new AuthException("Credenciales inválidas");
+        }
+        LOGGER.debug("auth.login phase=rate_limit_check");
         loginAttempService.ensureLoginAllowed(ipAddress);
+        LOGGER.debug("auth.login phase=user_lookup");
         Usuario usuario = usuarioRepository.findByEmail(loginRequest.username())
                 .orElseThrow(() -> {
                     loginAttempService.registerFailedLogin(ipAddress);
+                    LOGGER.warn("auth.login phase=user_lookup result=failed reason=user_not_found email={}", safeEmail(email));
                     throw new AuthException("Credenciales inválidas");
                 });
 
+        LOGGER.debug("auth.login phase=password_check email={}", safeEmail(email));
         if (!passwordEncoder.matches(loginRequest.password(), usuario.getContrasena())) {
             loginAttempService.registerFailedLogin(ipAddress);
+            LOGGER.warn("auth.login phase=password_check result=failed email={}", safeEmail(email));
             throw new AuthException("Credenciales inválidas");
         }
         
@@ -127,7 +142,16 @@ public class AuthService {
         }
         
         loginAttempService.registerSuccessfulLogin(ipAddress);
-        return completarAutenticacion(usuario);
+        LOGGER.info("auth.login phase=credentials_valid role={} elapsedMs={}", usuario.getRol(), (System.nanoTime()-started)/1_000_000);
+        LoginResponseDTO result = completarAutenticacion(usuario);
+        LOGGER.info("auth.login phase=completed mfaStatus={} emailOtpRequired={} elapsedMs={}", result.mfaStatus(), result.emailOtpRequired(), (System.nanoTime()-started)/1_000_000);
+        return result;
+    }
+
+    private String safeEmail(String email) {
+        if (email == null) return "<missing>";
+        int at = email.indexOf('@');
+        return at <= 1 ? "***" : email.substring(0, 1) + "***" + email.substring(at);
     }
 
     /**
