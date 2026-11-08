@@ -31,15 +31,13 @@ public class GoogleAppsScriptEmailSender implements EmailSender {
     @Autowired
     public GoogleAppsScriptEmailSender(
             @Value("${google.script.url:}") String scriptUrl,
-            @Value("${google.script.secret:}") String bridgeSecret,
-            ObjectMapper objectMapper) {
-        this(scriptUrl, bridgeSecret, objectMapper, createHttpClient());
+            @Value("${google.script.secret:}") String bridgeSecret) {
+        this(scriptUrl, bridgeSecret, createHttpClient());
     }
 
     GoogleAppsScriptEmailSender(
             String scriptUrl,
             String bridgeSecret,
-            ObjectMapper objectMapper,
             HttpClient httpClient) {
         if (scriptUrl == null || scriptUrl.isBlank() || bridgeSecret == null || bridgeSecret.isBlank()) {
             throw new IllegalStateException(
@@ -53,7 +51,7 @@ public class GoogleAppsScriptEmailSender implements EmailSender {
         }
         this.scriptUrl = scriptUrl;
         this.bridgeSecret = bridgeSecret;
-        this.objectMapper = objectMapper;
+        this.objectMapper = new ObjectMapper();
         this.httpClient = httpClient;
     }
 

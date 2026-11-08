@@ -31,8 +31,7 @@ class GoogleAppsScriptEmailSenderTest {
     void setUp() throws Exception {
         httpClient = mock(HttpClient.class);
         httpResponse = (HttpResponse<String>) mock(HttpResponse.class);
-        sender = new GoogleAppsScriptEmailSender(
-                SCRIPT_URL, "bridge-secret", new ObjectMapper(), httpClient);
+        sender = new GoogleAppsScriptEmailSender(SCRIPT_URL, "bridge-secret", httpClient);
     }
 
     @Test
@@ -85,12 +84,12 @@ class GoogleAppsScriptEmailSenderTest {
     @Test
     void constructor_exigeUrlAppsScriptHttpsYSecreto() {
         assertThrows(IllegalStateException.class,
-                () -> new GoogleAppsScriptEmailSender("", "bridge-secret", new ObjectMapper(), httpClient));
+                () -> new GoogleAppsScriptEmailSender("", "bridge-secret", httpClient));
         assertThrows(IllegalStateException.class,
                 () -> new GoogleAppsScriptEmailSender(
                         "http://script.google.com/macros/s/deployment-id/exec",
-                        "bridge-secret", new ObjectMapper(), httpClient));
+                        "bridge-secret", httpClient));
         assertThrows(IllegalStateException.class,
-                () -> new GoogleAppsScriptEmailSender(SCRIPT_URL, "", new ObjectMapper(), httpClient));
+                () -> new GoogleAppsScriptEmailSender(SCRIPT_URL, "", httpClient));
     }
 }
