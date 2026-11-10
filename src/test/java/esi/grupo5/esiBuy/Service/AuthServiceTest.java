@@ -64,7 +64,7 @@ class AuthServiceTest {
         assertEquals("CLIENTE", result.rol());
         assertEquals("NORMAL", result.tipoCliente());
         assertEquals("SUCCESS", result.mfaStatus());
-        verify(loginAttemptService).registerSuccessfulLogin("127.0.0.1");
+        verify(loginAttemptService).registerSuccessfulLogin("127.0.0.1", usuario.getEmail());
         verify(refreshTokenRepository).save(any());
     }
 
@@ -75,7 +75,7 @@ class AuthServiceTest {
         assertThrows(AuthException.class, () -> service.login(
                 new LoginRequestDTO("missing@test.com", "Password#1"), "127.0.0.1"));
 
-        verify(loginAttemptService).registerFailedLogin("127.0.0.1");
+        verify(loginAttemptService).registerFailedLogin("127.0.0.1", "missing@test.com");
         verify(jwtService, never()).generateToken(any());
         verify(refreshTokenRepository, never()).save(any());
     }
@@ -89,7 +89,7 @@ class AuthServiceTest {
         assertThrows(AuthException.class, () -> service.login(
                 new LoginRequestDTO(usuario.getEmail(), "wrong"), "127.0.0.1"));
 
-        verify(loginAttemptService).registerFailedLogin("127.0.0.1");
+        verify(loginAttemptService).registerFailedLogin("127.0.0.1", usuario.getEmail());
         verify(jwtService, never()).generateToken(any());
         verify(refreshTokenRepository, never()).save(any());
     }
@@ -104,7 +104,7 @@ class AuthServiceTest {
         assertThrows(ForbiddenException.class, () -> service.login(
                 new LoginRequestDTO(usuario.getEmail(), "Password#1"), "127.0.0.1"));
 
-        verify(loginAttemptService).registerFailedLogin("127.0.0.1");
+        verify(loginAttemptService).registerFailedLogin("127.0.0.1", usuario.getEmail());
         verify(authFactorService, never()).requiereMfaObligatorio(any());
     }
 
@@ -118,7 +118,7 @@ class AuthServiceTest {
         assertThrows(ForbiddenException.class, () -> service.login(
                 new LoginRequestDTO(usuario.getEmail(), "Password#1"), "127.0.0.1"));
 
-        verify(loginAttemptService).registerFailedLogin("127.0.0.1");
+        verify(loginAttemptService).registerFailedLogin("127.0.0.1", usuario.getEmail());
         verify(authFactorService, never()).requiereMfaObligatorio(any());
     }
 
@@ -132,7 +132,7 @@ class AuthServiceTest {
         assertThrows(PasswordExpiredException.class, () -> service.login(
                 new LoginRequestDTO(usuario.getEmail(), "Password#1"), "127.0.0.1"));
 
-        verify(loginAttemptService).registerFailedLogin("127.0.0.1");
+        verify(loginAttemptService).registerFailedLogin("127.0.0.1", usuario.getEmail());
         verify(refreshTokenRepository, never()).save(any());
     }
 
@@ -152,6 +152,7 @@ class AuthServiceTest {
         assertEquals(usuario.getEmail(), result.email());
         assertNull(result.accessToken());
         assertNull(result.refreshToken());
+        verify(loginAttemptService, never()).registerSuccessfulLogin("127.0.0.1", usuario.getEmail());
         verify(refreshTokenRepository, never()).save(any());
     }
 

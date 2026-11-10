@@ -18,6 +18,7 @@ import esi.grupo5.esiBuy.Service.AuthFactorService;
 import esi.grupo5.esiBuy.Service.AuthService;
 import esi.grupo5.esiBuy.Util.CookieUtil;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 import jakarta.validation.Valid;
 
@@ -56,8 +57,10 @@ public class AuthFactorController {
      * @throws esi.grupo5.esiBuy.Exception.ExpiredTokenException si el OTP de correo no es válido
      */
     @PostMapping("/verify-mfa")
-    public ResponseEntity<LoginResponseDTO> verifyMFA(@Valid @RequestBody MfaVerifyRequestDTO dto, HttpServletResponse response) {
-        LoginResponseDTO loginResponse = authService.verifyMFA(dto);
+    public ResponseEntity<LoginResponseDTO> verifyMFA(@Valid @RequestBody MfaVerifyRequestDTO dto,
+                                                     HttpServletRequest request,
+                                                     HttpServletResponse response) {
+        LoginResponseDTO loginResponse = authService.verifyMFA(dto, request.getRemoteAddr());
         cookieUtil.setTokenCookiesIfPresent(response, loginResponse);
         return ResponseEntity.ok(loginResponse);
     }

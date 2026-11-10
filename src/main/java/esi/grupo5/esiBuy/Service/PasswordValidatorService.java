@@ -5,6 +5,7 @@ import esi.grupo5.esiBuy.Exception.BusinessException;
 import esi.grupo5.esiBuy.Exception.ValidationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.Collection;
 import java.util.Set;
@@ -16,7 +17,8 @@ public class PasswordValidatorService {
     /** Código común para errores internos del servidor. */
     private static final String INTERNAL_ERROR_CODE = "INTERNAL_ERROR";
     /** Longitud mínima de contraseña. */
-    private static final int MIN_LENGTH = 8;
+    @Value("${app.password.min-length:8}")
+    private int minLength = 8;
     /** Longitud máxima aceptada por el codificador utilizado. */
     private static final int MAX_LENGTH = 72;
 
@@ -99,8 +101,8 @@ public class PasswordValidatorService {
 
     /** Comprueba los límites de longitud permitidos. */
     private void validateLength(String password) {
-        if (password.length() < MIN_LENGTH) {
-            throw new ValidationException("La contraseña debe tener al menos " + MIN_LENGTH + " caracteres");
+        if (password.length() < minLength) {
+            throw new ValidationException("La contraseña debe tener al menos " + minLength + " caracteres");
         }
         if (password.length() > MAX_LENGTH) {
             throw new ValidationException("La contraseña no puede superar los " + MAX_LENGTH + " caracteres");

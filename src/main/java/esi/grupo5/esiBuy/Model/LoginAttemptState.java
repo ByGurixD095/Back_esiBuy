@@ -4,6 +4,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /** Estado persistente de intentos fallidos y bloqueos temporales por dirección IP. */
 @Document(collection = "login_attempts")
@@ -27,6 +29,14 @@ public class LoginAttemptState {
     private LocalDateTime lastFailureAt;
     /** Instante de la última actualización del estado. */
     private LocalDateTime updatedAt;
+    /** Inicio de la ventana usada para los límites temporales. */
+    private LocalDateTime windowStartedAt;
+    /** Hashes de usuarios distintos vistos desde una IP dentro de la ventana actual. */
+    private List<String> distinctUsers = new ArrayList<>();
+    /** Inicio de la ventana del control adaptativo para una IP. */
+    private LocalDateTime adaptiveWindowStartedAt;
+    /** Intentos permitidos ya usados en la ventana adaptativa actual. */
+    private int adaptiveAttempts;
 
     /** Constructor requerido por MongoDB para materializar el documento. */
     public LoginAttemptState() {
@@ -110,4 +120,22 @@ public class LoginAttemptState {
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
+
+    public LocalDateTime getWindowStartedAt() { return windowStartedAt; }
+
+    public void setWindowStartedAt(LocalDateTime windowStartedAt) { this.windowStartedAt = windowStartedAt; }
+
+    public List<String> getDistinctUsers() { return distinctUsers; }
+
+    public void setDistinctUsers(List<String> distinctUsers) { this.distinctUsers = distinctUsers; }
+
+    public LocalDateTime getAdaptiveWindowStartedAt() { return adaptiveWindowStartedAt; }
+
+    public void setAdaptiveWindowStartedAt(LocalDateTime adaptiveWindowStartedAt) {
+        this.adaptiveWindowStartedAt = adaptiveWindowStartedAt;
+    }
+
+    public int getAdaptiveAttempts() { return adaptiveAttempts; }
+
+    public void setAdaptiveAttempts(int adaptiveAttempts) { this.adaptiveAttempts = adaptiveAttempts; }
 }

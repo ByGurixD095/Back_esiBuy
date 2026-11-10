@@ -23,12 +23,22 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import esi.grupo5.esiBuy.Exception.BusinessException;
+import esi.grupo5.esiBuy.Exception.RateLimitExceededException;
 
 /** Traduce las excepciones de negocio a respuestas HTTP uniformes. */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<Map<String, Object>> manejarLimite(RateLimitExceededException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, Long.toString(ex.getRetryAfterSeconds()))
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("error", "RATE_LIMITED", "message", "Demasiados intentos. Prueba de nuevo más tarde."));
+    }
 
     /**
      * Convierte una excepción de negocio en una respuesta JSON con estado, código y mensaje.

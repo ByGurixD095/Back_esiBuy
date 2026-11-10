@@ -107,27 +107,35 @@ public class AuthService {
      * @throws PasswordExpiredException si la contraseña ha caducado
      */
     public LoginResponseDTO login(LoginRequestDTO loginRequest, String ipAddress) {
-        loginAttempService.ensureLoginAllowed(ipAddress);
+        loginAttempService.ensureLoginAllowed(ipAddress, loginRequest.username());
         Usuario usuario = usuarioRepository.findByEmail(loginRequest.username())
                 .orElseThrow(() -> {
-                    loginAttempService.registerFailedLogin(ipAddress);
+                    loginAttempService.registerFailedLogin(ipAddress, loginRequest.username());
                     throw new AuthException("Credenciales inválidas");
                 });
 
         if (!passwordEncoder.matches(loginRequest.password(), usuario.getContrasena())) {
-            loginAttempService.registerFailedLogin(ipAddress);
+            loginAttempService.registerFailedLogin(ipAddress, loginRequest.username());
             throw new AuthException("Credenciales inválidas");
+        }
+
+        if (passwordEncoder.upgradeEncoding(usuario.getContrasena())) {
+            usuario.setContrasena(passwordEncoder.encode(loginRequest.password()));
+            usuarioRepository.save(usuario);
         }
         
         try {
             validarEstadoCuenta(usuario);
         } catch (ForbiddenException | PasswordExpiredException e) {
-            loginAttempService.registerFailedLogin(ipAddress);
+            loginAttempService.registerFailedLogin(ipAddress, loginRequest.username());
             throw e;
         }
         
-        loginAttempService.registerSuccessfulLogin(ipAddress);
-        return completarAutenticacion(usuario);
+        LoginResponseDTO response = completarAutenticacion(usuario);
+        if ("SUCCESS".equals(response.mfaStatus())) {
+            loginAttempService.registerSuccessfulLogin(ipAddress, loginRequest.username());
+        }
+        return response;
     }
 
     /**
@@ -137,7 +145,8 @@ public class AuthService {
      * @return respuesta con tokens o con el siguiente paso de autenticación
      */
     public LoginResponseDTO completarAutenticacion(Usuario usuario) {
-        if (!authFactorService.requiereMfaObligatorio(usuario)) {
+        if (!authFactorService.requiereMfaObligatorio(usuario)
+                && !usuario.is2faActivoCliente() && !usuario.is3faActivoCliente()) {
             return generarTokens(usuario);
         }
         String tipoCliente = obtenerTipoCliente(usuario);
@@ -162,10 +171,22 @@ public class AuthService {
      * @param dto correo y códigos de verificación
      * @return respuesta con tokens de acceso y refresco
      */
+    public LoginResponseDTO verifyMFA(MfaVerifyRequestDTO dto, String ipAddress) {
+        loginAttempService.ensureLoginAllowed(ipAddress, dto.email());
+        try {
+            Usuario usuario = authFactorService.verifyFactors(dto);
+            validarEstadoCuenta(usuario);
+            loginAttempService.registerSuccessfulLogin(ipAddress, dto.email());
+            return generarTokens(usuario);
+        } catch (AuthException | ExpiredTokenException | ForbiddenException | PasswordExpiredException e) {
+            loginAttempService.registerFailedLogin(ipAddress, dto.email());
+            throw e;
+        }
+    }
+
+    /** Compatibility overload for internal callers that do not have request metadata. */
     public LoginResponseDTO verifyMFA(MfaVerifyRequestDTO dto) {
-        Usuario usuario = authFactorService.verifyFactors(dto);
-        validarEstadoCuenta(usuario);
-        return generarTokens(usuario);
+        return verifyMFA(dto, "unknown");
     }
 
     /**
@@ -309,6 +330,7 @@ public class AuthService {
         usuario.setTokenRecuperacionContrasena(null);
         usuario.setFechaExpiracionTokenRecuperacion(null);
         usuarioRepository.save(usuario);
+        revocarRefreshTokens(usuario.getId());
     }
 
     /**

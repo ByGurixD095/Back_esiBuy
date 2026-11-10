@@ -14,6 +14,7 @@ import esi.grupo5.esiBuy.Service.AuthService;
 import esi.grupo5.esiBuy.Service.JwtService;
 import esi.grupo5.esiBuy.Util.CookieUtil;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -45,13 +46,15 @@ class AuthFactorControllerTest {
     @Test
     void verifyMfa_soloEscribeCookieCuandoHayAccessToken() {
         HttpServletResponse response = mock(HttpServletResponse.class);
+        HttpServletRequest servletRequest = mock(HttpServletRequest.class);
+        when(servletRequest.getRemoteAddr()).thenReturn("127.0.0.1");
         MfaVerifyRequestDTO request = new MfaVerifyRequestDTO("user@test.com", "123456", null);
         LoginResponseDTO withToken = new LoginResponseDTO("access", "refresh", "CLIENTE", "NORMAL");
         LoginResponseDTO withoutToken = new LoginResponseDTO(null, null, "CLIENTE", "NORMAL");
-        when(authService.verifyMFA(request)).thenReturn(withToken).thenReturn(withoutToken);
+        when(authService.verifyMFA(request, "127.0.0.1")).thenReturn(withToken).thenReturn(withoutToken);
 
-        assertEquals(withToken, controller.verifyMFA(request, response).getBody());
-        assertEquals(withoutToken, controller.verifyMFA(request, response).getBody());
+        assertEquals(withToken, controller.verifyMFA(request, servletRequest, response).getBody());
+        assertEquals(withoutToken, controller.verifyMFA(request, servletRequest, response).getBody());
 
         verify(cookieUtil).setTokenCookiesIfPresent(response, withToken);
         verify(cookieUtil).setTokenCookiesIfPresent(response, withoutToken);
@@ -88,11 +91,11 @@ class AuthFactorControllerTest {
     @Test
     void verifyMfa_traduceErroresDeNegocioConservandoElCodigo() {
         MfaVerifyRequestDTO request = new MfaVerifyRequestDTO("user@test.com", "123456", null);
-        when(authService.verifyMFA(any())).thenThrow(
+        when(authService.verifyMFA(any(), any())).thenThrow(
                 new BusinessException("verification failed", 403, "MFA_INVALID"));
 
         BusinessException error = assertThrows(BusinessException.class,
-                () -> controller.verifyMFA(request, mock(HttpServletResponse.class)));
+                () -> controller.verifyMFA(request, mock(HttpServletRequest.class), mock(HttpServletResponse.class)));
 
         assertEquals(403, error.getHttpStatusCode());
         assertEquals("MFA_INVALID", error.getErrorCode());

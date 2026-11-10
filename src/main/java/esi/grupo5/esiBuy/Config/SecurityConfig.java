@@ -22,7 +22,6 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.csrf.MissingCsrfTokenException;
 import org.springframework.security.web.csrf.InvalidCsrfTokenException;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.session.SessionManagementFilter;
@@ -51,6 +50,8 @@ public class SecurityConfig {
     private String cookieSameSite;
     @Value("${app.cookie.partitioned:false}")
     private boolean partitionedCookies;
+    @Value("${app.security.password-pepper:}")
+    private String passwordPepper;
 
     /** Filtro que establece la identidad y el rol a partir de la cookie JWT. */
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -80,7 +81,7 @@ public class SecurityConfig {
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return new PepperedPasswordEncoder(passwordPepper);
     }
 
     /**
